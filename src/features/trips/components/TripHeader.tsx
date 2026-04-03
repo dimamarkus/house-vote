@@ -1,6 +1,7 @@
 'use client'; // This component needs state, so it must be a client component
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import type { Trip } from 'db';
 import { Card, CardHeader, CardTitle, CardDescription } from '@turbodima/ui/shadcn/card';
 import { Button } from '@turbodima/ui/core/Button';
@@ -17,6 +18,7 @@ interface TripHeaderProps {
 }
 
 export function TripHeader({ trip }: TripHeaderProps) {
+  const router = useRouter();
   const [importUrl, setImportUrl] = useState('');
   const [isImporting, setIsImporting] = useState(false);
 
@@ -31,7 +33,8 @@ export function TripHeader({ trip }: TripHeaderProps) {
       const result = await importListingFromUrl({ url: importUrl, tripId: trip.id });
       toast.dismiss();
       if (result.success) {
-        toast.success('Listing imported successfully! Refreshing...');
+        router.refresh();
+        toast.success('Listing imported successfully.');
         setImportUrl('');
       } else {
         toast.error(errorToString(result.error || 'Import failed'));
@@ -56,6 +59,9 @@ export function TripHeader({ trip }: TripHeaderProps) {
                 {trip.description}
               </CardDescription>
             )}
+            <CardDescription className="mt-2 text-sm text-muted-foreground">
+              Paste a listing URL for a quick best-effort import, or use the browser import token in the sidebar for richer Airbnb/VRBO capture.
+            </CardDescription>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 flex-shrink-0 w-full sm:w-auto">
             <div className="flex items-center gap-2 w-full sm:w-auto">

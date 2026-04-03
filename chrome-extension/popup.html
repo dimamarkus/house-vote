@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>House Vote Importer</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="popup">
+      <section class="section">
+        <h1>House Vote Importer</h1>
+        <p class="muted">Use the trip id and import token from the trip sidebar in House Vote.</p>
+      </section>
+
+      <section class="section">
+        <label for="app-url">House Vote URL</label>
+        <input id="app-url" name="app-url" placeholder="http://localhost:3000" type="url" />
+      </section>
+
+      <section class="section">
+        <label for="trip-id">Trip ID</label>
+        <input id="trip-id" name="trip-id" placeholder="cuid trip id" type="text" />
+      </section>
+
+      <section class="section">
+        <label for="import-token">Import Token</label>
+        <textarea
+          id="import-token"
+          name="import-token"
+          placeholder="Paste the token from House Vote"
+          rows="3"
+        ></textarea>
+      </section>
+
+      <section class="section actions">
+        <button id="save-listing" type="button">Save Current Listing</button>
+      </section>
+
+      <section class="section">
+        <h2>Last Capture</h2>
+        <pre id="capture-preview">Nothing captured yet.</pre>
+      </section>
+
+      <section class="section">
+        <div id="status" class="status muted">Open an Airbnb or VRBO listing page, then click save.</div>
+      </section>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

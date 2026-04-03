@@ -41,6 +41,7 @@ model Trip {
   user           User             @relation("OwnedTrips", fields: [userId], references: [id], onDelete: Cascade)
   collaborators  User[]           @relation("TripCollaborators")
   listings       Listing[]
+  importToken    TripImportToken?
   invitations    TripInvitation[]
   TripGuest      TripGuest[]
 
@@ -62,6 +63,13 @@ model Listing {
   imageUrl         String? // Optional
   latitude         Float?
   longitude        Float?
+  source           ListingSource       @default(MANUAL)
+  importMethod     ListingImportMethod @default(MANUAL)
+  importStatus     ListingImportStatus @default(NOT_IMPORTED)
+  sourceExternalId String?
+  importedAt       DateTime?
+  importError      String?
+  rawImportPayload Json?
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
   addedById        String? // Optional
@@ -70,10 +78,26 @@ model Listing {
   tripId           String
   trip             Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
   likes            Like[]
+  photos           ListingPhoto[]
   status           ListingStatus @default(POTENTIAL)
 
   @@index([addedById])
+  @@index([source, importStatus])
+  @@index([sourceExternalId])
   @@index([tripId])
+}
+
+model ListingPhoto {
+  id        String   @id @default(cuid())
+  listingId String
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url       String
+  position  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId])
+  @@unique([listingId, position])
 }
 
 model Like {
@@ -93,6 +117,26 @@ enum ListingStatus {
   POTENTIAL
   REJECTED
   // Add other potential statuses later, e.g., VISITED, OFFERED
+}
+
+enum ListingSource {
+  MANUAL
+  AIRBNB
+  VRBO
+  UNKNOWN
+}
+
+enum ListingImportMethod {
+  MANUAL
+  URL_FETCH
+  EXTENSION
+}
+
+enum ListingImportStatus {
+  NOT_IMPORTED
+  PARTIAL
+  COMPLETE
+  FAILED
 }
 
 model TripInvitation {
@@ -128,5 +172,17 @@ model TripGuest {
   trip             Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@unique([tripId, guestDisplayName]) // Prevent duplicate names per trip
+  @@index([tripId])
+}
+
+model TripImportToken {
+  id         String   @id @default(cuid())
+  tripId     String   @unique
+  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tokenHash  String   @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  lastUsedAt DateTime?
+
   @@index([tripId])
 }

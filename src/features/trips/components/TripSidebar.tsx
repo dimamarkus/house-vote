@@ -1,6 +1,7 @@
 import type { Trip, User } from 'db';
 import { TripDetailsCard } from './TripDetailsCard';
 import { CollaboratorsList } from './CollaboratorsList';
+import { TripImportTokenCard } from './TripImportTokenCard';
 
 interface TripSidebarProps {
   trip: Pick<Trip, 'id' | 'userId' | 'location' | 'startDate' | 'endDate' | 'numberOfPeople' | 'name' | 'description'> & {
@@ -12,14 +13,14 @@ interface TripSidebarProps {
 }
 
 /**
- * Renders the sidebar content for the trip dashboard,
- * including import, details, and collaborators.
+ * Renders the trip summary cards above the dashboard content.
  */
 export function TripSidebar({ trip, guestNames, currentGuestName, isOwner }: TripSidebarProps) {
   return (
-    <div className="md:col-span-1 space-y-6">
-
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <TripDetailsCard trip={trip} />
+
+      {isOwner ? <TripImportTokenCard tripId={trip.id} /> : null}
 
       <CollaboratorsList
         tripId={trip.id}

@@ -35,13 +35,22 @@ export const db: PrismaClient = createPrismaClient(
 );
 
 // Re-export generated Prisma types and enums for convenient imports from 'db'
-export { InviteStatus, ListingStatus, Prisma } from "@prisma/client";
+export {
+  InviteStatus,
+  ListingImportMethod,
+  ListingImportStatus,
+  ListingSource,
+  ListingStatus,
+  Prisma,
+} from "@prisma/client";
 export type {
   Like,
   Listing,
+  ListingPhoto,
   PrismaClient,
   Trip,
   TripGuest,
+  TripImportToken,
   TripInvitation,
   User,
 } from "@prisma/client";

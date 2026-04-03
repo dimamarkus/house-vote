@@ -12,7 +12,6 @@ import type { SearchParams } from '@turbodima/core/types'; // Import the structu
 import { Card, CardContent } from '@turbodima/ui/shadcn/card';
 import { LinkButton } from '@turbodima/ui/core/LinkButton';
 import { TripHeader } from '/src/features/trips/components/TripHeader';
-import { Flex } from '@turbodima/ui/core/Flex';
 
 // Define allowed sort fields for Listing - Removed count fields
 const allowedSortByFields: ReadonlyArray<Prisma.ListingScalarFieldEnum> = [
@@ -157,23 +156,21 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
     <div className="p-6">
       <TripHeader trip={trip} />
 
-      <Flex.Row>
+      <div className="space-y-6">
+        <TripSidebar
+          trip={trip}
+          guestNames={guestNames}
+          currentGuestName={currentGuestName}
+          isOwner={isOwner}
+        />
         <TripContentArea
           tripId={currentTripId}
           viewMode={view}
           listings={listings}
           userLikes={userLikes}
           userId={userId}
-          className="flex-1"
         />
-        <TripSidebar
-          trip={trip} // Pass the necessary trip data
-          guestNames={guestNames}
-          currentGuestName={currentGuestName}
-          isOwner={isOwner}
-        />
-
-      </Flex.Row>
+      </div>
     </div>
   );
 }

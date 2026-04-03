@@ -36,6 +36,13 @@ interface MapListing {
   addedByGuestName: string | null;
   tripId: string;
   status: ListingStatusValue;
+  source: Listing['source'];
+  importMethod: Listing['importMethod'];
+  importStatus: Listing['importStatus'];
+  sourceExternalId: Listing['sourceExternalId'];
+  importedAt: Listing['importedAt'];
+  importError: Listing['importError'];
+  rawImportPayload: Listing['rawImportPayload'];
 }
 
 interface TripContentAreaProps {

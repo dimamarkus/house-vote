@@ -6,11 +6,13 @@ import type { Listing, User as PrismaUser, Trip, Like } from 'db';
 import { GenericTable, ColumnDef } from '@turbodima/ui/core/GenericTable';
 import { Button } from '@turbodima/ui/shadcn/button';
 import { Badge } from '@turbodima/ui/shadcn/badge';
+import { LinkButton } from '@turbodima/ui/core/LinkButton';
 import { deleteListing } from '../actions/deleteListing';
 import { LikeButton } from '../../likes/components/LikeButton';
 import { ListingStatusAction } from '../components/ListingStatusAction';
 import { SingleButtonForm } from '@turbodima/ui/form/SingleButtonForm';
 import { ImageWithFallback } from '@turbodima/ui/core/ImageWithFallback';
+import { ListingFormSheet } from '../forms/ListingFormSheet';
 
 // Requires getListings action to include: addedBy, likes: { select: { id: true }}
 // to satisfy these types fully.
@@ -25,6 +27,8 @@ type ListingWithRelations = Listing & {
   bedCount?: number | null;
   bathroomCount?: number | null;
   imageUrl?: string | null;
+  source?: 'MANUAL' | 'AIRBNB' | 'VRBO' | 'UNKNOWN';
+  importStatus?: 'NOT_IMPORTED' | 'PARTIAL' | 'COMPLETE' | 'FAILED';
 };
 
 interface ListingsTableProps {
@@ -70,6 +74,26 @@ export function ListingsTable({ listings, currentUserId, currentUserLikes = {}, 
             ) : (
               listing.title
             )}
+          </div>
+        );
+      }
+    },
+    {
+      header: "Source",
+      accessorKey: "source",
+      cell: (listing) => {
+        const sourceLabel = listing.source === 'UNKNOWN' ? 'Imported' : listing.source ?? 'MANUAL';
+        const importStatusLabel =
+          listing.importStatus && listing.importStatus !== 'NOT_IMPORTED'
+            ? listing.importStatus.toLowerCase()
+            : null;
+
+        return (
+          <div className="flex flex-col items-start gap-1">
+            <Badge weight="hollow">{sourceLabel}</Badge>
+            {importStatusLabel ? (
+              <span className="text-xs text-muted-foreground">{importStatusLabel}</span>
+            ) : null}
           </div>
         );
       }
@@ -215,19 +239,42 @@ export function ListingsTable({ listings, currentUserId, currentUserLikes = {}, 
       header: "Actions",
       cell: (listing) => {
         const canModify = !!currentUserId && currentUserId === listing.addedById;
+        const canViewSource = typeof listing.url === "string" && listing.url.length > 0;
 
         return (
           <div className="flex items-center justify-end gap-1 pr-4">
-            <Button size="icon" weight="ghost" title="View Details" className="size-8 p-0">
-               <span className="sr-only">View</span>
-              <Eye className="h-4 w-4" />
-            </Button>
+            {canViewSource ? (
+              <LinkButton
+                href={listing.url ?? '#'}
+                target="_blank"
+                size="icon"
+                weight="ghost"
+                title="View Original Listing"
+                className="size-8 p-0"
+              >
+                <span className="sr-only">View original listing</span>
+                <Eye className="h-4 w-4" />
+              </LinkButton>
+            ) : (
+              <Button
+                size="icon"
+                weight="ghost"
+                title="No source URL available"
+                className="size-8 p-0"
+                disabled
+              >
+                <span className="sr-only">No source URL available</span>
+                <Eye className="h-4 w-4" />
+              </Button>
+            )}
 
             {canModify && (
-              <Button size="icon" weight="ghost" title="Edit Listing" className="size-8 p-0">
-                <span className="sr-only">Edit</span>
-                <Edit className="h-4 w-4" />
-              </Button>
+              <ListingFormSheet listingId={listing.id} tripId={listing.tripId} initialState={listing}>
+                <Button size="icon" weight="ghost" title="Edit Listing" className="size-8 p-0">
+                  <span className="sr-only">Edit</span>
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </ListingFormSheet>
             )}
 
             {canModify && (
