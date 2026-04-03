@@ -17,14 +17,14 @@ A collaborative trip-planning app for comparing, discussing, and voting on renta
 
 ## Runtime
 
-- Node: `>=20.9.0`
-- Package manager: `pnpm@10.21.0`
+- Node: `24.x`
+- Package manager: `pnpm@10.33.0`
 
 ## First-Time Setup
 
 1. Copy `env.example` to `.env.local`.
 2. Install dependencies with `pnpm install`.
-3. Generate the Prisma client and Zod outputs with `pnpm db:generate`.
+3. Generate the Prisma client with `pnpm db:generate`.
 4. Ensure your Postgres database is reachable via `DATABASE_URL`.
 5. Apply schema changes with `pnpm db:push` or your preferred Prisma migration workflow.
 6. Start the app with `pnpm dev`.
@@ -52,10 +52,8 @@ Clerk stays enabled in this standalone app, so authenticated flows and protected
 
 ## Generated Code
 
-This repo treats Prisma-generated code as local build output, not source code.
+This repo uses Prisma's standard `@prisma/client` generation flow.
 
-- do not edit files under `generated/`
-- do not commit `generated/`
 - regenerate with `pnpm db:generate` after Prisma schema changes
 
 ## Standalone Notes

@@ -32,7 +32,9 @@ export async function fetchListingMetadata(
 
   if (!validationResult.success) {
     // Concatenate errors if multiple fields fail (though only url here)
-    const errorMessage = validationResult.error.errors.map(e => e.message).join(', ');
+    const errorMessage = validationResult.error.issues
+      .map((issue) => issue.message)
+      .join(', ');
     return { error: errorMessage || "Invalid input." };
   }
 

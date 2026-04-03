@@ -2,7 +2,11 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "es2022"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es2022"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -12,15 +16,26 @@
     "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
-      "/*": ["./*"],
-      "@/*": ["./src/*"],
-      "db": ["./db.ts"],
-      "@turbodima/core/*": ["./src/compat/core/*"],
-      "@turbodima/ui/*": ["./src/compat/ui/*"]
+      "/*": [
+        "./*"
+      ],
+      "@/*": [
+        "./src/*"
+      ],
+      "db": [
+        "./db.ts"
+      ],
+      "@turbodima/core/*": [
+        "./src/compat/core/*"
+      ],
+      "@turbodima/ui/*": [
+        "./src/compat/ui/*"
+      ]
     },
     "plugins": [
       {
@@ -35,5 +50,7 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

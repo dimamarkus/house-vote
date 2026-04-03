@@ -19,6 +19,8 @@
 * Prisma-generated client and Zod outputs should be generated locally and ignored in git.
 * CI/deploy is deferred until after the standalone app is locally healthy.
 * Used a local compatibility layer for the shared core package first to reduce churn while extracting.
+* Modernized the standalone app to the latest coherent stable stack instead of forcing incompatible "latest" versions blindly.
+* Standardized the standalone repo on Node `24.x` and aligned typings/tooling to that runtime.
 
 **Progress:**
 
@@ -54,6 +56,19 @@
   * `pnpm check-types`
   * `pnpm lint`
   * `pnpm build` with dummy Clerk env vars for build-time validation
+* ✅ Modernized the standalone stack after extraction:
+  * Upgraded to Next `16`, React `19.2`, Clerk `7`, Prisma `7`, Zod `4`, and TypeScript `6`.
+  * Replaced the abandoned `zod-prisma` generator with app-owned Zod schemas.
+  * Added `prisma.config.ts` and migrated Prisma 7 datasource configuration there.
+  * Switched Prisma runtime setup to the Postgres driver adapter pattern required by Prisma 7.
+  * Renamed `src/middleware.ts` to `src/proxy.ts` for Next 16.
+  * Updated `check-types` to use `next typegen`.
+  * Tightened the repo runtime contract to Node `24.x`, added `.nvmrc`, and aligned `@types/node` to Node 24.
+* ✅ Re-verified the modernized standalone repo locally on Node `24.14.1`:
+  * `pnpm db:generate`
+  * `pnpm check-types`
+  * `pnpm lint`
+  * `pnpm build`
 
 **Challenges:**
 
@@ -61,6 +76,8 @@
 * The extraction needed a larger UI localization pass than `toliks-poems` because the app depended on shared forms, tables, and theming helpers in addition to basic primitives.
 * Verification exposed a lot of pre-existing lint debt inside the cloned app. That had to be cleaned up before the standalone build could pass end-to-end.
 * Next 15's ESLint config shape differed from the newer setup pattern used elsewhere, so the local `eslint.config.mjs` had to be adapted with `FlatCompat`.
+* Prisma 7 required a real migration to its new config and driver-adapter model; keeping the old constructor setup was not viable.
+* ESLint `10` was available but not coherent with the current Next 16 lint plugin chain in this repo, so the toolchain was intentionally kept on the latest stable `eslint@9` instead.
 
 **Blockers:**
 

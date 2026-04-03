@@ -1,6 +1,6 @@
 import { Button } from "@turbodima/ui/shadcn/button";
 import Link from "next/link";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+import { Show } from "@clerk/nextjs";
 
 export default function HomePage() {
   return (
@@ -13,7 +13,7 @@ export default function HomePage() {
           Stop juggling links and opinions. HouseVote lets your group easily collect, compare, and vote on rental listings for your next trip.
         </p>
         <div className="flex flex-col gap-4 sm:flex-row">
-          <SignedOut>
+          <Show when="signed-out">
             <Button asChild size="lg">
               <Link href="/sign-in">Get Started</Link>
             </Button>
@@ -21,12 +21,12 @@ export default function HomePage() {
               {/* This will redirect to sign-in if not authenticated */}
               <Link href="/trips">View Your Trips</Link>
             </Button>
-          </SignedOut>
-          <SignedIn>
+          </Show>
+          <Show when="signed-in">
             <Button asChild size="lg">
               <Link href="/trips">Go to My Trips</Link>
             </Button>
-          </SignedIn>
+          </Show>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 
 /**
  * Hook to manage the guest user's display name stored in localStorage for a specific trip.
@@ -11,33 +11,31 @@ import { useState, useEffect } from 'react';
  * @returns The guest's display name or null.
  */
 export function useGuestSession(tripId: string | null, userId: string | null): string | null {
-  const [currentGuestName, setCurrentGuestName] = useState<string | null>(null);
+  return useMemo(() => {
+    if (typeof window === 'undefined' || userId || !tripId) {
+      return null;
+    }
 
-  useEffect(() => {
-    // Only run for guests (not logged-in users) and if tripId is valid
-    if (!userId && tripId) {
-      const guestSessionKey = `housevote_guest_session_${tripId}`;
-      let storedName: string | null = null;
+    const guestSessionKey = `housevote_guest_session_${tripId}`;
 
-      try {
-        const storedSession = localStorage.getItem(guestSessionKey);
-        if (storedSession) {
-          const sessionData = JSON.parse(storedSession);
-          storedName = sessionData.displayName || null;
-        }
-      } catch (e) {
-        console.error("Failed to parse guest session:", e);
-        // Attempt to clear corrupted data
-        try {
-          localStorage.removeItem(guestSessionKey);
-        } catch (removeError) {
-            console.error("Failed to remove corrupted guest session key:", removeError);
-        }
+    try {
+      const storedSession = localStorage.getItem(guestSessionKey);
+      if (!storedSession) {
+        return null;
       }
 
-      setCurrentGuestName(storedName);
-    }
-  }, [userId, tripId]); // Rerun effect if userId or tripId changes
+      const sessionData = JSON.parse(storedSession) as { displayName?: string };
+      return sessionData.displayName || null;
+    } catch (error) {
+      console.error("Failed to parse guest session:", error);
 
-  return currentGuestName;
+      try {
+        localStorage.removeItem(guestSessionKey);
+      } catch (removeError) {
+        console.error("Failed to remove corrupted guest session key:", removeError);
+      }
+
+      return null;
+    }
+  }, [tripId, userId]);
 }

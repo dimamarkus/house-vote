@@ -1,8 +1,8 @@
 # Project Status
 
-**Current Phase:** Standalone Extraction (Locally Verified)
+**Current Phase:** Standalone Modernization (Locally Verified)
 
-**Overall Progress:** 65% // Standalone repo now installs, generates Prisma artifacts, lints, type-checks, and builds locally
+**Overall Progress:** 78% // Standalone repo is extracted, modernized, and verified locally on Node 24
 
 **Next Tasks:**
 
@@ -31,6 +31,12 @@
   * ✅ Shared `@turbodima/core` package replaced with local compatibility layer
   * ✅ Shared `@turbodima/ui` package replaced with local compatibility layer
   * ✅ Standalone `pnpm install`, `pnpm db:generate`, `pnpm lint`, `pnpm check-types`, and `pnpm build` verified locally
+* ✅ Standalone Modernization
+  * ✅ Upgraded to a modern standalone stack (`next@16`, `react@19.2`, `@clerk/nextjs@7`, `prisma@7`, `zod@4`, `typescript@6`)
+  * ✅ Replaced `zod-prisma` with app-owned Zod schemas
+  * ✅ Migrated Prisma to `prisma.config.ts` and driver-adapter setup
+  * ✅ Standardized repo runtime to Node `24.x`
+  * ✅ Verified `pnpm db:generate`, `pnpm lint`, `pnpm check-types`, and `pnpm build` under Node `24.14.1`
 
 **Blockers:**
 

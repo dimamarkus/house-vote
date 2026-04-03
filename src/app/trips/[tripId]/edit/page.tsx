@@ -20,7 +20,6 @@ export default function EditTripPage() {
 
   useEffect(() => {
     if (!tripId) return;
-    setIsLoading(true);
     getTrip(tripId)
       .then((res) => {
         // Explicitly check for the error case first

@@ -1,10 +1,10 @@
 'use client'; // Needs Button component
 
 import type { TripInvitation } from 'db';
-import { InviteStatus } from 'db';
 import Link from 'next/link';
 import { Button } from '@turbodima/ui/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
+import { INVITE_STATUS } from '../constants/invite-status';
 
 interface InvitationStatusDisplayProps {
   invitation: Pick<TripInvitation, 'status' | 'tripId'>;
@@ -19,11 +19,11 @@ export function InvitationStatusDisplay({ invitation }: InvitationStatusDisplayP
   let description: string;
 
   switch (invitation.status) {
-    case InviteStatus.EXPIRED:
+    case INVITE_STATUS.EXPIRED:
       title = 'Invitation Expired';
       description = 'This invitation has expired and is no longer valid.';
       break;
-    case InviteStatus.DECLINED:
+    case INVITE_STATUS.DECLINED:
       title = 'Invitation Declined';
       description = 'This invitation has been declined.';
       break;

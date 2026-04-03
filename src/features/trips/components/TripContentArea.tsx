@@ -3,12 +3,12 @@
 import dynamic from 'next/dynamic';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
 import type { Listing } from 'db';
-import { ListingStatus } from 'db';
 import { ListingsTable } from '@/features/listings/tables/ListingsTable';
 import { ListingCard } from '@/features/listings/components/ListingCard';
 import { LikeButton } from '@/features/likes/components/LikeButton';
 import { TripViewToggle } from './TripViewToggle';
 import { cn } from '@turbodima/ui/utils/cn';
+import { LISTING_STATUS, type ListingStatusValue } from '@/features/listings/constants/listing-status';
 
 // Dynamically import the map component, disabling SSR
 const ListingsMap = dynamic(
@@ -35,7 +35,7 @@ interface MapListing {
   addedById: string | null;
   addedByGuestName: string | null;
   tripId: string;
-  status: ListingStatus;
+  status: ListingStatusValue;
 }
 
 interface TripContentAreaProps {
@@ -52,8 +52,8 @@ export function TripContentArea({ viewMode = 'table', listings, userLikes, userI
   const basePath = `/trips/${tripId}`;
 
   // Filter listings based on status
-  const potentialListings = listings.filter(l => l.status === ListingStatus.POTENTIAL);
-  const rejectedListings = listings.filter(l => l.status === ListingStatus.REJECTED);
+  const potentialListings = listings.filter(l => l.status === LISTING_STATUS.POTENTIAL);
+  const rejectedListings = listings.filter(l => l.status === LISTING_STATUS.REJECTED);
 
   // Convert Potential Listings for the map
   const listingsForMap: MapListing[] = viewMode === 'map' ? potentialListings.map(listing => ({

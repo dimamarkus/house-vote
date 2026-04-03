@@ -6,23 +6,10 @@
 
 generator client {
   provider = "prisma-client-js"
-  // Generate a client local to this app to avoid cross-app schema conflicts in monorepo
-  output   = "../generated/client"
-}
-
-generator zod {
-  provider              = "zod-prisma"
-  output                = "../generated/zod" // Adjust path as needed
-  relationModel         = true
-  modelCase             = "PascalCase"
-  modelSuffix           = "Schema"
-  useDecimalJs          = true
-  prismaJsonNullability = true
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // Stub User model - Clerk handles user data, but we need relations

@@ -6,17 +6,17 @@ import { createErrorResponse, createSuccessResponse } from "@turbodima/core/resp
 import { revalidatePath } from "next/cache";
 import { listings } from "../db";
 import type { Listing } from "db";
-import { ListingStatus } from "db";
 import { z } from "zod";
 import { validateActionInput } from "@turbodima/core/form-data";
 import { ApiResponse } from "@turbodima/core/types";
 import { trips } from "../../trips/db";
+import { LISTING_STATUS } from "../constants/listing-status";
 
 // Input schema for updating listing status
 const updateListingStatusSchema = z.object({
   listingId: z.string().min(1, "Listing ID is required"),
-  status: z.nativeEnum(ListingStatus, {
-    errorMap: () => ({ message: "Invalid listing status" }),
+  status: z.enum([LISTING_STATUS.POTENTIAL, LISTING_STATUS.REJECTED], {
+    error: "Invalid listing status",
   }),
 });
 

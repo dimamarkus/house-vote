@@ -1,5 +1,17 @@
 import { z } from 'zod';
-import { TripSchema } from '../../../generated/zod/trip';
+
+export const TripSchema = z.object({
+  id: z.string().cuid(),
+  name: z.string().min(3, { message: "Trip name must be at least 3 characters" }),
+  description: z.string().nullable().optional(),
+  startDate: z.date().nullable().optional(),
+  endDate: z.date().nullable().optional(),
+  location: z.string().nullable().optional(),
+  numberOfPeople: z.number().int().positive().nullable().optional(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  userId: z.string(),
+});
 
 // Extend the generated schema with custom validation
 export const TripWithDateValidation = TripSchema.refine(

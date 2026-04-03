@@ -2,17 +2,17 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { ListingStatus } from "db";
 import { Button } from "@turbodima/ui/shadcn/button";
 import { toast } from "sonner";
 import { Ban, Check } from "lucide-react";
 import { updateListingStatus } from "../actions/updateListingStatus";
+import { LISTING_STATUS, type ListingStatusValue } from "../constants/listing-status";
 
 interface ListingStatusActionProps {
   listingId: string;
-  currentStatus: ListingStatus;
+  currentStatus: ListingStatusValue;
   size?: "sm" | "md" | "lg";
-  onStatusUpdate?: (newStatus: ListingStatus) => void;
+  onStatusUpdate?: (newStatus: ListingStatusValue) => void;
 }
 
 // Submit button with loading state
@@ -70,12 +70,12 @@ export function ListingStatusAction({
   onStatusUpdate,
 }: ListingStatusActionProps) {
   const [status, setStatus] = useState(currentStatus);
-  const isRejected = status === ListingStatus.REJECTED;
+  const isRejected = status === LISTING_STATUS.REJECTED;
 
   // New status will be the opposite of current status
   const newStatus = isRejected
-    ? ListingStatus.POTENTIAL
-    : ListingStatus.REJECTED;
+    ? LISTING_STATUS.POTENTIAL
+    : LISTING_STATUS.REJECTED;
 
   const handleAction = async (formData: FormData) => {
     try {

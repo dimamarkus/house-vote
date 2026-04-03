@@ -1,7 +1,6 @@
 import { HTMLAttributes } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
 import type { Listing as PrismaListing } from 'db';
-import { ListingStatus } from 'db';
 type Listing = PrismaListing & { imageUrl?: string | null };
 
 import Link from 'next/link';
@@ -9,6 +8,7 @@ import { Badge, BadgeProps } from '@turbodima/ui/shadcn/badge';
 import { ExternalLink, BedDouble, Bath, StickyNote, UserCircle, CalendarDays, CheckCircle, XCircle, Image as ImageIcon } from 'lucide-react';
 import { ImageWithFallback } from '@turbodima/ui/core/ImageWithFallback';
 import { cn } from '@turbodima/ui/utils/cn';
+import { LISTING_STATUS, type ListingStatusValue } from '../constants/listing-status';
 
 /**
  * Props for the ListingCard component
@@ -53,18 +53,18 @@ export function ListingCard({
 }: ListingCardProps) {
   const detailUrl = `${baseUrl}/${listing.id}`;
 
-  const getStatusVariant = (status: ListingStatus): BadgeProps['variant'] => {
+  const getStatusVariant = (status: ListingStatusValue): BadgeProps['variant'] => {
     switch (status) {
-      case ListingStatus.POTENTIAL: return 'primary';
-      case ListingStatus.REJECTED: return 'destructive';
+      case LISTING_STATUS.POTENTIAL: return 'primary';
+      case LISTING_STATUS.REJECTED: return 'destructive';
       default: return 'secondary';
     }
   };
 
-  const getStatusIcon = (status: ListingStatus) => {
+  const getStatusIcon = (status: ListingStatusValue) => {
     switch (status) {
-      case ListingStatus.POTENTIAL: return <CheckCircle className="h-4 w-4 mr-1" />;
-      case ListingStatus.REJECTED: return <XCircle className="h-4 w-4 mr-1" />;
+      case LISTING_STATUS.POTENTIAL: return <CheckCircle className="h-4 w-4 mr-1" />;
+      case LISTING_STATUS.REJECTED: return <XCircle className="h-4 w-4 mr-1" />;
       default: return null;
     }
   };
