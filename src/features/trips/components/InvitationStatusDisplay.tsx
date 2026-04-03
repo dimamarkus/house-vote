@@ -1,8 +1,7 @@
 'use client'; // Needs Button component
 
 import type { TripInvitation } from 'db';
-import Link from 'next/link';
-import { Button } from '@turbodima/ui/shadcn/button';
+import { LinkButton } from '@turbodima/ui/core/LinkButton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
 import { INVITE_STATUS } from '../constants/invite-status';
 
@@ -43,9 +42,7 @@ export function InvitationStatusDisplay({ invitation }: InvitationStatusDisplayP
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-end">
-          <Button asChild>
-            <Link href="/trips">Go to My Trips</Link>
-          </Button>
+          <LinkButton href="/trips">Go to My Trips</LinkButton>
         </CardContent>
       </Card>
     </div>

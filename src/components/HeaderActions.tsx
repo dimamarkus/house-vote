@@ -4,9 +4,8 @@
 import { UserButton } from '@clerk/nextjs';
 import { useAuthStatus } from '@turbodima/core/auth/client/useAuthStatus';
 import { SIGNIN_PATH } from '@turbodima/core/constants';
-import { Button } from '@turbodima/ui/core/Button';
+import { LinkButton } from '@turbodima/ui/core/LinkButton';
 import { ThemeToggle } from '@turbodima/ui/core/ThemeToggle';
-import Link from 'next/link';
 
 export function HeaderActions() {
   const { isAuthenticated, isLoading } = useAuthStatus();
@@ -23,9 +22,7 @@ export function HeaderActions() {
             userProfileUrl="/profile"
           />
         ) : (
-          <Button asChild>
-            <Link href={SIGNIN_PATH}>Sign In</Link>
-          </Button>
+          <LinkButton href={SIGNIN_PATH}>Sign In</LinkButton>
         )}
       </div>
       <ThemeToggle />

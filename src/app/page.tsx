@@ -1,5 +1,4 @@
-import { Button } from "@turbodima/ui/shadcn/button";
-import Link from "next/link";
+import { LinkButton } from "@turbodima/ui/core/LinkButton";
 import { Show } from "@clerk/nextjs";
 
 export default function HomePage() {
@@ -14,18 +13,17 @@ export default function HomePage() {
         </p>
         <div className="flex flex-col gap-4 sm:flex-row">
           <Show when="signed-out">
-            <Button asChild size="lg">
-              <Link href="/sign-in">Get Started</Link>
-            </Button>
-            <Button asChild weight="hollow" size="lg">
-              {/* This will redirect to sign-in if not authenticated */}
-              <Link href="/trips">View Your Trips</Link>
-            </Button>
+            <LinkButton href="/sign-in" size="lg">
+              Get Started
+            </LinkButton>
+            <LinkButton href="/trips" size="lg" weight="hollow">
+              View Your Trips
+            </LinkButton>
           </Show>
           <Show when="signed-in">
-            <Button asChild size="lg">
-              <Link href="/trips">Go to My Trips</Link>
-            </Button>
+            <LinkButton href="/trips" size="lg">
+              Go to My Trips
+            </LinkButton>
           </Show>
         </div>
       </div>

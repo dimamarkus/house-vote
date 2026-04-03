@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
-import { Button } from '@turbodima/ui/shadcn/button';
 import { EmptyState } from '@turbodima/ui/core/EmptyState';
+import { LinkButton } from '@turbodima/ui/core/LinkButton';
 import { PlusCircle } from 'lucide-react';
 import { getTrips } from '@/features/trips/actions/getTrips';
 import { TripsTable } from '@/features/trips/tables/TripsTable';
@@ -53,11 +52,9 @@ export default async function TripsPage({
   console.log('trips', trips);
   // Define the action button component
   const CreateTripButton = (
-    <Button asChild>
-      <Link href="/trips/create">
-        <PlusCircle className="w-4 h-4 mr-2" /> Create New Trip
-      </Link>
-    </Button>
+    <LinkButton href="/trips/create">
+      <PlusCircle className="w-4 h-4 mr-2" /> Create New Trip
+    </LinkButton>
   );
 
   return (

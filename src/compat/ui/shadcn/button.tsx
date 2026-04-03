@@ -69,6 +69,27 @@ function getSizeClasses(size: ButtonSize) {
   return "h-9 rounded-md px-4 py-2";
 }
 
+type ButtonClassNameProps = {
+  className?: string;
+  size?: ButtonSize;
+  variant?: ButtonVariant;
+  weight?: ButtonWeight;
+};
+
+export function buttonClassName({
+  className,
+  size = "default",
+  variant = "primary",
+  weight = "solid",
+}: ButtonClassNameProps) {
+  return cn(
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background",
+    getVariantClasses(variant, weight),
+    getSizeClasses(size),
+    className,
+  );
+}
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
@@ -98,18 +119,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : "button";
     const Icon = icon ? iconMap[icon] : null;
     const content = text ?? children;
+    const componentProps = asChild ? props : { ...props, type };
 
     return (
       <Comp
         ref={ref}
-        className={cn(
-          "inline-flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ring-offset-background",
-          getVariantClasses(variant, weight),
-          getSizeClasses(size),
-          className,
-        )}
-        type={asChild ? undefined : type}
-        {...props}
+        className={buttonClassName({ className, size, variant, weight })}
+        {...componentProps}
       >
         {Icon ? <Icon className="h-4 w-4" /> : null}
         {asChild ? <Slottable>{children}</Slottable> : content}

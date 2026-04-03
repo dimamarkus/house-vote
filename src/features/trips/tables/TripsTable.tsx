@@ -5,10 +5,10 @@ import { format } from 'date-fns';
 import { Calendar, ArrowRight, Eye, Edit, Users } from 'lucide-react';
 import type { Trip } from 'db';
 import { GenericTable } from '@turbodima/ui/core/GenericTable';
-import { Button } from '@turbodima/ui/shadcn/button';
 import { Badge } from '@turbodima/ui/shadcn/badge';
 import { ColumnDef } from '@turbodima/ui/core/GenericTable';
 import { useAuth } from '@clerk/nextjs';
+import { LinkButton } from '@turbodima/ui/core/LinkButton';
 
 interface TripsTableProps {
   trips: Trip[];
@@ -81,17 +81,13 @@ export function TripsTable({ trips, currentUserId }: TripsTableProps) {
       header: "Actions",
       cell: (trip) => (
         <div className="flex items-center gap-2">
-          <Button size="sm" weight="ghost" asChild>
-            <Link href={`/trips/${trip.id}`}>
-              <Eye className="h-4 w-4 mr-1" /> View
-            </Link>
-          </Button>
+          <LinkButton href={`/trips/${trip.id}`} size="sm" weight="ghost">
+            <Eye className="h-4 w-4 mr-1" /> View
+          </LinkButton>
           {(!userIdToUse || trip.userId === userIdToUse) && (
-            <Button size="sm" weight="ghost" asChild>
-              <Link href={`/trips/${trip.id}/edit`}>
-                <Edit className="h-4 w-4 mr-1" /> Edit
-              </Link>
-            </Button>
+            <LinkButton href={`/trips/${trip.id}/edit`} size="sm" weight="ghost">
+              <Edit className="h-4 w-4 mr-1" /> Edit
+            </LinkButton>
           )}
         </div>
       )

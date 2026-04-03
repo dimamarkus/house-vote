@@ -9,9 +9,8 @@ import { Prisma } from 'db';
 import type { Listing, Trip, User } from 'db';
 import { processSearchParams } from '@turbodima/core/search-params';
 import type { SearchParams } from '@turbodima/core/types'; // Import the structured SearchParams type
-import { Button } from '@turbodima/ui/shadcn/button';
 import { Card, CardContent } from '@turbodima/ui/shadcn/card';
-import Link from 'next/link';
+import { LinkButton } from '@turbodima/ui/core/LinkButton';
 import { TripHeader } from '/src/features/trips/components/TripHeader';
 import { Flex } from '@turbodima/ui/core/Flex';
 
@@ -140,9 +139,9 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
             <h1 className="text-2xl font-bold text-red-500 mb-4">Error: {fetchError || 'Trip not found'}</h1>
             <p className="mb-6">There was an issue loading this trip. Try going back to your trips list.</p>
             <div className="mb-4">
-              <Button asChild weight="hollow">
-                <Link href="/trips">Back to Trips</Link>
-              </Button>
+              <LinkButton href="/trips" weight="hollow">
+                Back to Trips
+              </LinkButton>
             </div>
           </CardContent>
         </Card>
