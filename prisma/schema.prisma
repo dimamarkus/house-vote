@@ -1,0 +1,145 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  // Generate a client local to this app to avoid cross-app schema conflicts in monorepo
+  output   = "../generated/client"
+}
+
+generator zod {
+  provider              = "zod-prisma"
+  output                = "../generated/zod" // Adjust path as needed
+  relationModel         = true
+  modelCase             = "PascalCase"
+  modelSuffix           = "Schema"
+  useDecimalJs          = true
+  prismaJsonNullability = true
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Stub User model - Clerk handles user data, but we need relations
+model User {
+  id                 String    @id // Clerk User ID
+  trips              Trip[]    @relation("OwnedTrips")
+  collaboratingTrips Trip[]    @relation("TripCollaborators")
+  listingsAdded      Listing[] @relation("AddedByUser")
+  likes              Like[]
+}
+
+model Trip {
+  id             String           @id @default(cuid())
+  /// @zod.min(3, { message: "Trip name must be at least 3 characters" })
+  name           String
+  /// @zod.optional().nullable()
+  description    String?
+  /// @zod.optional().nullable()
+  startDate      DateTime?
+  /// @zod.optional().nullable()
+  endDate        DateTime?
+  /// @zod.optional().nullable()
+  location       String?
+  /// @zod.int().positive().optional().nullable()
+  numberOfPeople Int?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  userId         String
+  user           User             @relation("OwnedTrips", fields: [userId], references: [id], onDelete: Cascade)
+  collaborators  User[]           @relation("TripCollaborators")
+  listings       Listing[]
+  invitations    TripInvitation[]
+  TripGuest      TripGuest[]
+
+  /// @zod.refine((data) => !data.startDate || !data.endDate || data.endDate >= data.startDate, { message: "End date must be after start date", path: ["endDate"] })
+  @@index([userId])
+}
+
+model Listing {
+  id               String        @id @default(cuid())
+  /// @zod.min(1, { message: "Title cannot be empty" })
+  title            String // Required
+  address          String? // Optional
+  url              String? // Optional
+  price            Int? // Optional
+  bedroomCount     Int? // Optional
+  bedCount         Int? // Optional
+  bathroomCount    Int? // Optional
+  notes            String?
+  imageUrl         String? // Optional
+  latitude         Float?
+  longitude        Float?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  addedById        String? // Optional
+  addedBy          User?         @relation("AddedByUser", fields: [addedById], references: [id], onDelete: Cascade)
+  addedByGuestName String?
+  tripId           String
+  trip             Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  likes            Like[]
+  status           ListingStatus @default(POTENTIAL)
+
+  @@index([addedById])
+  @@index([tripId])
+}
+
+model Like {
+  id               String   @id @default(cuid())
+  createdAt        DateTime @default(now())
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestDisplayName String?
+  listingId        String
+  listing          Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([listingId])
+}
+
+enum ListingStatus {
+  POTENTIAL
+  REJECTED
+  // Add other potential statuses later, e.g., VISITED, OFFERED
+}
+
+model TripInvitation {
+  id        String       @id @default(cuid())
+  email     String?
+  token     String       @unique
+  status    InviteStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  expiresAt DateTime
+  tripId    String
+  trip      Trip         @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, email])
+  @@index([tripId])
+  @@index([token])
+  @@index([email])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+// New model to track guests who joined via shareable link
+model TripGuest {
+  id               String   @id @default(cuid())
+  tripId           String
+  guestDisplayName String // Name the guest provided
+  createdAt        DateTime @default(now())
+  trip             Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, guestDisplayName]) // Prevent duplicate names per trip
+  @@index([tripId])
+}
