@@ -50,6 +50,23 @@ Required:
 
 Clerk stays enabled in this standalone app, so authenticated flows and protected routes depend on those env values.
 
+## Deploy Notes
+
+This app does not need custom Vercel build configuration.
+
+- `pnpm build` runs `prisma generate` automatically via `prebuild`
+- `pnpm check-types` runs `prisma generate` automatically via `precheck-types`
+- Node is pinned via `package.json` engines and `.nvmrc`
+- pnpm is pinned via `packageManager`
+
+For Vercel or any other fresh CI environment, make sure these env vars exist at build/runtime:
+
+- `DATABASE_URL`
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
+- `CLERK_SECRET_KEY`
+
+If a fresh deploy fails with Prisma types missing, that means the build did not run through the package scripts. The intended entrypoint is `pnpm build`, not `next build` directly.
+
 ## Generated Code
 
 This repo uses Prisma's standard `@prisma/client` generation flow.
