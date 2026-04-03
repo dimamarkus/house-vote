@@ -1,6 +1,25 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient as PrismaClientConstructor } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
 import { createPrismaClient } from './src/compat/core/prisma';
+
+function normalizePostgresConnectionString(connectionString: string) {
+  try {
+    const url = new URL(connectionString);
+    const sslMode = url.searchParams.get("sslmode");
+
+    if (sslMode === "prefer" || sslMode === "require" || sslMode === "verify-ca") {
+      // `pg` currently treats these as aliases for `verify-full` and warns about it.
+      // Normalize explicitly so dev overlay noise matches the connection behavior in use today.
+      url.searchParams.set("sslmode", "verify-full");
+      return url.toString();
+    }
+
+    return connectionString;
+  } catch {
+    return connectionString;
+  }
+}
 
 /**
  * App-specific Prisma Client instance
@@ -8,9 +27,9 @@ import { createPrismaClient } from './src/compat/core/prisma';
  */
 export const db: PrismaClient = createPrismaClient(
   () =>
-    new PrismaClient({
+    new PrismaClientConstructor({
       adapter: new PrismaPg({
-        connectionString: process.env.DATABASE_URL!,
+        connectionString: normalizePostgresConnectionString(process.env.DATABASE_URL!),
       }),
     }),
 );
