@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "prisma generate",
     "build": "next build",
+    "precheck-types": "prisma generate",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
     "check-types": "next typegen && tsc --noEmit",
