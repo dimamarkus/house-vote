@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Button } from '@turbodima/ui/core/Button';
+import type { ButtonProps } from '@turbodima/ui/core/Button';
 import {
   Sheet,
   SheetContent,
@@ -24,6 +25,14 @@ interface TripFormSheetProps {
   initialData?: TripFormData; // Make optional, but usually provided for edits
   /** Custom label for the trigger button */
   triggerLabel?: string;
+  /** Trigger icon */
+  triggerIcon?: ButtonProps['icon'];
+  /** Trigger size */
+  triggerSize?: ButtonProps['size'];
+  /** Trigger weight */
+  triggerWeight?: ButtonProps['weight'];
+  /** Trigger class name */
+  triggerClassName?: string;
   /** Side from which the sheet appears */
   side?: "top" | "right" | "bottom" | "left";
 }
@@ -37,6 +46,10 @@ export function TripFormSheet({
   tripId,
   initialData,
   triggerLabel = 'Edit',
+  triggerIcon = 'settings',
+  triggerSize = 'sm',
+  triggerWeight = 'link',
+  triggerClassName,
   side = "right",
 }: TripFormSheetProps) {
   const [open, setOpen] = useState(false);
@@ -47,7 +60,13 @@ export function TripFormSheet({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button weight="link" icon="settings" text={triggerLabel} size="sm" />
+        <Button
+          weight={triggerWeight}
+          icon={triggerIcon}
+          text={triggerLabel}
+          size={triggerSize}
+          className={triggerClassName}
+        />
       </SheetTrigger>
       <SheetContent side={side} className="overflow-y-auto sm:max-w-md">
         <SheetHeader>

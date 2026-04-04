@@ -7,6 +7,7 @@ import { GenericTable, ColumnDef } from '@turbodima/ui/core/GenericTable';
 import { Button } from '@turbodima/ui/shadcn/button';
 import { Badge } from '@turbodima/ui/shadcn/badge';
 import { LinkButton } from '@turbodima/ui/core/LinkButton';
+import { AirbnbLogotype, GlobeIcon, VrboLogotype } from '../../../components/TravelSourceIcons';
 import { LikeButton } from '../../likes/components/LikeButton';
 import { ListingStatusAction } from '../components/ListingStatusAction';
 import { ImageWithFallback } from '@turbodima/ui/core/ImageWithFallback';
@@ -97,10 +98,46 @@ export function ListingsTable({
       header: "Source",
       accessorKey: "source",
       cell: (listing) => {
-        const sourceLabel = listing.source === 'UNKNOWN' ? 'Imported' : listing.source ?? 'MANUAL';
+        const source = listing.source ?? 'MANUAL';
+
+        if (source === 'AIRBNB') {
+          return (
+            <Badge
+              weight="hollow"
+              className="border-rose-200 bg-rose-50 px-2.5 py-1 text-rose-700"
+              title="Airbnb"
+            >
+              <AirbnbLogotype />
+            </Badge>
+          );
+        }
+
+        if (source === 'VRBO') {
+          return (
+            <Badge
+              weight="hollow"
+              className="border-blue-200 bg-blue-50 px-2.5 py-1 text-blue-700"
+              title="Vrbo"
+            >
+              <VrboLogotype />
+            </Badge>
+          );
+        }
+
+        if (source === 'UNKNOWN') {
+          return (
+            <Badge
+              weight="hollow"
+              className="border-slate-200 bg-slate-50 px-2 text-slate-700"
+              title="Imported"
+            >
+              <GlobeIcon className="h-3.5 w-3.5 shrink-0" />
+            </Badge>
+          );
+        }
 
         return (
-          <Badge weight="hollow">{sourceLabel}</Badge>
+          <Badge weight="hollow">Manual</Badge>
         );
       }
     },

@@ -2,13 +2,28 @@
  * Generates travel site URLs with parameters from trip data
  */
 
+type TravelDateValue = Date | string | null | undefined;
+
+function parseTravelDate(date: TravelDateValue): Date | null {
+  if (!date) {
+    return null;
+  }
+
+  const parsedDate = date instanceof Date ? date : new Date(date);
+
+  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+}
+
 /**
  * Format a date to YYYY-MM-DD format for URL parameters
  */
-function formatDate(date: Date | null | undefined): string {
-  if (!date) return '';
+function formatDate(date: TravelDateValue): string {
+  const parsedDate = parseTravelDate(date);
+
+  if (!parsedDate) return '';
+
   try {
-    const isoString = date.toISOString();
+    const isoString = parsedDate.toISOString();
     // Use type assertion to ensure string
     return isoString.split('T')[0] || '';
   } catch {
@@ -22,8 +37,8 @@ function formatDate(date: Date | null | undefined): string {
  */
 export function generateAirbnbUrl(params: {
   location?: string | null;
-  startDate?: Date | null;
-  endDate?: Date | null;
+  startDate?: TravelDateValue;
+  endDate?: TravelDateValue;
   numberOfPeople?: number | null;
 }): string {
   const { location, startDate, endDate, numberOfPeople } = params;
@@ -38,27 +53,36 @@ export function generateAirbnbUrl(params: {
   }
 
   // Build query parameters
-  const queryParams = [];
+  const queryParams = new URLSearchParams();
+
+  queryParams.set('refinement_paths[]', '/homes');
 
   // Add dates if available
   const checkinDate = formatDate(startDate);
   if (checkinDate) {
-    queryParams.push(`checkin=${checkinDate}`);
+    queryParams.set('checkin', checkinDate);
   }
 
   const checkoutDate = formatDate(endDate);
   if (checkoutDate) {
-    queryParams.push(`checkout=${checkoutDate}`);
+    queryParams.set('checkout', checkoutDate);
+  }
+
+  if (checkinDate || checkoutDate) {
+    queryParams.set('date_picker_type', 'calendar');
   }
 
   // Add guests if available
   if (typeof numberOfPeople === 'number' && numberOfPeople > 0) {
-    queryParams.push(`adults=${numberOfPeople}`);
+    const guestCount = numberOfPeople.toString();
+    queryParams.set('adults', guestCount);
+    queryParams.set('guests', guestCount);
   }
 
   // Add query string if we have parameters
-  if (queryParams.length > 0) {
-    return `${baseUrl}?${queryParams.join('&')}`;
+  const queryString = queryParams.toString();
+  if (queryString) {
+    return `${baseUrl}?${queryString}`;
   }
 
   return baseUrl;
@@ -69,8 +93,8 @@ export function generateAirbnbUrl(params: {
  */
 export function generateVrboUrl(params: {
   location?: string | null;
-  startDate?: Date | null;
-  endDate?: Date | null;
+  startDate?: TravelDateValue;
+  endDate?: TravelDateValue;
   numberOfPeople?: number | null;
 }): string {
   const { location, startDate, endDate, numberOfPeople } = params;
