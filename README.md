@@ -7,10 +7,12 @@ A collaborative trip-planning app for comparing, discussing, and voting on renta
 - install: `pnpm install`
 - dev: `pnpm dev`
 - build: `pnpm build`
+- vercel build: `pnpm vercel-build`
 - start: `pnpm start`
 - lint: `pnpm lint`
 - types: `pnpm check-types`
 - prisma generate: `pnpm db:generate`
+- prisma migrate deploy: `pnpm db:migrate:deploy`
 - prisma push: `pnpm db:push`
 - prisma status: `pnpm db:status`
 - prisma studio: `pnpm db:studio`
@@ -39,7 +41,12 @@ Required:
 
 - `DATABASE_URL`
 
+Optional but recommended for production migrations:
+
+- `DIRECT_DATABASE_URL`
+
 The app uses Prisma with a Postgres datasource. Without a valid `DATABASE_URL`, Prisma generation and runtime DB access will fail.
+If your host gives you a pooled runtime URL and a separate direct connection URL, keep `DATABASE_URL` for runtime and use `DIRECT_DATABASE_URL` for migrations.
 
 ### Clerk
 
@@ -52,20 +59,28 @@ Clerk stays enabled in this standalone app, so authenticated flows and protected
 
 ## Deploy Notes
 
-This app does not need custom Vercel build configuration.
+Use a custom Vercel build command so production deploys apply pending Prisma migrations before the app build.
 
 - `pnpm build` runs `prisma generate` automatically via `prebuild`
 - `pnpm check-types` runs `prisma generate` automatically via `precheck-types`
 - Node is pinned via `package.json` engines and `.nvmrc`
 - pnpm is pinned via `packageManager`
+- `pnpm vercel-build` runs `prisma migrate deploy` only for production deploys, then runs the normal app build
+
+### Vercel Setup
+
+Set the project build command to:
+
+`pnpm vercel-build`
 
 For Vercel or any other fresh CI environment, make sure these env vars exist at build/runtime:
 
 - `DATABASE_URL`
+- `DIRECT_DATABASE_URL` (recommended when migrations should use a direct DB connection)
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
 - `CLERK_SECRET_KEY`
 
-If a fresh deploy fails with Prisma types missing, that means the build did not run through the package scripts. The intended entrypoint is `pnpm build`, not `next build` directly.
+If a fresh deploy fails with Prisma types missing, that means the build did not run through the package scripts. The intended Vercel entrypoint is `pnpm vercel-build`, not `next build` directly.
 
 ## Generated Code
 

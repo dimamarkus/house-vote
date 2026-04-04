@@ -6,6 +6,7 @@
     "dev": "next dev",
     "prebuild": "prisma generate",
     "build": "next build",
+    "vercel-build": "prisma migrate deploy && pnpm build",
     "precheck-types": "prisma generate",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
@@ -13,6 +14,7 @@
     "test": "vitest run",
     "test:import": "vitest run src/features/listings/import/extractListingCaptureFromHtml.test.ts",
     "db:generate": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:push": "prisma db push",
     "db:status": "prisma migrate status",
     "db:studio": "prisma studio"
