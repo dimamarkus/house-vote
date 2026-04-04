@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
-import { createErrorResponse, createSuccessResponse } from '@turbodima/core/responses';
-import { ErrorCode } from '@turbodima/core/errors';
-import { validateActionInput } from '@turbodima/core/form-data';
+import { createErrorResponse, createSuccessResponse } from '@/core/responses';
+import { ErrorCode } from '@/core/errors';
+import { validateActionInput } from '@/core/form-data';
 import { importListingCapture } from '../import/importListingCapture';
 import { scrapeListingMetadataFromUrl } from '../import/scrapeListingMetadataFromUrl';
 import { UrlImportInputSchema } from '../import/schemas';

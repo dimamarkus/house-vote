@@ -2,9 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
-import { ErrorCode } from '@turbodima/core/errors';
-import { validateActionInput } from '@turbodima/core/form-data';
-import { createErrorResponse } from '@turbodima/core/responses';
+import { ErrorCode } from '@/core/errors';
+import { validateActionInput } from '@/core/form-data';
+import { createErrorResponse } from '@/core/responses';
 
 import { listings } from '../db';
 import { ListingFormDataSchema } from '../schemas';

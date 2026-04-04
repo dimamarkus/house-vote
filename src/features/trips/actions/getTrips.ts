@@ -2,11 +2,11 @@
 
 import { auth } from '@clerk/nextjs/server';
 import type { Trip } from 'db';
-import { createErrorResponse, createSuccessResponse } from '@turbodima/core/responses';
-import { ErrorCode } from '@turbodima/core/errors';
+import { createErrorResponse, createSuccessResponse } from '@/core/responses';
+import { ErrorCode } from '@/core/errors';
 import { cache } from 'react';
 import { trips } from '../db';
-import { ApiResponse } from '@turbodima/core/types';
+import { ApiResponse } from '@/core/types';
 
 // Use standard ApiResponse type
 type GetTripsResponse = ApiResponse<Trip[]>;

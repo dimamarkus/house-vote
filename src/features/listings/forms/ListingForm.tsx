@@ -2,24 +2,24 @@
 
 /**
  * Note: If using this component with all field types, ensure you have these UI components:
- * - @turbodima/ui/form/fields/InputField
- * - @turbodima/ui/form/fields/TextareaField
- * - @turbodima/ui/form/fields/CheckboxField
- * - @turbodima/ui/form/fields/DatePickerField
- * - @turbodima/ui/form/fields/SelectField
+ * - @/ui/form/fields/InputField
+ * - @/ui/form/fields/TextareaField
+ * - @/ui/form/fields/CheckboxField
+ * - @/ui/form/fields/DatePickerField
+ * - @/ui/form/fields/SelectField
  *
  * You can remove imports for components you don't use.
  */
 
-import { Button } from '@turbodima/ui/shadcn/button';
+import { Button } from '@/ui/shadcn/button';
 import { ListingFormValues } from '../schemas';
-import { FormSection } from '@turbodima/ui/form/FormSection';
+import { FormSection } from '@/ui/form/FormSection';
 
-import { InputField } from '@turbodima/ui/form/fields/InputField';
+import { InputField } from '@/ui/form/fields/InputField';
 import { createListing } from '../actions/createListing';
 import { updateListing } from '../actions/updateListing';
-import { Form } from '@turbodima/ui/form/Form';
-import { cn } from '@turbodima/ui/utils/cn';
+import { Form } from '@/ui/form/Form';
+import { cn } from '@/ui/utils/cn';
 
 
 interface ListingFormProps {

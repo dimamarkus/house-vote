@@ -1,10 +1,10 @@
 import { db } from 'db';
 import { Prisma, Trip, User, InviteStatus } from 'db';
-import { ErrorCode } from '@turbodima/core/errors';
+import { ErrorCode } from '@/core/errors';
 import type { TripFormData } from './schemas';
 import { TripOperationOptions, TripGetOptions } from './types';
 import { randomUUID } from 'node:crypto';
-import { handleDbOperation } from '@turbodima/core/responses';
+import { handleDbOperation } from '@/core/responses';
 import { hashTripImportToken } from './utils/hashTripImportToken';
 
 type TripWithCollaborators = Prisma.TripGetPayload<{

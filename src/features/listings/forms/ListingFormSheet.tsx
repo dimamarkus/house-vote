@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@turbodima/ui/shadcn/button';
+import { Button } from '@/ui/shadcn/button';
 import {
   Sheet,
   SheetContent,
@@ -9,7 +9,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@turbodima/ui/shadcn/sheet';
+} from '@/ui/shadcn/sheet';
 import { Edit } from 'lucide-react';
 import { ListingForm } from './ListingForm';
 import { ListingFormValues } from '../schemas';

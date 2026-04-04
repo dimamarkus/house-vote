@@ -1,7 +1,7 @@
 import { db } from 'db';
-import { ErrorCode } from '@turbodima/core/errors';
-import { handleDbOperation } from '@turbodima/core/responses';
-import { processRelationOperations, getEntities } from '@turbodima/core/server-actions';
+import { ErrorCode } from '@/core/errors';
+import { handleDbOperation } from '@/core/responses';
+import { processRelationOperations, getEntities } from '@/core/server-actions';
 import { ListingFormData } from './schemas';
 import {
   ListingActionOptions,

@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { format } from 'date-fns';
 import { Calendar, ArrowRight, Eye, Edit, Users } from 'lucide-react';
 import type { Trip } from 'db';
-import { GenericTable } from '@turbodima/ui/core/GenericTable';
-import { Badge } from '@turbodima/ui/shadcn/badge';
-import { ColumnDef } from '@turbodima/ui/core/GenericTable';
+import { GenericTable } from '@/ui/core/GenericTable';
+import { Badge } from '@/ui/shadcn/badge';
+import { ColumnDef } from '@/ui/core/GenericTable';
 import { useAuth } from '@clerk/nextjs';
-import { LinkButton } from '@turbodima/ui/core/LinkButton';
+import { LinkButton } from '@/ui/core/LinkButton';
 
 interface TripsTableProps {
   trips: Trip[];

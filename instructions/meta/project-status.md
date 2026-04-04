@@ -1,14 +1,14 @@
 # Project Status
 
-**Current Phase:** Standalone Modernization (Locally Verified)
+**Current Phase:** Import Hardening Complete, Post-Cleanup Verification
 
-**Overall Progress:** 78% // Standalone repo is extracted, modernized, and verified locally on Node 24
+**Overall Progress:** 88% // Import hardening is complete, standalone cleanup is app-owned, and code verification is green locally
 
 **Next Tasks:**
 
-* Run the app with real env vars and verify authenticated and database-backed flows manually.
-* Decide whether to keep the compat-layer import surface or do a follow-up cleanup pass to rename imports to app-owned paths.
-* Review remaining monorepo-era abstractions and remove any now-unnecessary compatibility shims.
+* Do one final authenticated browser sanity pass after a hard refresh to confirm the trip dashboard is clean after the `src/core` / `src/ui` move.
+* Make a checkpoint commit for the post-import-hardening cleanup work once runtime verification is confirmed.
+* Update any lingering docs that still describe the old `src/compat` import surface.
 * Defer CI/deploy wiring until after manual runtime verification, per plan.
 
 **Completed Milestones:**
@@ -37,8 +37,22 @@
   * ✅ Migrated Prisma to `prisma.config.ts` and driver-adapter setup
   * ✅ Standardized repo runtime to Node `24.x`
   * ✅ Verified `pnpm db:generate`, `pnpm lint`, `pnpm check-types`, and `pnpm build` under Node `24.14.1`
+* ✅ Import Hardening
+  * ✅ Unified manual URL import and extension import around one shared import service
+  * ✅ Refactored parser logic into reusable/testable modules with debug metadata
+  * ✅ Surfaced multiple photos in listing card and table views
+  * ✅ Removed import-status clutter from the source column
+  * ✅ Improved extension UX with trip autodetect and post-save feedback
+  * ✅ Added fixture-based parser regression coverage for Airbnb and VRBO examples
+* ✅ Post-Import Cleanup
+  * ✅ Fixed the `ListingCard` hydration issue caused by invalid HTML nesting
+  * ✅ Replaced locale-dependent card date formatting with deterministic rendering
+  * ✅ Moved `src/compat/core` to `src/core` and `src/compat/ui` to `src/ui`
+  * ✅ Rewrote app imports from `@turbodima/*` to app-owned paths
+  * ✅ Verified `pnpm check-types` and `pnpm lint` after the path cleanup
 
 **Blockers:**
 
-* No current extraction blocker for local development.
+* No current code-level blocker for local development.
+* Final browser-side verification still depends on an authenticated local session.
 * Real app runtime still depends on valid Clerk and database env vars.

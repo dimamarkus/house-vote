@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@turbodima/ui/shadcn/button';
-import { Input } from '@turbodima/ui/shadcn/input';
-import { Form } from '@turbodima/ui/form/Form';
-import { FormField } from '@turbodima/ui/form/FormField';
+import { Button } from '@/ui/shadcn/button';
+import { Input } from '@/ui/shadcn/input';
+import { Form } from '@/ui/form/Form';
+import { FormField } from '@/ui/form/FormField';
 import { createInvitation } from '../actions/createInvitation';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTrigger, DialogTitle } from '@turbodima/ui/shadcn/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTrigger, DialogTitle } from '@/ui/shadcn/dialog';
 
 interface InviteCollaboratorFormProps {
   tripId: string;

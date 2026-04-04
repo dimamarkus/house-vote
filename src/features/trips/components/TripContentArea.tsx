@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import type { Listing, ListingPhoto } from 'db';
 import type { ListingWithMedia } from '@/features/listings/types';
 import { ListingsTable } from '@/features/listings/tables/ListingsTable';
@@ -9,7 +9,7 @@ import { ListingCard } from '@/features/listings/components/ListingCard';
 import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
 import { LikeButton } from '@/features/likes/components/LikeButton';
 import { TripViewToggle } from './TripViewToggle';
-import { cn } from '@turbodima/ui/utils/cn';
+import { cn } from '@/ui/utils/cn';
 import { LISTING_STATUS, type ListingStatusValue } from '@/features/listings/constants/listing-status';
 
 // Dynamically import the map component, disabling SSR

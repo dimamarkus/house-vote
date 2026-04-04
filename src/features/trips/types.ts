@@ -1,5 +1,5 @@
 import { Prisma, Trip, User } from 'db';
-import { ApiResponse } from '@turbodima/core/types';
+import { ApiResponse } from '@/core/types';
 
 // Trip-specific options for database operations
 export interface TripActionOptions {

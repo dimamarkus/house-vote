@@ -1,7 +1,7 @@
 // No directive needed, assuming server component by default
 
 import type { Trip, TripInvitation } from 'db';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { GuestJoinForm } from '../forms/GuestJoinForm';
 import { EmailInviteActions } from './EmailInviteActions'; // Import the new component
 

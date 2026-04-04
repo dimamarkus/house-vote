@@ -1,4 +1,4 @@
-import { Button } from "@turbodima/ui/shadcn/button";
+import { Button } from "@/ui/shadcn/button";
 import { handleInvitation } from "../actions/acceptInvitation";
 
 interface EmailInviteActionsProps {

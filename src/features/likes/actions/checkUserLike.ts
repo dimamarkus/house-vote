@@ -1,8 +1,8 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { ErrorCode } from '@turbodima/core/errors';
-import { createErrorResponse, createSuccessResponse } from '@turbodima/core/responses';
+import { ErrorCode } from '@/core/errors';
+import { createErrorResponse, createSuccessResponse } from '@/core/responses';
 import { likes } from '../db';
 import { HasLikedResponse } from '../types';
 

@@ -2,12 +2,12 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Input } from '@turbodima/ui/shadcn/input';
-import { Button } from '@turbodima/ui/shadcn/button';
-import { Label } from '@turbodima/ui/shadcn/label';
+import { Input } from '@/ui/shadcn/input';
+import { Button } from '@/ui/shadcn/button';
+import { Label } from '@/ui/shadcn/label';
 import { toast } from 'sonner';
 import { joinTripAsGuest } from '../actions/joinTripAsGuest';
-import { Alert, AlertDescription, AlertTitle } from '@turbodima/ui/shadcn/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/ui/shadcn/alert';
 import { Terminal } from 'lucide-react';
 
 interface GuestJoinFormProps {

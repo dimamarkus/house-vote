@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Button } from "@turbodima/ui/shadcn/button";
+import { Button } from "@/ui/shadcn/button";
 import { toast } from "sonner";
 import { Ban, Check } from "lucide-react";
 import { updateListingStatus } from "../actions/updateListingStatus";

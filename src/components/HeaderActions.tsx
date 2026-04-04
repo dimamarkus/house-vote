@@ -2,10 +2,10 @@
 
 // import { NotificationBell } from '@/features/notifications/components/NotificationBell';
 import { UserButton } from '@clerk/nextjs';
-import { useAuthStatus } from '@turbodima/core/auth/client/useAuthStatus';
-import { SIGNIN_PATH } from '@turbodima/core/constants';
-import { LinkButton } from '@turbodima/ui/core/LinkButton';
-import { ThemeToggle } from '@turbodima/ui/core/ThemeToggle';
+import { useAuthStatus } from '@/core/auth/client/useAuthStatus';
+import { SIGNIN_PATH } from '@/core/constants';
+import { LinkButton } from '@/ui/core/LinkButton';
+import { ThemeToggle } from '@/ui/core/ThemeToggle';
 
 export function HeaderActions() {
   const { isAuthenticated, isLoading } = useAuthStatus();

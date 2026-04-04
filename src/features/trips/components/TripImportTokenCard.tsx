@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { Copy, KeyRound, RefreshCcw } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@turbodima/ui/shadcn/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
-import { Input } from '@turbodima/ui/shadcn/input';
+import { Button } from '@/ui/shadcn/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import { Input } from '@/ui/shadcn/input';
 import { generateTripImportToken } from '../actions/generateTripImportToken';
 
 interface TripImportTokenCardProps {

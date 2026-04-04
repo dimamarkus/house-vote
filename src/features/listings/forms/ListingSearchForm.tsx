@@ -1,8 +1,8 @@
 'use client';
 
-import { Form } from '@turbodima/ui/form/Form';
-import { SearchInput } from '@turbodima/ui/core/SearchInput';
-import { Button } from '@turbodima/ui/shadcn/button';
+import { Form } from '@/ui/form/Form';
+import { SearchInput } from '@/ui/core/SearchInput';
+import { Button } from '@/ui/shadcn/button';
 import { Search } from 'lucide-react';
 
 /**

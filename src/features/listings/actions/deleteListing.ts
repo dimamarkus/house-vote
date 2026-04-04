@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
-import { ErrorCode } from '@turbodima/core/errors';
-import { createErrorResponse } from '@turbodima/core/responses';
+import { ErrorCode } from '@/core/errors';
+import { createErrorResponse } from '@/core/responses';
 
 import { listings } from '../db';
 import { trips } from '../../trips/db';

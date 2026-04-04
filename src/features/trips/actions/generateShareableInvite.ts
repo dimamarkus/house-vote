@@ -1,11 +1,11 @@
 'use server';
 
 import { currentUser } from '@clerk/nextjs/server';
-import { createErrorResponse, createSuccessResponse } from '@turbodima/core/responses';
-import { ErrorCode } from '@turbodima/core/errors';
+import { createErrorResponse, createSuccessResponse } from '@/core/responses';
+import { ErrorCode } from '@/core/errors';
 import { trips } from '../db'; // Assuming db operations are in ../db
 import { TripInvitation } from 'db';
-import { ApiResponse } from '@turbodima/core/types';
+import { ApiResponse } from '@/core/types';
 
 export type GenerateShareableInviteResponse = ApiResponse<Pick<TripInvitation, 'token'>>;
 

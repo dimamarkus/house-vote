@@ -3,13 +3,13 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import { db } from 'db';
-import { ErrorCode } from '@turbodima/core/errors';
-import { validateActionInput } from '@turbodima/core/form-data';
+import { ErrorCode } from '@/core/errors';
+import { validateActionInput } from '@/core/form-data';
 import { invitationFormSchema } from '../schemas';
 import crypto from 'crypto';
 import { TripInvitation } from 'db';
-import { ApiResponse } from '@turbodima/core/types';
-import { createErrorResponse, createSuccessResponse } from '@turbodima/core/responses';
+import { ApiResponse } from '@/core/types';
+import { createErrorResponse, createSuccessResponse } from '@/core/responses';
 
 type InvitationResponse = ApiResponse<TripInvitation>;
 

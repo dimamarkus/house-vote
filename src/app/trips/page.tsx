@@ -1,11 +1,11 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@clerk/nextjs/server';
-import { EmptyState } from '@turbodima/ui/core/EmptyState';
-import { LinkButton } from '@turbodima/ui/core/LinkButton';
+import { EmptyState } from '@/ui/core/EmptyState';
+import { LinkButton } from '@/ui/core/LinkButton';
 import { PlusCircle } from 'lucide-react';
 import { getTrips } from '@/features/trips/actions/getTrips';
 import { TripsTable } from '@/features/trips/tables/TripsTable';
-import { processSearchParams } from '@turbodima/core/search-params';
+import { processSearchParams } from '@/core/search-params';
 
 export const metadata = {
   title: 'My Trips | Housevote',

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@turbodima/ui/shadcn/button';
+import { Button } from '@/ui/shadcn/button';
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@turbodima/ui/shadcn/dialog';
+} from '@/ui/shadcn/dialog';
 import { Pencil, Plus } from 'lucide-react';
 import { ListingFormData } from '../schemas';
 import { ListingForm } from './ListingFormOLD';

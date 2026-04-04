@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@turbodima/ui/core/Button';
-import type { ButtonProps } from '@turbodima/ui/core/Button';
+import { Button } from '@/ui/core/Button';
+import type { ButtonProps } from '@/ui/core/Button';
 import {
   Sheet,
   SheetContent,
@@ -10,7 +10,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@turbodima/ui/shadcn/sheet';
+} from '@/ui/shadcn/sheet';
 import { TripFormData } from '../schemas'; // Assuming schemas exist
 import { TripForm } from './TripForm';
 import { updateTrip } from '../actions/updateTrip'; // Import the update action

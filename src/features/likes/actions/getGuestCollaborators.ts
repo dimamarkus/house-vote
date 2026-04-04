@@ -1,9 +1,9 @@
 'use server';
 
 import { cache } from 'react';
-import { ErrorCode } from '@turbodima/core/errors';
-import { createErrorResponse } from '@turbodima/core/responses';
-import { ApiResponse } from '@turbodima/core/types';
+import { ErrorCode } from '@/core/errors';
+import { createErrorResponse } from '@/core/responses';
+import { ApiResponse } from '@/core/types';
 import { likes } from '../db';
 
 /**

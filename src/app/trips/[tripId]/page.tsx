@@ -8,10 +8,10 @@ import { TripSidebar } from '@/features/trips/components/TripSidebar'; // Import
 import { auth } from '@clerk/nextjs/server'; // Use server-side auth
 import { Prisma } from 'db';
 import type { Trip, User } from 'db';
-import { processSearchParams } from '@turbodima/core/search-params';
-import type { SearchParams } from '@turbodima/core/types'; // Import the structured SearchParams type
-import { Card, CardContent } from '@turbodima/ui/shadcn/card';
-import { LinkButton } from '@turbodima/ui/core/LinkButton';
+import { processSearchParams } from '@/core/search-params';
+import type { SearchParams } from '@/core/types'; // Import the structured SearchParams type
+import { Card, CardContent } from '@/ui/shadcn/card';
+import { LinkButton } from '@/ui/core/LinkButton';
 import { TripHeader } from '/src/features/trips/components/TripHeader';
 
 // Define allowed sort fields for Listing - Removed count fields

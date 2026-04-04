@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import { db } from 'db';
-import { validateActionInput } from '@turbodima/core/form-data';
+import { validateActionInput } from '@/core/form-data';
 import { invitationResponseSchema } from '../schemas';
 import { InviteStatus } from 'db';
 import { redirect } from 'next/navigation';

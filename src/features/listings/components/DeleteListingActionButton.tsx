@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 import { deleteListing } from '../actions/deleteListing';
-import { SingleButtonForm } from '@turbodima/ui/form/SingleButtonForm';
+import { SingleButtonForm } from '@/ui/form/SingleButtonForm';
 import { Trash2 } from 'lucide-react';
-import type { ButtonSize, ButtonVariant, ButtonWeight } from '@turbodima/ui/shadcn/button';
+import type { ButtonSize, ButtonVariant, ButtonWeight } from '@/ui/shadcn/button';
 
 type DeleteListingActionButtonProps = {
   listingId: string;

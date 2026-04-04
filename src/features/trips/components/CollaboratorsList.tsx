@@ -1,19 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@turbodima/ui/shadcn/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle
-} from '@turbodima/ui/shadcn/card';
-import { Badge } from '@turbodima/ui/shadcn/badge';
+} from '@/ui/shadcn/card';
+import { Badge } from '@/ui/shadcn/badge';
 import { Users, UserPlus, Link as LinkIcon, Copy, Check } from 'lucide-react';
 import { InviteCollaboratorForm } from '../forms/InviteCollaboratorForm';
-import { Button } from '@turbodima/ui/shadcn/button';
-import { Input } from '@turbodima/ui/shadcn/input';
+import { Button } from '@/ui/shadcn/button';
+import { Input } from '@/ui/shadcn/input';
 import { toast } from 'sonner';
 import { generateShareableInvite } from '../actions/generateShareableInvite';
 import { useUser } from '@clerk/nextjs';

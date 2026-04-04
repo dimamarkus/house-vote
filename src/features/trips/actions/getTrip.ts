@@ -3,8 +3,8 @@
  */
 'use server';
 
-import { ErrorCode } from '@turbodima/core/errors';
-import { createErrorResponse } from '@turbodima/core/responses';
+import { ErrorCode } from '@/core/errors';
+import { createErrorResponse } from '@/core/responses';
 import { cache } from 'react';
 import { trips } from '../db';
 import { TripResponse, TripGetOptions } from '../types';

@@ -2,8 +2,8 @@
 
 import 'server-only';
 
-import { ErrorCode } from '@turbodima/core/errors';
-import { createErrorResponse } from '@turbodima/core/responses';
+import { ErrorCode } from '@/core/errors';
+import { createErrorResponse } from '@/core/responses';
 import { cache } from 'react';
 
 import { listings } from '../db';

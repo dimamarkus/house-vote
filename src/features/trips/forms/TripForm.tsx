@@ -1,17 +1,17 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Form } from '@turbodima/ui/form/Form';
-import { FormSection } from '@turbodima/ui/form/FormSection';
-import { InputField } from '@turbodima/ui/form/fields/InputField';
+import { Form } from '@/ui/form/Form';
+import { FormSection } from '@/ui/form/FormSection';
+import { InputField } from '@/ui/form/fields/InputField';
 import { DatePickerField } from '../../../components/DatePickerField';
-import { TextareaField } from '@turbodima/ui/form/fields/TextareaField';
-import { Button } from '@turbodima/ui/shadcn/button';
+import { TextareaField } from '@/ui/form/fields/TextareaField';
+import { Button } from '@/ui/shadcn/button';
 import { createTrip } from '../actions/createTrip';
 import type { TripFormData } from '../schemas';
 import { toast } from 'sonner';
 import type { Trip } from 'db';
-import type { BasicApiResponse } from '@turbodima/core/types';
+import type { BasicApiResponse } from '@/core/types';
 
 interface TripFormProps {
   initialData?: Partial<TripFormData>;

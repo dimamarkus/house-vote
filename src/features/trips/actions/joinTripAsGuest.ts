@@ -2,11 +2,11 @@
 
 import { z } from 'zod';
 import { db } from 'db';
-import { ErrorCode } from '@turbodima/core/errors';
-import { createErrorResponse, createSuccessResponse } from '@turbodima/core/responses';
-import { ApiResponse } from '@turbodima/core/types';
+import { ErrorCode } from '@/core/errors';
+import { createErrorResponse, createSuccessResponse } from '@/core/responses';
+import { ApiResponse } from '@/core/types';
 import { InviteStatus, Prisma } from 'db';
-import { validateActionInput } from '@turbodima/core/form-data';
+import { validateActionInput } from '@/core/form-data';
 
 // Input schema for the action
 const joinGuestSchema = z.object({

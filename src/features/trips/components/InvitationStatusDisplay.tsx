@@ -1,8 +1,8 @@
 'use client'; // Needs Button component
 
 import type { TripInvitation } from 'db';
-import { LinkButton } from '@turbodima/ui/core/LinkButton';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
+import { LinkButton } from '@/ui/core/LinkButton';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { INVITE_STATUS } from '../constants/invite-status';
 
 interface InvitationStatusDisplayProps {

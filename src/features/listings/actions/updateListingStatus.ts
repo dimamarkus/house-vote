@@ -1,14 +1,14 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { ErrorCode } from "@turbodima/core/errors";
-import { createErrorResponse, createSuccessResponse } from "@turbodima/core/responses";
+import { ErrorCode } from "@/core/errors";
+import { createErrorResponse, createSuccessResponse } from "@/core/responses";
 import { revalidatePath } from "next/cache";
 import { listings } from "../db";
 import type { Listing } from "db";
 import { z } from "zod";
-import { validateActionInput } from "@turbodima/core/form-data";
-import { ApiResponse } from "@turbodima/core/types";
+import { validateActionInput } from "@/core/form-data";
+import { ApiResponse } from "@/core/types";
 import { trips } from "../../trips/db";
 import { LISTING_STATUS } from "../constants/listing-status";
 

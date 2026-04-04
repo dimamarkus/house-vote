@@ -2,9 +2,9 @@
 
 import { cache } from 'react';
 import { db } from 'db';
-import { ErrorCode } from '@turbodima/core/errors';
-import { createErrorResponse, handleDbOperation } from '@turbodima/core/responses';
-import { ApiResponse } from '@turbodima/core/types';
+import { ErrorCode } from '@/core/errors';
+import { createErrorResponse, handleDbOperation } from '@/core/responses';
+import { ApiResponse } from '@/core/types';
 
 /**
  * DB operation to fetch guest names for a trip.

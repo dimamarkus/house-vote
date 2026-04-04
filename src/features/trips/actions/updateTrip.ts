@@ -3,12 +3,12 @@
 import { revalidatePath } from 'next/cache';
 import { auth } from '@clerk/nextjs/server';
 import { TripFormSchema } from '../schemas';
-import { validateActionInput } from '@turbodima/core/form-data';
-import { createErrorResponse, createSuccessResponse } from '@turbodima/core/responses';
+import { validateActionInput } from '@/core/form-data';
+import { createErrorResponse, createSuccessResponse } from '@/core/responses';
 import type { Trip } from 'db';
-import { ErrorCode } from '@turbodima/core/errors';
+import { ErrorCode } from '@/core/errors';
 import { trips } from '../db';
-import { BasicApiResponse } from '@turbodima/core/types';
+import { BasicApiResponse } from '@/core/types';
 
 export async function updateTrip(
   tripId: string, // Add tripId as the first argument

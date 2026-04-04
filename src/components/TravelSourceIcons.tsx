@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { cn } from '../compat/ui/utils/cn';
+import { cn } from '../ui/utils/cn';
 
 interface TravelSourceIconProps {
   className?: string;

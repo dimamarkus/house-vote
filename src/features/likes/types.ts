@@ -1,5 +1,5 @@
 import { Prisma } from "db";
-import { ApiResponse, PrismaActionOptions } from "@turbodima/core/types";
+import { ApiResponse, PrismaActionOptions } from "@/core/types";
 
 // Options for like database operations
 export type LikeActionOptions = PrismaActionOptions<Prisma.LikeInclude>;

@@ -1,7 +1,7 @@
 import { db } from 'db';
 import { Prisma } from 'db';
-import { handleDbOperation } from '@turbodima/core/responses';
-import { ErrorCode } from '@turbodima/core/errors';
+import { handleDbOperation } from '@/core/responses';
+import { ErrorCode } from '@/core/errors';
 
 // Database operations for users
 export const users = {

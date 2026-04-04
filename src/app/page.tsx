@@ -1,4 +1,4 @@
-import { LinkButton } from "@turbodima/ui/core/LinkButton";
+import { LinkButton } from "@/ui/core/LinkButton";
 import { Show } from "@clerk/nextjs";
 
 export default function HomePage() {

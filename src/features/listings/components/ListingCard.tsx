@@ -1,5 +1,6 @@
 import { HTMLAttributes } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
+import { format } from 'date-fns';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import type { Listing as PrismaListing, ListingPhoto } from 'db';
 type Listing = PrismaListing & {
   imageUrl?: string | null;
@@ -7,10 +8,10 @@ type Listing = PrismaListing & {
 };
 
 import Link from 'next/link';
-import { Badge, BadgeProps } from '@turbodima/ui/shadcn/badge';
+import { Badge, BadgeProps } from '@/ui/shadcn/badge';
 import { ExternalLink, BedDouble, Bath, StickyNote, UserCircle, CalendarDays, CheckCircle, XCircle, Image as ImageIcon } from 'lucide-react';
-import { ImageWithFallback } from '@turbodima/ui/core/ImageWithFallback';
-import { cn } from '@turbodima/ui/utils/cn';
+import { ImageWithFallback } from '@/ui/core/ImageWithFallback';
+import { cn } from '@/ui/utils/cn';
 import { LISTING_STATUS, type ListingStatusValue } from '../constants/listing-status';
 
 /**
@@ -170,7 +171,7 @@ export function ListingCard({
            <div className="col-span-2 flex items-center gap-1">
                <CalendarDays className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                 <span className="text-muted-foreground">
-                   Added: {listing.createdAt.toLocaleDateString()}
+                   Added: {format(listing.createdAt, 'MMM d, yyyy')}
                 </span>
             </div>
         </div>

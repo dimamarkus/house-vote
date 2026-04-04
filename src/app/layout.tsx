@@ -1,8 +1,8 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { ThemeProvider } from '@turbodima/ui/core/ThemeProvider';
-import { Toaster } from '@turbodima/ui/shadcn/sonner';
+import { ThemeProvider } from '@/ui/core/ThemeProvider';
+import { Toaster } from '@/ui/shadcn/sonner';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Header } from '/src/components/Header';
 

@@ -1,7 +1,6 @@
 import { CalendarDays, MapPin, Users } from 'lucide-react';
 import type { Trip } from 'db';
-import { Card, CardHeader, CardTitle, CardDescription } from '@turbodima/ui/shadcn/card';
-import { Badge } from '@turbodima/ui/shadcn/badge';
+import { Card, CardHeader, CardTitle, CardDescription } from '@/ui/shadcn/card';
 import type { TripFormData } from '../schemas';
 import { TripFormSheet } from '../forms/TripFormSheet';
 import { formatTripDateRange } from '../utils/formatTripDateRange';
@@ -23,14 +22,10 @@ export function TripHeader({ trip }: TripHeaderProps) {
   };
 
   return (
-    <Card className="mb-6 overflow-hidden border-border/60 bg-gradient-to-br from-background via-background to-muted/40">
+    <Card className="mb-6 overflow-hidden border-0 bg-gradient-to-br from-background via-background to-muted/20 shadow-none">
       <CardHeader className="gap-6">
         <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-x-6">
           <div className="space-y-5">
-            <Badge weight="hollow" className="w-fit">
-              Trip
-            </Badge>
-
             <div className="space-y-3">
               <CardTitle className="text-3xl tracking-tight sm:text-4xl">{trip.name}</CardTitle>
               {trip.description ? (

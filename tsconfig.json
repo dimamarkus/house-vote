@@ -29,12 +29,6 @@
       ],
       "db": [
         "./db.ts"
-      ],
-      "@turbodima/core/*": [
-        "./src/compat/core/*"
-      ],
-      "@turbodima/ui/*": [
-        "./src/compat/ui/*"
       ]
     },
     "plugins": [

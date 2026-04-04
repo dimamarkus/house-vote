@@ -1,7 +1,7 @@
 "use client";
 
 import { LikeButton } from "./LikeButton";
-import { Card, CardContent, CardHeader, CardTitle } from "@turbodima/ui/shadcn/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/ui/shadcn/card";
 
 interface LikeDemoProps {
   listingId: string;

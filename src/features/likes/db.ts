@@ -1,9 +1,9 @@
 import { db } from "db";
-import { ErrorCode } from "@turbodima/core/errors";
-import { handleDbOperation } from "@turbodima/core/responses";
+import { ErrorCode } from "@/core/errors";
+import { handleDbOperation } from "@/core/responses";
 import { type PrismaClient, Prisma } from "db";
 import { LikeActionOptions, LikeCreateInputData } from "./types";
-import { PrismaActionOptions, ApiResponse } from '@turbodima/core/types';
+import { PrismaActionOptions, ApiResponse } from '@/core/types';
 
 // Type for database client (can be regular Prisma client or transaction client)
   type DbClient = PrismaClient | Prisma.TransactionClient;

@@ -1,8 +1,8 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import { createErrorResponse } from '@turbodima/core/responses';
-import { ErrorCode } from '@turbodima/core/errors';
+import { createErrorResponse } from '@/core/responses';
+import { ErrorCode } from '@/core/errors';
 import { trips } from '../db';
 
 export async function generateTripImportToken(tripId: string) {

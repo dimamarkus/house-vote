@@ -1,7 +1,7 @@
 'use client';
 
-import { FormField } from '@turbodima/ui/form/FormField';
-import { Input } from '@turbodima/ui/shadcn/input';
+import { FormField } from '@/ui/form/FormField';
+import { Input } from '@/ui/shadcn/input';
 import { useFormStatus } from 'react-dom';
 
 interface DatePickerFieldProps {

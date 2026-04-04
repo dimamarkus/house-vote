@@ -3,14 +3,14 @@
 import { format } from 'date-fns';
 import { Eye, Edit, DollarSign, Bed, BedDouble, Bath, Image as ImageIcon } from 'lucide-react';
 import type { Listing, User as PrismaUser, Trip, Like, ListingPhoto } from 'db';
-import { GenericTable, ColumnDef } from '@turbodima/ui/core/GenericTable';
-import { Button } from '@turbodima/ui/shadcn/button';
-import { Badge } from '@turbodima/ui/shadcn/badge';
-import { LinkButton } from '@turbodima/ui/core/LinkButton';
+import { GenericTable, ColumnDef } from '@/ui/core/GenericTable';
+import { Button } from '@/ui/shadcn/button';
+import { Badge } from '@/ui/shadcn/badge';
+import { LinkButton } from '@/ui/core/LinkButton';
 import { AirbnbLogotype, GlobeIcon, VrboLogotype } from '../../../components/TravelSourceIcons';
 import { LikeButton } from '../../likes/components/LikeButton';
 import { ListingStatusAction } from '../components/ListingStatusAction';
-import { ImageWithFallback } from '@turbodima/ui/core/ImageWithFallback';
+import { ImageWithFallback } from '@/ui/core/ImageWithFallback';
 import { ListingFormSheet } from '../forms/ListingFormSheet';
 import { DeleteListingActionButton } from '../components/DeleteListingActionButton';
 

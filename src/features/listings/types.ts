@@ -1,12 +1,12 @@
 import { Listing, Prisma, ListingStatus as PrismaListingStatus } from "db";
-import { GetEntityOptions } from "@turbodima/core/server-actions";
+import { GetEntityOptions } from "@/core/server-actions";
 import {
   ArrayApiResponse,
   BasicApiResponse,
   ModelAggregations,
   PrismaActionOptionsWithRelations
-} from '@turbodima/core/types';
-import { GenericSearchParams } from '@turbodima/core/schemas';
+} from '@/core/types';
+import { GenericSearchParams } from '@/core/schemas';
 import { ListingFormData } from "./schemas"; // Import form data type
 
 /**

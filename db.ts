@@ -1,7 +1,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient as PrismaClientConstructor } from "@prisma/client";
 import type { PrismaClient } from "@prisma/client";
-import { createPrismaClient } from './src/compat/core/prisma';
+import { createPrismaClient } from './src/core/prisma';
 
 function normalizePostgresConnectionString(connectionString: string) {
   try {

@@ -4,8 +4,8 @@ import { getTrip } from '@/features/trips/actions/getTrip';
 import { updateTrip } from '@/features/trips/actions/updateTrip';
 import { TripForm } from '@/features/trips/forms/TripForm';
 import type { TripFormData } from '@/features/trips/schemas';
-import { Button } from '@turbodima/ui/shadcn/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
+import { Button } from '@/ui/shadcn/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 

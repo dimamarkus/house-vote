@@ -1,8 +1,8 @@
 'use client';
 
-// import { Button } from '@turbodima/ui/shadcn/button';
+// import { Button } from '@/ui/shadcn/button';
 import { useTripViewMode } from '@/features/trips/hooks/useTripViewMode';
-import { Button } from '@turbodima/ui/core/Button';
+import { Button } from '@/ui/core/Button';
 
 interface TripViewToggleProps {
   tripId: string;

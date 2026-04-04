@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Heart } from "lucide-react";
 import { toggleLike } from "../actions/toggleLike";
-import { Button } from "@turbodima/ui/shadcn/button";
+import { Button } from "@/ui/shadcn/button";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 

@@ -1,5 +1,5 @@
 import { TripForm } from '@/features/trips/forms/TripForm';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@turbodima/ui/shadcn/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/ui/shadcn/card';
 
 export default function CreateTripPage() {
   // Could add requireAuth() here if middleware wasn't covering it
