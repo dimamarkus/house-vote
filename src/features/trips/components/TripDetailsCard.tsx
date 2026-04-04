@@ -3,6 +3,7 @@
 import type { Trip } from 'db';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
 import { generateAirbnbUrl, generateVrboUrl } from '../utils/travelLinks';
+import { formatTripDateRange } from '../utils/formatTripDateRange';
 import { AirbnbIcon, VrboIcon } from './TripIcons';
 import { MapPin, Calendar, Users } from 'lucide-react';
 import { LinkButton } from '@turbodima/ui/core/LinkButton';
@@ -28,6 +29,7 @@ export function TripDetailsCard({ trip }: TripDetailsCardProps) {
     endDate: trip.endDate ? new Date(trip.endDate) : null,
     numberOfPeople: trip.numberOfPeople ?? undefined,
   };
+  const tripDateRange = formatTripDateRange(trip.startDate, trip.endDate);
 
   return (
     <Card>
@@ -46,13 +48,7 @@ export function TripDetailsCard({ trip }: TripDetailsCardProps) {
         <Flex.Row align="center"  >
           <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           <span className="text-sm text-muted-foreground mr-auto">Dates:</span>
-          {trip.startDate || trip.endDate
-            ? `${trip.startDate
-                ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(trip.startDate))
-                : '??'} - ${trip.endDate
-                ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(trip.endDate))
-                : '??'}`
-            : 'Not set'}
+          {tripDateRange ?? 'Not set'}
         </Flex.Row>
         <Flex.Row align="center">
           <Users className="h-4 w-4 text-muted-foreground flex-shrink-0" />
