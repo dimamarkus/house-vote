@@ -40,6 +40,42 @@ interface ListingsTableProps {
   basePath?: string;
 }
 
+interface SourceBadgeProps {
+  href?: string | null;
+  title: string;
+  className: string;
+  children: React.ReactNode;
+}
+
+function SourceBadge({ href, title, className, children }: SourceBadgeProps) {
+  const badge = (
+    <Badge
+      weight="hollow"
+      className={className}
+      title={href ? `Open original ${title} listing` : title}
+    >
+      {children}
+    </Badge>
+  );
+
+  if (!href) {
+    return badge;
+  }
+
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      aria-label={`Open original ${title} listing`}
+      title={`Open original ${title} listing`}
+    >
+      {badge}
+    </a>
+  );
+}
+
 export function ListingsTable({
   listings,
   currentUserId,
@@ -99,40 +135,41 @@ export function ListingsTable({
       accessorKey: "source",
       cell: (listing) => {
         const source = listing.source ?? 'MANUAL';
+        const sourceUrl = typeof listing.url === 'string' && listing.url.length > 0 ? listing.url : null;
 
         if (source === 'AIRBNB') {
           return (
-            <Badge
-              weight="hollow"
-              className="border-rose-200 bg-rose-50 px-2.5 py-1 text-rose-700"
+            <SourceBadge
+              href={sourceUrl}
               title="Airbnb"
+              className="border-rose-200 bg-rose-50 px-2.5 py-1 text-rose-700"
             >
               <AirbnbLogotype />
-            </Badge>
+            </SourceBadge>
           );
         }
 
         if (source === 'VRBO') {
           return (
-            <Badge
-              weight="hollow"
-              className="border-blue-200 bg-blue-50 px-2.5 py-1 text-blue-700"
+            <SourceBadge
+              href={sourceUrl}
               title="Vrbo"
+              className="border-blue-200 bg-blue-50 px-2.5 py-1 text-blue-700"
             >
               <VrboLogotype />
-            </Badge>
+            </SourceBadge>
           );
         }
 
         if (source === 'UNKNOWN') {
           return (
-            <Badge
-              weight="hollow"
-              className="border-slate-200 bg-slate-50 px-2 text-slate-700"
+            <SourceBadge
+              href={sourceUrl}
               title="Imported"
+              className="border-slate-200 bg-slate-50 px-2 text-slate-700"
             >
               <GlobeIcon className="h-3.5 w-3.5 shrink-0" />
-            </Badge>
+            </SourceBadge>
           );
         }
 
