@@ -199,3 +199,37 @@ export function normalizeImportedListing(
     rawImportPayload: capture.rawPayload ?? capture,
   };
 }
+
+export function getMissingImportedListingFields(listing: NormalizedImportedListing): string[] {
+  const missingFields: string[] = [];
+
+  if (!listing.title) {
+    missingFields.push('title');
+  }
+
+  if (!listing.address) {
+    missingFields.push('address');
+  }
+
+  if (listing.price === null) {
+    missingFields.push('price');
+  }
+
+  if (listing.photoUrls.length === 0) {
+    missingFields.push('photos');
+  }
+
+  if (listing.bedroomCount === null) {
+    missingFields.push('bedrooms');
+  }
+
+  if (listing.bedCount === null) {
+    missingFields.push('beds');
+  }
+
+  if (listing.bathroomCount === null) {
+    missingFields.push('bathrooms');
+  }
+
+  return missingFields;
+}

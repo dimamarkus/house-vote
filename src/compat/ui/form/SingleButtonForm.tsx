@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../shadcn/button";
@@ -12,8 +13,10 @@ type ActionResult = {
 
 export function SingleButtonForm({
   action,
+  buttonClassName,
   buttonIcon: ButtonIcon,
   buttonSize = "default",
+  buttonText,
   buttonVariant = "primary",
   buttonWeight = "solid",
   confirmLabel,
@@ -23,8 +26,10 @@ export function SingleButtonForm({
   title,
 }: {
   action: () => Promise<ActionResult>;
+  buttonClassName?: string;
   buttonIcon?: LucideIcon;
   buttonSize?: "default" | "sm" | "lg" | "icon";
+  buttonText?: ReactNode;
   buttonVariant?: "primary" | "neutral" | "destructive";
   buttonWeight?: "solid" | "hollow" | "ghost" | "link";
   confirmLabel?: string;
@@ -38,6 +43,7 @@ export function SingleButtonForm({
 
   return (
     <Button
+      className={buttonClassName}
       disabled={isSubmitting}
       onClick={async () => {
         const confirmed = window.confirm(
@@ -71,6 +77,7 @@ export function SingleButtonForm({
       weight={buttonWeight}
     >
       {ButtonIcon ? <ButtonIcon className="h-4 w-4" /> : null}
+      {buttonText ?? null}
     </Button>
   );
 }

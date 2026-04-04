@@ -6,12 +6,13 @@ import { ErrorCode } from '@turbodima/core/errors';
 import { createErrorResponse } from '@turbodima/core/responses';
 
 import { listings } from '../db';
+import { trips } from '../../trips/db';
 // Import ListingGetOptions for the authorization check
 import { ListingActionOptions, ListingResponse, ListingGetOptions } from '../types';
 
 /**
  * Server action for deleting a listing by ID.
- * Requires authentication and authorization (user must own the listing).
+ * Requires authentication and either trip ownership or listing ownership.
  *
  * @param listingId - The ID of the listing to delete.
  * @param options - Optional parameters for the action (e.g., Prisma includes for the response).
@@ -30,7 +31,7 @@ export async function deleteListing(
     });
   }
 
-  // 2. Authorization Check: Fetch listing and verify ownership
+  // 2. Authorization Check: Fetch listing and verify ownership rules
   let tripIdToRevalidate: string | null = null;
   try {
     const getOptions: ListingGetOptions = { select: { addedById: true, tripId: true } };
@@ -46,14 +47,24 @@ export async function deleteListing(
       });
     }
 
-    if (existingListingResponse.data.addedById !== userId) {
-      // TODO: Add more sophisticated auth check? (e.g., allow trip owner/collaborators?)
-      // For now, only the user who added it can delete.
+    const tripResult = await trips.get(existingListingResponse.data.tripId, { userId });
+    if (!tripResult.success) {
       return createErrorResponse({
-        error: 'You are not authorized to delete this listing.',
+        error: tripResult.error || 'You are not authorized to delete this listing.',
+        code: tripResult.code || ErrorCode.FORBIDDEN,
+      });
+    }
+
+    const isTripOwner = tripResult.data.userId === userId;
+    const isListingOwner = existingListingResponse.data.addedById === userId;
+
+    if (!isTripOwner && !isListingOwner) {
+      return createErrorResponse({
+        error: 'Only the trip owner or the user who added this listing can delete it.',
         code: ErrorCode.FORBIDDEN,
       });
     }
+
     // Store tripId for revalidation after successful delete
     tripIdToRevalidate = existingListingResponse.data.tripId;
 

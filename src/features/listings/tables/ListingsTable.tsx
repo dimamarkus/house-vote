@@ -1,18 +1,17 @@
 'use client';
 
 import { format } from 'date-fns';
-import { Eye, Edit, DollarSign, Trash2, Bed, BedDouble, Bath, Image as ImageIcon } from 'lucide-react';
+import { Eye, Edit, DollarSign, Bed, BedDouble, Bath, Image as ImageIcon } from 'lucide-react';
 import type { Listing, User as PrismaUser, Trip, Like } from 'db';
 import { GenericTable, ColumnDef } from '@turbodima/ui/core/GenericTable';
 import { Button } from '@turbodima/ui/shadcn/button';
 import { Badge } from '@turbodima/ui/shadcn/badge';
 import { LinkButton } from '@turbodima/ui/core/LinkButton';
-import { deleteListing } from '../actions/deleteListing';
 import { LikeButton } from '../../likes/components/LikeButton';
 import { ListingStatusAction } from '../components/ListingStatusAction';
-import { SingleButtonForm } from '@turbodima/ui/form/SingleButtonForm';
 import { ImageWithFallback } from '@turbodima/ui/core/ImageWithFallback';
 import { ListingFormSheet } from '../forms/ListingFormSheet';
+import { DeleteListingActionButton } from '../components/DeleteListingActionButton';
 
 // Requires getListings action to include: addedBy, likes: { select: { id: true }}
 // to satisfy these types fully.
@@ -34,11 +33,18 @@ type ListingWithRelations = Listing & {
 interface ListingsTableProps {
   listings: ListingWithRelations[];
   currentUserId?: string;
+  currentUserIsOwner?: boolean;
   currentUserLikes?: Record<string, boolean>;
   basePath?: string;
 }
 
-export function ListingsTable({ listings, currentUserId, currentUserLikes = {}, basePath }: ListingsTableProps) {
+export function ListingsTable({
+  listings,
+  currentUserId,
+  currentUserIsOwner = false,
+  currentUserLikes = {},
+  basePath,
+}: ListingsTableProps) {
 
   // Columns expect cell function to receive the item directly
   const columns: ColumnDef<ListingWithRelations>[] = [
@@ -238,7 +244,8 @@ export function ListingsTable({ listings, currentUserId, currentUserLikes = {}, 
     {
       header: "Actions",
       cell: (listing) => {
-        const canModify = !!currentUserId && currentUserId === listing.addedById;
+        const canEdit = !!currentUserId && currentUserId === listing.addedById;
+        const canDelete = !!currentUserId && (currentUserIsOwner || currentUserId === listing.addedById);
         const canViewSource = typeof listing.url === "string" && listing.url.length > 0;
 
         return (
@@ -268,7 +275,7 @@ export function ListingsTable({ listings, currentUserId, currentUserLikes = {}, 
               </Button>
             )}
 
-            {canModify && (
+            {canEdit && (
               <ListingFormSheet listingId={listing.id} tripId={listing.tripId} initialState={listing}>
                 <Button size="icon" weight="ghost" title="Edit Listing" className="size-8 p-0">
                   <span className="sr-only">Edit</span>
@@ -277,19 +284,13 @@ export function ListingsTable({ listings, currentUserId, currentUserLikes = {}, 
               </ListingFormSheet>
             )}
 
-            {canModify && (
+            {canDelete && (
               <div className="text-destructive hover:text-destructive hover:bg-destructive/10 size-8 p-0 flex items-center justify-center">
-                <SingleButtonForm
-                  action={() => deleteListing(listing.id)}
-                  buttonIcon={Trash2}
-                  buttonWeight="ghost"
+                <DeleteListingActionButton
+                  listingId={listing.id}
+                  listingTitle={listing.title}
                   buttonSize="sm"
-                  title="Delete Listing"
-                  description={`Are you sure you want to delete listing "${listing.title}"? This cannot be undone.`}
-                  successMessage={`${listing.title} deleted successfully.`}
-                  errorMessage={`Failed to delete ${listing.title}.`}
-                  confirmLabel="Delete"
-                  confirmVariant="destructive"
+                  buttonWeight="ghost"
                 />
               </div>
             )}

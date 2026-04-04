@@ -167,6 +167,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
           tripId={currentTripId}
           viewMode={view}
           listings={listings}
+          isOwner={isOwner}
           userLikes={userLikes}
           userId={userId}
         />

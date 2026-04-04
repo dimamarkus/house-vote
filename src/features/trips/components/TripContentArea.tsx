@@ -5,6 +5,7 @@ import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@turbodima
 import type { Listing } from 'db';
 import { ListingsTable } from '@/features/listings/tables/ListingsTable';
 import { ListingCard } from '@/features/listings/components/ListingCard';
+import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
 import { LikeButton } from '@/features/likes/components/LikeButton';
 import { TripViewToggle } from './TripViewToggle';
 import { cn } from '@turbodima/ui/utils/cn';
@@ -48,13 +49,22 @@ interface MapListing {
 interface TripContentAreaProps {
   viewMode?: 'table' | 'map' | 'card';
   listings: Listing[];
+  isOwner: boolean;
   userLikes: Record<string, boolean>;
   userId: string | null;
   tripId: string;
   className?: string;
 }
 
-export function TripContentArea({ viewMode = 'table', listings, userLikes, userId, tripId, className }: TripContentAreaProps) {
+export function TripContentArea({
+  viewMode = 'table',
+  listings,
+  isOwner,
+  userLikes,
+  userId,
+  tripId,
+  className,
+}: TripContentAreaProps) {
   // Construct base path for sorting links
   const basePath = `/trips/${tripId}`;
 
@@ -86,6 +96,7 @@ export function TripContentArea({ viewMode = 'table', listings, userLikes, userI
             <ListingsTable
               listings={potentialListings}
               currentUserId={userId || undefined}
+              currentUserIsOwner={isOwner}
               currentUserLikes={userLikes}
               basePath={basePath}
             />
@@ -105,6 +116,15 @@ export function TripContentArea({ viewMode = 'table', listings, userLikes, userI
                         <LikeButton
                           listingId={listing.id}
                           initialLiked={userLikes[listing.id] || false}
+                        />
+                      )}
+                      {userId && (isOwner || userId === listing.addedById) && (
+                        <DeleteListingActionButton
+                          listingId={listing.id}
+                          listingTitle={listing.title}
+                          buttonText="Delete"
+                          buttonVariant="destructive"
+                          buttonWeight="hollow"
                         />
                       )}
                     </div>
@@ -129,6 +149,7 @@ export function TripContentArea({ viewMode = 'table', listings, userLikes, userI
             <ListingsTable
               listings={rejectedListings}
               currentUserId={userId || undefined}
+              currentUserIsOwner={isOwner}
               currentUserLikes={userLikes}
               basePath={basePath}
             />
