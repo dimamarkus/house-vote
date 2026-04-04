@@ -3,6 +3,8 @@ import type { NormalizedImportedListing } from './types';
 
 interface UpsertImportedListingOptions {
   addedById?: string;
+  addedByGuestId?: string;
+  addedByGuestName?: string;
 }
 
 function toJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
@@ -61,6 +63,7 @@ export async function upsertImportedListing(
       select: {
         id: true,
         addedById: true,
+        addedByGuestId: true,
       },
     });
 
@@ -72,6 +75,8 @@ export async function upsertImportedListing(
           data: {
             ...listingData,
             ...(options?.addedById && !existingListing.addedById ? { addedById: options.addedById } : {}),
+            ...(options?.addedByGuestId && !existingListing.addedByGuestId ? { addedByGuestId: options.addedByGuestId } : {}),
+            ...(options?.addedByGuestName ? { addedByGuestName: options.addedByGuestName } : {}),
           },
           include: {
             photos: true,
@@ -82,6 +87,8 @@ export async function upsertImportedListing(
             ...listingData,
             tripId,
             ...(options?.addedById ? { addedById: options.addedById } : {}),
+            ...(options?.addedByGuestId ? { addedByGuestId: options.addedByGuestId } : {}),
+            ...(options?.addedByGuestName ? { addedByGuestName: options.addedByGuestName } : {}),
           },
           include: {
             photos: true,

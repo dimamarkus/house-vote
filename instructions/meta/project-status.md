@@ -10,6 +10,7 @@
 * Make a checkpoint commit for the post-import-hardening cleanup work once runtime verification is confirmed.
 * Update any lingering docs that still describe the old `src/compat` import surface.
 * Defer CI/deploy wiring until after manual runtime verification, per plan.
+* Exercise published voting end-to-end in the browser (publish, guest name, vote move, close voting, rotate link) and adjust copy if product language drifts from [housevote-overview.md](housevote-overview.md).
 
 **Completed Milestones:**
 
@@ -50,6 +51,10 @@
   * ✅ Moved `src/compat/core` to `src/core` and `src/compat/ui` to `src/ui`
   * ✅ Rewrote app imports from `@turbodima/*` to app-owned paths
   * ✅ Verified `pnpm check-types` and `pnpm lint` after the path cleanup
+* ✅ Published trip voting
+  * ✅ `TripShare` / `TripVote` / `TripGuest` model and migration for public `/share/<token>` flow
+  * ✅ Owner **Voting** and **Guests** sidebar cards; guest public page with name pick, single movable vote, optional guest listing URLs
+  * ✅ Documented in README and [housevote-overview.md](housevote-overview.md) (published voting section)
 
 **Blockers:**
 

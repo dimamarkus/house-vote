@@ -41,6 +41,7 @@ export {
   ListingImportStatus,
   ListingSource,
   ListingStatus,
+  TripGuestSource,
   Prisma,
 } from "@prisma/client";
 export type {
@@ -50,6 +51,8 @@ export type {
   PrismaClient,
   Trip,
   TripGuest,
+  TripShare,
+  TripVote,
   TripImportToken,
   TripInvitation,
   User,

@@ -41,9 +41,11 @@ model Trip {
   user           User             @relation("OwnedTrips", fields: [userId], references: [id], onDelete: Cascade)
   collaborators  User[]           @relation("TripCollaborators")
   listings       Listing[]
+  votes          TripVote[]
+  guests         TripGuest[]
+  share          TripShare?
   importToken    TripImportToken?
   invitations    TripInvitation[]
-  TripGuest      TripGuest[]
 
   /// @zod.refine((data) => !data.startDate || !data.endDate || data.endDate >= data.startDate, { message: "End date must be after start date", path: ["endDate"] })
   @@index([userId])
@@ -74,14 +76,18 @@ model Listing {
   updatedAt        DateTime      @updatedAt
   addedById        String? // Optional
   addedBy          User?         @relation("AddedByUser", fields: [addedById], references: [id], onDelete: Cascade)
+  addedByGuestId   String?
+  addedByGuest     TripGuest?    @relation("AddedByGuest", fields: [addedByGuestId], references: [id], onDelete: SetNull)
   addedByGuestName String?
   tripId           String
   trip             Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
   likes            Like[]
+  votes            TripVote[]
   photos           ListingPhoto[]
   status           ListingStatus @default(POTENTIAL)
 
   @@index([addedById])
+  @@index([addedByGuestId])
   @@index([source, importStatus])
   @@index([sourceExternalId])
   @@index([tripId])
@@ -168,11 +174,52 @@ model TripGuest {
   id               String   @id @default(cuid())
   tripId           String
   guestDisplayName String // Name the guest provided
+  source           TripGuestSource @default(SELF_ADDED)
   createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
   trip             Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  addedListings    Listing[] @relation("AddedByGuest")
+  votes            TripVote[]
 
   @@unique([tripId, guestDisplayName]) // Prevent duplicate names per trip
   @@index([tripId])
+}
+
+model TripShare {
+  id                    String   @id @default(cuid())
+  tripId                String   @unique
+  token                 String   @unique
+  isPublished           Boolean  @default(false)
+  votingOpen            Boolean  @default(true)
+  allowGuestSuggestions Boolean  @default(true)
+  publishedAt           DateTime?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  trip                  Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+}
+
+model TripVote {
+  id        String   @id @default(cuid())
+  tripId    String
+  guestId   String
+  listingId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  guest     TripGuest @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, guestId])
+  @@index([tripId])
+  @@index([guestId])
+  @@index([listingId])
+}
+
+enum TripGuestSource {
+  OWNER_ADDED
+  SELF_ADDED
 }
 
 model TripImportToken {

@@ -5,6 +5,7 @@ const isPublicRoute = createRouteMatcher([
   '/',             // Home page
   '/about',        // About page (assuming it exists or will be created)
   '/invite(.*)',   // Invite page and its sub-routes
+  '/share(.*)',    // Published trip voting links
   '/sign-in(.*)',  // Sign-in page and its sub-routes
   '/sign-up(.*)',  // Sign-up page and its sub-routes
   '/api/webhooks/(.*)', // Example public API webhook route

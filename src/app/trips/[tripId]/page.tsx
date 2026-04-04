@@ -3,6 +3,7 @@ import { getListingsByTrip } from '@/features/listings/actions/getListingsByTrip
 import type { ListingWithMedia } from '@/features/listings/types';
 import { getTrip } from '@/features/trips/actions/getTrip';
 import { getTripGuests } from '@/features/trips/actions/getTripGuests';
+import { publishedTrips } from '@/features/trips/publishedDb';
 import { TripContentArea } from '@/features/trips/components/TripContentArea';
 import { TripSidebar } from '@/features/trips/components/TripSidebar'; // Import the new sidebar
 import { auth } from '@clerk/nextjs/server'; // Use server-side auth
@@ -74,6 +75,29 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
   let listings: ListingWithMedia[] = [];
   let guestNames: string[] = [];
   let userLikes: Record<string, boolean> = {};
+  let publishedShareSummary:
+    | {
+        share: {
+          token: string;
+          isPublished: boolean;
+          votingOpen: boolean;
+          allowGuestSuggestions: boolean;
+        } | null;
+        listings: Array<{
+          id: string;
+          title: string;
+          status: string;
+        }>;
+        guests: Array<{
+          id: string;
+          guestDisplayName: string;
+          source: 'OWNER_ADDED' | 'SELF_ADDED';
+          votes: Array<{
+            listingId: string;
+          }>;
+        }>;
+      }
+    | undefined;
   let fetchError: string | null = null;
 
   try {
@@ -85,10 +109,36 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
          throw new Error(errorMessage);
     }
     trip = tripResponse.data as TripWithIncludes;
+    const isOwner = userId === trip.userId;
 
     const guestNamesResponse = await getTripGuests(currentTripId);
     if (guestNamesResponse.success && Array.isArray(guestNamesResponse.data)) {
         guestNames = guestNamesResponse.data as string[];
+    }
+
+    if (isOwner && userId) {
+        const shareSummary = await publishedTrips.getOwnerTripShareSummary(currentTripId, userId);
+        publishedShareSummary = {
+          share: shareSummary.share ? {
+            token: shareSummary.share.token,
+            isPublished: shareSummary.share.isPublished,
+            votingOpen: shareSummary.share.votingOpen,
+            allowGuestSuggestions: shareSummary.share.allowGuestSuggestions,
+          } : null,
+          listings: shareSummary.listings.map((listing) => ({
+            id: listing.id,
+            title: listing.title,
+            status: listing.status,
+          })),
+          guests: shareSummary.share?.guests.map((guest) => ({
+            id: guest.id,
+            guestDisplayName: guest.guestDisplayName,
+            source: guest.source,
+            votes: guest.votes.map((vote) => ({
+              listingId: vote.listingId,
+            })),
+          })) ?? [],
+        };
     }
 
     const listingsResponse = await getListingsByTrip(currentTripId, {
@@ -163,6 +213,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
           guestNames={guestNames}
           currentGuestName={currentGuestName}
           isOwner={isOwner}
+          publishedShareSummary={publishedShareSummary}
         />
         <TripContentArea
           tripId={currentTripId}

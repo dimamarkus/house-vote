@@ -268,16 +268,19 @@ export const listings = {
         throw new Error("Listing not found");
       }
 
+      if (status === ListingStatus.REJECTED) {
+        await (dbClient as DbClientWithModels).tripVote.deleteMany({
+          where: {
+            listingId,
+          },
+        });
+      }
+
       // Update the listing status
       return (dbClient as DbClientWithModels).listing.update({
         where: { id: listingId },
         data: {
           status,
-          // Record who updated the status if provided
-          ...(options?.performedBy && {
-            statusUpdatedById: options.performedBy,
-            statusUpdatedAt: new Date()
-          })
         },
         include: options?.include
       });

@@ -1,0 +1,430 @@
+import { randomUUID } from 'node:crypto';
+import { db, ListingStatus, Prisma, TripGuestSource } from 'db';
+import { scrapeListingMetadataFromUrl } from '@/features/listings/import/scrapeListingMetadataFromUrl';
+import { upsertImportedListing } from '@/features/listings/import/upsertImportedListing';
+
+const publishedVoteInclude = Prisma.validator<Prisma.TripVoteInclude>()({
+  guest: {
+    select: {
+      id: true,
+      guestDisplayName: true,
+    },
+  },
+});
+
+const publishedListingInclude = Prisma.validator<Prisma.ListingInclude>()({
+  photos: true,
+  votes: {
+    include: publishedVoteInclude,
+    orderBy: {
+      createdAt: 'asc',
+    },
+  },
+});
+
+const publishedTripShareSelect = Prisma.validator<Prisma.TripShareSelect>()({
+  id: true,
+  tripId: true,
+  token: true,
+  isPublished: true,
+  votingOpen: true,
+  allowGuestSuggestions: true,
+  publishedAt: true,
+  trip: {
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      location: true,
+      startDate: true,
+      endDate: true,
+      numberOfPeople: true,
+      guests: {
+        include: {
+          votes: {
+            select: {
+              listingId: true,
+            },
+          },
+        },
+        orderBy: {
+          guestDisplayName: 'asc',
+        },
+      },
+    },
+  },
+});
+
+const ownerShareListingSelect = Prisma.validator<Prisma.ListingSelect>()({
+  id: true,
+  title: true,
+  status: true,
+});
+
+type DbClient = typeof db | Prisma.TransactionClient;
+
+type PublishedTripShareQueryRecord = Prisma.TripShareGetPayload<{
+  select: typeof publishedTripShareSelect;
+}>;
+
+export type PublishedTripListingRecord = Prisma.ListingGetPayload<{
+  include: typeof publishedListingInclude;
+}>;
+
+export type PublishedTripGuestRecord = PublishedTripShareQueryRecord['trip']['guests'][number];
+
+export type PublishedTripShareRecord = Omit<PublishedTripShareQueryRecord, 'trip'> & {
+  trip: Omit<PublishedTripShareQueryRecord['trip'], 'guests'>;
+  guests: PublishedTripGuestRecord[];
+};
+
+export type OwnerTripShareListingRecord = Prisma.ListingGetPayload<{
+  select: typeof ownerShareListingSelect;
+}>;
+
+function mapPublishedTripShareRecord(share: PublishedTripShareQueryRecord): PublishedTripShareRecord {
+  const { trip, ...shareFields } = share;
+  const { guests, ...tripFields } = trip;
+
+  return {
+    ...shareFields,
+    trip: tripFields,
+    guests,
+  };
+}
+
+function normalizeGuestDisplayName(displayName: string) {
+  return displayName.trim().replace(/\s+/g, ' ');
+}
+
+async function getTripOwnerId(tripId: string, dbClient: DbClient) {
+  const trip = await dbClient.trip.findUnique({
+    where: { id: tripId },
+    select: { userId: true },
+  });
+
+  if (!trip) {
+    throw new Error('Trip not found.');
+  }
+
+  return trip.userId;
+}
+
+async function assertTripOwner(tripId: string, userId: string, dbClient: DbClient) {
+  const ownerId = await getTripOwnerId(tripId, dbClient);
+
+  if (ownerId !== userId) {
+    throw new Error('Only the trip owner can manage published voting.');
+  }
+}
+
+async function findGuestByName(tripId: string, displayName: string, dbClient: DbClient) {
+  return dbClient.tripGuest.findFirst({
+    where: {
+      tripId,
+      guestDisplayName: {
+        equals: displayName,
+        mode: 'insensitive',
+      },
+    },
+  });
+}
+
+async function createGuest(
+  tripId: string,
+  displayName: string,
+  source: typeof TripGuestSource[keyof typeof TripGuestSource],
+  dbClient: DbClient,
+) {
+  const normalizedName = normalizeGuestDisplayName(displayName);
+
+  if (!normalizedName) {
+    throw new Error('Guest name cannot be empty.');
+  }
+
+  const existingGuest = await findGuestByName(tripId, normalizedName, dbClient);
+
+  if (existingGuest) {
+    throw new Error(`"${existingGuest.guestDisplayName}" is already on the guest list.`);
+  }
+
+  return dbClient.tripGuest.create({
+    data: {
+      tripId,
+      guestDisplayName: normalizedName,
+      source,
+    },
+  });
+}
+
+async function ensureShareRecord(tripId: string, dbClient: DbClient) {
+  return dbClient.tripShare.upsert({
+    where: {
+      tripId,
+    },
+    update: {},
+    create: {
+      tripId,
+      token: randomUUID(),
+    },
+  });
+}
+
+async function getShareByToken(token: string) {
+  return db.tripShare.findUnique({
+    where: { token },
+    select: publishedTripShareSelect,
+  });
+}
+
+async function assertPublishedShare(token: string) {
+  const share = await getShareByToken(token);
+
+  if (!share) {
+    throw new Error('This voting link is invalid.');
+  }
+
+  if (!share.isPublished) {
+    throw new Error('This voting link is not published right now.');
+  }
+
+  return mapPublishedTripShareRecord(share);
+}
+
+async function assertGuestInTrip(tripId: string, guestId: string, dbClient: DbClient) {
+  const guest = await dbClient.tripGuest.findUnique({
+    where: { id: guestId },
+  });
+
+  if (!guest || guest.tripId !== tripId) {
+    throw new Error('Guest session is no longer valid for this trip.');
+  }
+
+  return guest;
+}
+
+async function assertPotentialListing(tripId: string, listingId: string, dbClient: DbClient) {
+  const listing = await dbClient.listing.findUnique({
+    where: { id: listingId },
+    select: {
+      id: true,
+      tripId: true,
+      status: true,
+    },
+  });
+
+  if (!listing || listing.tripId !== tripId) {
+    throw new Error('Listing not found for this trip.');
+  }
+
+  if (listing.status !== ListingStatus.POTENTIAL) {
+    throw new Error('Only active listings can receive votes.');
+  }
+
+  return listing;
+}
+
+export const publishedTrips = {
+  getPublishedTripByToken: async (token: string) => {
+    const share = await getShareByToken(token);
+
+    if (!share) {
+      return null;
+    }
+
+    const listings = await db.listing.findMany({
+      where: {
+        tripId: share.tripId,
+        status: ListingStatus.POTENTIAL,
+      },
+      include: publishedListingInclude,
+      orderBy: [
+        {
+          createdAt: 'desc',
+        },
+      ],
+    });
+
+    return {
+      share: mapPublishedTripShareRecord(share),
+      listings,
+    };
+  },
+
+  getOwnerTripShareSummary: async (tripId: string, ownerId: string) => {
+    await assertTripOwner(tripId, ownerId, db);
+
+    const share = await db.tripShare.findUnique({
+      where: {
+        tripId,
+      },
+      select: publishedTripShareSelect,
+    });
+
+    const listings = await db.listing.findMany({
+      where: {
+        tripId,
+      },
+      select: ownerShareListingSelect,
+      orderBy: [
+        {
+          createdAt: 'desc',
+        },
+      ],
+    });
+
+    return {
+      share: share ? mapPublishedTripShareRecord(share) : null,
+      listings,
+    };
+  },
+
+  publish: async (tripId: string, ownerId: string) => {
+    await assertTripOwner(tripId, ownerId, db);
+
+    const existingShare = await ensureShareRecord(tripId, db);
+
+    return db.tripShare.update({
+      where: {
+        id: existingShare.id,
+      },
+      data: {
+        isPublished: true,
+        publishedAt: existingShare.publishedAt ?? new Date(),
+      },
+    });
+  },
+
+  unpublish: async (tripId: string, ownerId: string) => {
+    await assertTripOwner(tripId, ownerId, db);
+
+    const share = await ensureShareRecord(tripId, db);
+
+    return db.tripShare.update({
+      where: {
+        id: share.id,
+      },
+      data: {
+        isPublished: false,
+      },
+    });
+  },
+
+  updateSettings: async (
+    tripId: string,
+    ownerId: string,
+    data: {
+      votingOpen?: boolean;
+      allowGuestSuggestions?: boolean;
+    },
+  ) => {
+    await assertTripOwner(tripId, ownerId, db);
+
+    const share = await ensureShareRecord(tripId, db);
+
+    return db.tripShare.update({
+      where: {
+        id: share.id,
+      },
+      data,
+    });
+  },
+
+  rotateToken: async (tripId: string, ownerId: string) => {
+    await assertTripOwner(tripId, ownerId, db);
+
+    const share = await ensureShareRecord(tripId, db);
+
+    return db.tripShare.update({
+      where: {
+        id: share.id,
+      },
+      data: {
+        token: randomUUID(),
+      },
+    });
+  },
+
+  addOwnerGuest: async (tripId: string, ownerId: string, displayName: string) => {
+    await assertTripOwner(tripId, ownerId, db);
+
+    return createGuest(tripId, displayName, TripGuestSource.OWNER_ADDED, db);
+  },
+
+  removeGuest: async (tripId: string, ownerId: string, guestId: string) => {
+    await assertTripOwner(tripId, ownerId, db);
+
+    const guest = await assertGuestInTrip(tripId, guestId, db);
+
+    return db.tripGuest.delete({
+      where: {
+        id: guest.id,
+      },
+    });
+  },
+
+  claimGuestSession: async (token: string, guestId: string) => {
+    const share = await assertPublishedShare(token);
+    const guest = await assertGuestInTrip(share.tripId, guestId, db);
+
+    return {
+      share,
+      guest,
+    };
+  },
+
+  createGuestSession: async (token: string, displayName: string) => {
+    const share = await assertPublishedShare(token);
+    const guest = await createGuest(share.tripId, displayName, TripGuestSource.SELF_ADDED, db);
+
+    return {
+      share,
+      guest,
+    };
+  },
+
+  castVote: async (token: string, guestId: string, listingId: string) => {
+    const share = await assertPublishedShare(token);
+
+    if (!share.votingOpen) {
+      throw new Error('Voting is closed for this trip.');
+    }
+
+    await assertGuestInTrip(share.tripId, guestId, db);
+    await assertPotentialListing(share.tripId, listingId, db);
+
+    return db.tripVote.upsert({
+      where: {
+        tripId_guestId: {
+          tripId: share.tripId,
+          guestId,
+        },
+      },
+      update: {
+        listingId,
+      },
+      create: {
+        tripId: share.tripId,
+        guestId,
+        listingId,
+      },
+      include: publishedVoteInclude,
+    });
+  },
+
+  submitGuestListingUrl: async (token: string, guestId: string, url: string) => {
+    const share = await assertPublishedShare(token);
+
+    if (!share.allowGuestSuggestions) {
+      throw new Error('Guest listing suggestions are disabled right now.');
+    }
+
+    const guest = await assertGuestInTrip(share.tripId, guestId, db);
+    const normalizedListing = await scrapeListingMetadataFromUrl(url);
+
+    return upsertImportedListing(share.tripId, normalizedListing, {
+      addedByGuestId: guest.id,
+      addedByGuestName: guest.guestDisplayName,
+    });
+  },
+};

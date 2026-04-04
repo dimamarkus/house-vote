@@ -35,6 +35,7 @@ interface MapListing {
   createdAt: Date;
   updatedAt: Date;
   addedById: string | null;
+  addedByGuestId: string | null;
   addedByGuestName: string | null;
   tripId: string;
   status: ListingStatusValue;
@@ -80,6 +81,7 @@ export function TripContentArea({
     latitude: listing.latitude,
     longitude: listing.longitude,
     addedById: listing.addedById || null,
+    addedByGuestId: listing.addedByGuestId || null,
     addedByGuestName: listing.addedByGuestName || null,
   })) : [];
 

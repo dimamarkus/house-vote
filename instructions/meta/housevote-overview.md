@@ -26,12 +26,12 @@ A collaborative web/mobile application designed to help groups of friends easily
 * **Flow C: Inviting Collaborators (Trip Owner)** (Unchanged from previous refinement)
   * ... Generates unique link, Owner shares it ... Owner can control collaborator add permissions from the dashboard.
 
-* **Flow D: Collaborating & Voting/Liking (Collaborator)**
-  * Collaborator clicks the unique link.
-  * *(First-time access via link):* Prompt appears: "Enter your name for this trip: [_____]". This name is stored in their browser's local storage/session, specifically associated with *this trip link*, to identify their actions (likes, potentially added listings).
+* **Flow D: Collaborating & Voting/Liking (Collaborator — signed-in dashboard)**
+  * Collaborator uses the trip dashboard while signed in (invitation / Clerk).
   * Collaborator views the table of potential listings.
-  * **Liking:** Each listing row has a "Like" button (e.g., a heart or thumbs-up icon). A user can click "Like" on *multiple* listings they find appealing. Clicking again unlikes it.
-  * The display updates (ideally in near real-time) to show the *count* of likes for each listing and *who* liked it (e.g., displaying names/initials of likers next to the like count or in a tooltip).
+  * **Liking:** Each listing row has a "Like" control. A user can like *multiple* listings; toggling removes the like.
+  * The display updates to show like counts and who liked each listing.
+  * **Note:** Dashboard **likes** and **published public votes** (see Flow G) are different systems. Likes are for authenticated collaborators on the main trip UI; published votes are for guests on `/share/<token>` and are stored as `TripVote`.
 
 * **Flow E: Managing Listings (Trip Owner)**
   * ... (Delete functions as before) ...
@@ -59,4 +59,28 @@ A collaborative web/mobile application designed to help groups of friends easily
 
 * The user experience goal is for actions (adding listings, liking, rejecting) performed by one user to reflect automatically and quickly for all other users currently viewing the same trip dashboard, enhancing the feeling of live collaboration.
 
-This revised blueprint incorporates your feedback, focusing on flexibility (manual entry), a clear (but lightweight) collaboration model (named sessions, multiple likes), and using existing mechanisms (reject) for handling unavailable listings. This feels like a very usable and well-defined user experience flow!
+**7. Published trip voting (public share link)**
+
+*Simple version:* The owner turns on a public link. Guests open it without logging in, choose who they are on the list (or add their name), click one house as their vote, and can change their mind later. The owner can close voting, pull the page down, or rotate the link if the old one leaked.
+
+* **Route and access:** `GET /share/<token>` (`<token>` is a UUID on `TripShare`). Middleware marks `/share/*` as public so Clerk does not block the page. If the trip is unpublished or the token was rotated, the old URL shows a clear “not live” state instead of trip data.
+
+* **Owner UI (trip sidebar):** Two cards:
+  * **Voting** — Publish/unpublish the page, open/close voting, allow or disallow guest-submitted listing URLs (`allowGuestSuggestions`), copy the link, open the public page in a new tab, and rotate the token (previous links stop working).
+  * **Guests** — Manage the **trip team** (owner, collaborators) and the **guest list** used on the public page: add names, remove guests, invite collaborators by email, and see who has voted when that data is loaded. Helper copy explains that guests may add themselves on the public page if their name is missing.
+
+* **Guest flow on the public page:**
+  1. **Choose your name** — Pick an existing guest row the owner added, or add a new name. Display names are **unique per trip** (enforced in the database).
+  2. **Session on device** — After a name is chosen, the app stores `guestId` and display name in `localStorage` under `housevote_published_guest_<tripId>` so returning to the same link remembers the voter. Another device or cleared storage = treat as a new person (new `TripGuest` row when they submit a name again).
+  3. **Voting rules** — At most **one active vote per guest** (`TripVote` is unique on `[tripId, guestId]`). Choosing a different listing **moves** the vote; many guests may vote for the **same** listing. If voting is **closed**, the UI should not allow new vote changes (server actions enforce this).
+  4. **Optional listing URL** — If the owner enabled guest suggestions, the guest can paste a rental URL; import runs like other listing imports and ties the listing to the guest where applicable (`Listing.addedByGuestId`).
+
+* **What guests see:** Listing cards show vote counts and voter names for the published flow. A single **current winner** (or leading listing) highlight may appear on the top card instead of a separate global leaderboard, depending on the current UI.
+
+* **Listings and votes:** Rejecting a listing (owner) removes it from contention; vote rows for that listing are cleared so tallies stay consistent.
+
+* **Trust model:** The share URL is an **unauthenticated capability URL**. Anyone with it can vote as any **name** on the list or add a new name until duplicates collide. Rotating the link is the primary mitigation if a link is overshared.
+
+* **Implementation pointers:** Server mutations live in `src/features/trips/actions/publishedTripActions.ts`; reads and share helpers in `src/features/trips/publishedDb.ts`; public UI in `src/features/trips/components/PublishedTripPageClient.tsx`. The guest session hook must use a **stable** `useSyncExternalStore` snapshot (e.g. raw `localStorage` string, parse in `useMemo`) so Next.js does not hit hydration mismatches or update loops.
+
+This revised blueprint incorporates your feedback, focusing on flexibility (manual entry), a clear (but lightweight) collaboration model (named sessions, multiple likes), published voting for non-signed-in guests, and using existing mechanisms (reject) for handling unavailable listings.
