@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ListingImportRequestSchema } from '@/features/listings/import/schemas';
-import {
-  getMissingImportedListingFields,
-  normalizeImportedListing,
-} from '@/features/listings/import/normalizeImportedListing';
-import { upsertImportedListing } from '@/features/listings/import/upsertImportedListing';
+import { importListingCapture } from '@/features/listings/import/importListingCapture';
 import { trips } from '@/features/trips/db';
 
 const corsHeaders = {
@@ -48,35 +44,17 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const normalizedListing = normalizeImportedListing(capture, 'EXTENSION');
-
-    if (normalizedListing.source === 'UNKNOWN') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Only Airbnb and VRBO listing pages are supported right now.',
-        },
-        {
-          status: 400,
-          headers: corsHeaders,
-        },
-      );
-    }
-
-    const savedListing = await upsertImportedListing(tripId, normalizedListing, {
+    const importResult = await importListingCapture({
+      tripId,
+      capture,
+      importMethod: 'EXTENSION',
       addedById: importTokenResult.data.ownerId,
     });
-    const missingFields = getMissingImportedListingFields(normalizedListing);
 
     return NextResponse.json(
       {
         success: true,
-        data: {
-          listingId: savedListing.id,
-          source: normalizedListing.source,
-          importStatus: normalizedListing.importStatus,
-          missingFields,
-        },
+        data: importResult,
       },
       {
         status: 200,

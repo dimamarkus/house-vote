@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns';
 import { Eye, Edit, DollarSign, Bed, BedDouble, Bath, Image as ImageIcon } from 'lucide-react';
-import type { Listing, User as PrismaUser, Trip, Like } from 'db';
+import type { Listing, User as PrismaUser, Trip, Like, ListingPhoto } from 'db';
 import { GenericTable, ColumnDef } from '@turbodima/ui/core/GenericTable';
 import { Button } from '@turbodima/ui/shadcn/button';
 import { Badge } from '@turbodima/ui/shadcn/badge';
@@ -26,6 +26,7 @@ type ListingWithRelations = Listing & {
   bedCount?: number | null;
   bathroomCount?: number | null;
   imageUrl?: string | null;
+  photos?: ListingPhoto[];
   source?: 'MANUAL' | 'AIRBNB' | 'VRBO' | 'UNKNOWN';
   importStatus?: 'NOT_IMPORTED' | 'PARTIAL' | 'COMPLETE' | 'FAILED';
 };
@@ -51,10 +52,13 @@ export function ListingsTable({
     {
       header: "Image",
       cell: (listing) => {
+        const photoCount = listing.photos?.length ?? 0;
+        const heroImageUrl = listing.photos?.[0]?.url ?? listing.imageUrl ?? null;
+
         return (
-          <div className="w-16 h-10 overflow-hidden rounded bg-muted flex items-center justify-center">
+          <div className="relative w-16 h-10 overflow-hidden rounded bg-muted flex items-center justify-center">
             <ImageWithFallback
-              src={listing.imageUrl ?? null}
+              src={heroImageUrl}
               alt={listing.title || 'Listing thumbnail'}
               width={64}
               height={40}
@@ -62,6 +66,11 @@ export function ListingsTable({
               FallbackIcon={ImageIcon}
               fallbackClassName="h-full w-full p-1"
             />
+            {photoCount > 1 ? (
+              <span className="absolute bottom-1 right-1 rounded bg-background/85 px-1.5 py-0.5 text-[10px] font-medium leading-none backdrop-blur">
+                {photoCount}
+              </span>
+            ) : null}
           </div>
         );
       }
@@ -89,18 +98,9 @@ export function ListingsTable({
       accessorKey: "source",
       cell: (listing) => {
         const sourceLabel = listing.source === 'UNKNOWN' ? 'Imported' : listing.source ?? 'MANUAL';
-        const importStatusLabel =
-          listing.importStatus && listing.importStatus !== 'NOT_IMPORTED'
-            ? listing.importStatus.toLowerCase()
-            : null;
 
         return (
-          <div className="flex flex-col items-start gap-1">
-            <Badge weight="hollow">{sourceLabel}</Badge>
-            {importStatusLabel ? (
-              <span className="text-xs text-muted-foreground">{importStatusLabel}</span>
-            ) : null}
-          </div>
+          <Badge weight="hollow">{sourceLabel}</Badge>
         );
       }
     },

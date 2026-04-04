@@ -1,12 +1,13 @@
 import { checkUserLike } from '@/features/likes/actions/checkUserLike';
 import { getListingsByTrip } from '@/features/listings/actions/getListingsByTrip';
+import type { ListingWithMedia } from '@/features/listings/types';
 import { getTrip } from '@/features/trips/actions/getTrip';
 import { getTripGuests } from '@/features/trips/actions/getTripGuests';
 import { TripContentArea } from '@/features/trips/components/TripContentArea';
 import { TripSidebar } from '@/features/trips/components/TripSidebar'; // Import the new sidebar
 import { auth } from '@clerk/nextjs/server'; // Use server-side auth
 import { Prisma } from 'db';
-import type { Listing, Trip, User } from 'db';
+import type { Trip, User } from 'db';
 import { processSearchParams } from '@turbodima/core/search-params';
 import type { SearchParams } from '@turbodima/core/types'; // Import the structured SearchParams type
 import { Card, CardContent } from '@turbodima/ui/shadcn/card';
@@ -70,7 +71,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
 
   // --- Data Fetching (use currentTripId) ---
   let trip: TripWithIncludes | null = null;
-  let listings: Listing[] = [];
+  let listings: ListingWithMedia[] = [];
   let guestNames: string[] = [];
   let userLikes: Record<string, boolean> = {};
   let fetchError: string | null = null;
@@ -99,7 +100,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
     });
 
     if (listingsResponse.success && listingsResponse.data) {
-        listings = (listingsResponse.data || []) as Listing[];
+        listings = (listingsResponse.data || []) as ListingWithMedia[];
 
         // 4. Fetch User Likes (only if logged in)
         if (userId && listings.length > 0) {

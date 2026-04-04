@@ -20,6 +20,29 @@ export type ListingImportStatusValue = z.infer<typeof ListingImportStatusSchema>
 
 export type UrlImportInput = z.infer<typeof UrlImportInputSchema>;
 
+export interface ListingImportDebugField {
+  winner: string | null;
+  candidates: Array<{
+    label: string;
+    value: string | null;
+  }>;
+}
+
+export interface ListingImportDebugInfo {
+  parserVersion: string;
+  source: ListingImportSourceValue;
+  hostname: string | null;
+  canonicalUrl: string;
+  title: ListingImportDebugField;
+  address: ListingImportDebugField;
+  price: ListingImportDebugField;
+  photoCount: number;
+  structuredDataTypes: string[];
+  selectorSignals: Record<string, string[]>;
+  sourceSignals: Record<string, unknown>;
+  amenitySummary: string[];
+}
+
 export interface NormalizedImportedListing {
   canonicalUrl: string;
   title: string;
@@ -36,4 +59,15 @@ export interface NormalizedImportedListing {
   importStatus: ListingImportStatusValue;
   sourceExternalId: string | null;
   rawImportPayload: unknown;
+}
+
+export interface ListingImportResult {
+  listingId: string;
+  listingTitle: string;
+  tripId: string;
+  tripPath: string;
+  source: ListingImportSourceValue;
+  importStatus: ListingImportStatusValue;
+  missingFields: string[];
+  debug: ListingImportDebugInfo | null;
 }

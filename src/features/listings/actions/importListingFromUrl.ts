@@ -5,9 +5,9 @@ import { auth } from '@clerk/nextjs/server';
 import { createErrorResponse, createSuccessResponse } from '@turbodima/core/responses';
 import { ErrorCode } from '@turbodima/core/errors';
 import { validateActionInput } from '@turbodima/core/form-data';
+import { importListingCapture } from '../import/importListingCapture';
 import { scrapeListingMetadataFromUrl } from '../import/scrapeListingMetadataFromUrl';
 import { UrlImportInputSchema } from '../import/schemas';
-import { upsertImportedListing } from '../import/upsertImportedListing';
 
 // Standard server action function
 export async function importListingFromUrl(inputData: { url: string; tripId: string }) {
@@ -35,25 +35,37 @@ export async function importListingFromUrl(inputData: { url: string; tripId: str
     const { url, tripId } = validationResult.data;
 
     const normalizedListing = await scrapeListingMetadataFromUrl(url);
-    const savedListing = await upsertImportedListing(tripId, normalizedListing, {
+    const importResult = await importListingCapture({
+      tripId,
+      capture: {
+        source: normalizedListing.source,
+        url: normalizedListing.canonicalUrl,
+        title: normalizedListing.title,
+        address: normalizedListing.address,
+        price: normalizedListing.price,
+        bedroomCount: normalizedListing.bedroomCount,
+        bedCount: normalizedListing.bedCount,
+        bathroomCount: normalizedListing.bathroomCount,
+        notes: normalizedListing.notes,
+        imageUrl: normalizedListing.imageUrl,
+        photoUrls: normalizedListing.photoUrls,
+        rawPayload: normalizedListing.rawImportPayload,
+      },
+      importMethod: 'URL_FETCH',
       addedById: userId,
     });
 
     revalidatePath(`/trips/${tripId}`);
 
     return createSuccessResponse({
-      data: {
-        listingId: savedListing.id,
-        importStatus: normalizedListing.importStatus,
-      },
+      data: importResult,
     });
 
   } catch (error) {
-    // Catch unexpected errors during the process
-    console.error('Unexpected error in importListingFromUrl:', error);
     return createErrorResponse({
-      error: 'An unexpected error occurred during import.',
-      code: ErrorCode.UNKNOWN_ERROR,
+      error: error instanceof Error ? error.message : 'An unexpected error occurred during import.',
+      code: ErrorCode.PROCESSING_ERROR,
+      prefix: 'Failed to import listing from URL:',
     });
   }
 }

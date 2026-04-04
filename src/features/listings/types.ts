@@ -25,6 +25,12 @@ export type ListingCountFields = Record<string, never>;
  * Extends the base model with counts of related items
  */
 export type ListingWithRelations = Prisma.ListingGetPayload<object> & ModelAggregations<ListingCountFields>;
+export type ListingWithMedia = Prisma.ListingGetPayload<{
+  include: {
+    photos: true;
+    likes: true;
+  };
+}>;
 
 /**
  * Valid sort fields for listings, including virtual fields

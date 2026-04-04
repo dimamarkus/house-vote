@@ -1,5 +1,6 @@
 import type {
   ListingImportCapture,
+  ListingImportDebugInfo,
   ListingImportMethodValue,
   ListingImportSourceValue,
   ListingImportStatusValue,
@@ -232,4 +233,18 @@ export function getMissingImportedListingFields(listing: NormalizedImportedListi
   }
 
   return missingFields;
+}
+
+export function extractImportDebugData(rawImportPayload: unknown): ListingImportDebugInfo | null {
+  if (!rawImportPayload || typeof rawImportPayload !== 'object' || Array.isArray(rawImportPayload)) {
+    return null;
+  }
+
+  const parserDebug = (rawImportPayload as Record<string, unknown>).parserDebug;
+
+  if (!parserDebug || typeof parserDebug !== 'object' || Array.isArray(parserDebug)) {
+    return null;
+  }
+
+  return parserDebug as ListingImportDebugInfo;
 }

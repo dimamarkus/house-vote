@@ -43,7 +43,8 @@ label {
 input,
 textarea,
 button,
-pre {
+pre,
+.link-button {
   border-radius: 10px;
   border: 1px solid #334155;
   background: #111827;
@@ -71,11 +72,40 @@ button {
   background: #2563eb;
   border-color: #2563eb;
   font-weight: 600;
+  text-align: center;
 }
 
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.secondary-button,
+.link-button {
+  background: transparent;
+  border-color: #475569;
+  text-decoration: none;
+}
+
+.compact-row {
+  margin-top: -4px;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.checkbox-row input {
+  width: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.hidden {
+  display: none;
 }
 
 .muted {

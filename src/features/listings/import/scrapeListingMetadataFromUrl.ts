@@ -1,4 +1,4 @@
-import * as cheerio from 'cheerio';
+import { extractListingCaptureFromHtml } from './extractListingCaptureFromHtml';
 import { normalizeImportedListing } from './normalizeImportedListing';
 import type { NormalizedImportedListing } from './types';
 
@@ -19,27 +19,10 @@ export async function scrapeListingMetadataFromUrl(
   }
 
   const html = await response.text();
-  const $ = cheerio.load(html);
-  const pageTitle = $('meta[property="og:title"]').attr('content')?.trim() || $('title').first().text().trim();
-  const metaDescription = $('meta[name="description"]').attr('content')?.trim() ?? null;
-  const ogImageUrl = $('meta[property="og:image"]').attr('content')?.trim() ?? null;
-  const canonicalUrl = $('link[rel="canonical"]').attr('href')?.trim() ?? inputUrl;
+  const { capture } = extractListingCaptureFromHtml(html, inputUrl);
 
   return normalizeImportedListing(
-    {
-      url: canonicalUrl,
-      title: pageTitle || null,
-      address: pageTitle || null,
-      notes: metaDescription,
-      imageUrl: ogImageUrl,
-      photoUrls: ogImageUrl ? [ogImageUrl] : [],
-      rawPayload: {
-        pageTitle,
-        metaDescription,
-        ogImageUrl,
-        canonicalUrl,
-      },
-    },
+    capture,
     'URL_FETCH',
   );
 }

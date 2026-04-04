@@ -148,10 +148,16 @@ export const listings = {
     options?: GetListingsOptions
   ): Promise<ListingsResponse> => {
     const dbClient = options?.tx || db;
+    const include = {
+      photos: true,
+      likes: true,
+      ...options?.include,
+    };
 
     // Use the getEntities utility with an additional where clause for tripId
     return getEntities((dbClient as DbClientWithModels).listing, {
       ...options,
+      include,
       where: {
         ...options?.where, // Preserve existing filters if any
         tripId: tripId,

@@ -1,7 +1,10 @@
 import { HTMLAttributes } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
-import type { Listing as PrismaListing } from 'db';
-type Listing = PrismaListing & { imageUrl?: string | null };
+import type { Listing as PrismaListing, ListingPhoto } from 'db';
+type Listing = PrismaListing & {
+  imageUrl?: string | null;
+  photos?: ListingPhoto[];
+};
 
 import Link from 'next/link';
 import { Badge, BadgeProps } from '@turbodima/ui/shadcn/badge';
@@ -52,6 +55,9 @@ export function ListingCard({
   ...props
 }: ListingCardProps) {
   const detailUrl = `${baseUrl}/${listing.id}`;
+  const photoUrls = listing.photos?.map((photo) => photo.url) ?? [];
+  const heroImageUrl = photoUrls[0] ?? listing.imageUrl ?? null;
+  const photoCount = photoUrls.length;
 
   const getStatusVariant = (status: ListingStatusValue): BadgeProps['variant'] => {
     switch (status) {
@@ -71,40 +77,51 @@ export function ListingCard({
 
   return (
     <Card className={cn("flex flex-col", className)} {...props}>
-      {listing.imageUrl && (
-        <div className="aspect-video overflow-hidden rounded-t-lg bg-muted">
+      {heroImageUrl && (
+        <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
           <ImageWithFallback
-            src={listing.imageUrl}
-            alt={listing.address || 'Listing image'}
+            src={heroImageUrl}
+            alt={listing.title || 'Listing image'}
             width={400}
             height={225}
             className="object-cover w-full h-full"
             FallbackIcon={ImageIcon}
             fallbackClassName="h-full w-full"
           />
+          {photoCount > 1 ? (
+            <Badge
+              variant="secondary"
+              className="absolute right-3 top-3 bg-background/85 text-foreground backdrop-blur"
+            >
+              {photoCount} photos
+            </Badge>
+          ) : null}
         </div>
       )}
-      <CardHeader className={cn(listing.imageUrl ? 'pt-4' : 'pt-6')}>
+      <CardHeader className={cn(heroImageUrl ? 'pt-4' : 'pt-6')}>
         <CardTitle className="text-lg">
           {showLink ? (
             <Link href={detailUrl} className="hover:underline">
-              {listing.address || `Listing ${listing.id}`}
+              {listing.title}
             </Link>
           ) : (
-            listing.address || `Listing ${listing.id}`
+            listing.title
           )}
         </CardTitle>
-        {listing.url && (
-          <CardDescription>
-            <a
-              href={listing.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-            >
-              <ExternalLink className="h-3 w-3" />
-              View Original Listing
-            </a>
+        {(listing.address || listing.url) && (
+          <CardDescription className="space-y-1">
+            {listing.address ? <div>{listing.address}</div> : null}
+            {listing.url ? (
+              <a
+                href={listing.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+              >
+                <ExternalLink className="h-3 w-3" />
+                View Original Listing
+              </a>
+            ) : null}
           </CardDescription>
         )}
       </CardHeader>

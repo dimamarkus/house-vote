@@ -33,8 +33,18 @@ export function TripHeader({ trip }: TripHeaderProps) {
       const result = await importListingFromUrl({ url: importUrl, tripId: trip.id });
       toast.dismiss();
       if (result.success) {
+        if (!result.data) {
+          toast.error('Import finished without any listing data.');
+          return;
+        }
+
         router.refresh();
-        toast.success('Listing imported successfully.');
+        const missingFields = result.data.missingFields ?? [];
+        const successMessage =
+          missingFields.length > 0
+            ? `Saved "${result.data.listingTitle}". Still missing: ${missingFields.join(', ')}.`
+            : `Saved "${result.data.listingTitle}".`;
+        toast.success(successMessage);
         setImportUrl('');
       } else {
         toast.error(errorToString(result.error || 'Import failed'));
@@ -60,7 +70,7 @@ export function TripHeader({ trip }: TripHeaderProps) {
               </CardDescription>
             )}
             <CardDescription className="mt-2 text-sm text-muted-foreground">
-              Paste a listing URL for a quick best-effort import, or use the browser import token in the sidebar for richer Airbnb/VRBO capture.
+              Paste a listing URL for a best-effort Airbnb or VRBO import, or use the browser import token for the richer in-browser parser.
             </CardDescription>
           </div>
           <div className="flex flex-col sm:flex-row items-center gap-2 flex-shrink-0 w-full sm:w-auto">

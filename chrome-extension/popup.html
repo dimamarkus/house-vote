@@ -10,7 +10,7 @@
     <main class="popup">
       <section class="section">
         <h1>House Vote Importer</h1>
-        <p class="muted">Use the trip id and import token from House Vote, then save from an Airbnb or VRBO property page.</p>
+        <p class="muted">Use the import token from House Vote, then save from an Airbnb or VRBO property page. If a House Vote trip tab is already open, the trip id can auto-fill.</p>
       </section>
 
       <section class="section">
@@ -21,6 +21,7 @@
       <section class="section">
         <label for="trip-id">Trip ID</label>
         <input id="trip-id" name="trip-id" placeholder="cuid trip id" type="text" />
+        <button id="detect-trip" class="secondary-button" type="button">Use Open Trip Tab</button>
       </section>
 
       <section class="section">
@@ -33,8 +34,16 @@
         ></textarea>
       </section>
 
+      <section class="section compact-row">
+        <label class="checkbox-row" for="debug-mode">
+          <input id="debug-mode" name="debug-mode" type="checkbox" />
+          <span>Parser debug mode</span>
+        </label>
+      </section>
+
       <section class="section actions">
         <button id="save-listing" type="button">Save Current Airbnb/VRBO Listing</button>
+        <a id="open-saved-trip" class="link-button hidden" href="#" target="_blank" rel="noopener noreferrer">Open Saved Trip</a>
       </section>
 
       <section class="section">

@@ -2,7 +2,8 @@
 
 import dynamic from 'next/dynamic';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
-import type { Listing } from 'db';
+import type { Listing, ListingPhoto } from 'db';
+import type { ListingWithMedia } from '@/features/listings/types';
 import { ListingsTable } from '@/features/listings/tables/ListingsTable';
 import { ListingCard } from '@/features/listings/components/ListingCard';
 import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
@@ -44,11 +45,12 @@ interface MapListing {
   importedAt: Listing['importedAt'];
   importError: Listing['importError'];
   rawImportPayload: Listing['rawImportPayload'];
+  photos?: ListingPhoto[];
 }
 
 interface TripContentAreaProps {
   viewMode?: 'table' | 'map' | 'card';
-  listings: Listing[];
+  listings: ListingWithMedia[];
   isOwner: boolean;
   userLikes: Record<string, boolean>;
   userId: string | null;
