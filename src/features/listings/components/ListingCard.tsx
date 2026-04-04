@@ -1,5 +1,5 @@
 import { HTMLAttributes } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@turbodima/ui/shadcn/card';
 import type { Listing as PrismaListing, ListingPhoto } from 'db';
 type Listing = PrismaListing & {
   imageUrl?: string | null;
@@ -109,8 +109,8 @@ export function ListingCard({
           )}
         </CardTitle>
         {(listing.address || listing.url) && (
-          <CardDescription className="space-y-1">
-            {listing.address ? <div>{listing.address}</div> : null}
+          <div className="space-y-1 text-sm text-muted-foreground">
+            {listing.address ? <p>{listing.address}</p> : null}
             {listing.url ? (
               <a
                 href={listing.url}
@@ -122,7 +122,7 @@ export function ListingCard({
                 View Original Listing
               </a>
             ) : null}
-          </CardDescription>
+          </div>
         )}
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
