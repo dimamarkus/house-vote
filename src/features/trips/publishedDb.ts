@@ -235,7 +235,6 @@ export const publishedTrips = {
     const listings = await db.listing.findMany({
       where: {
         tripId: share.tripId,
-        status: ListingStatus.POTENTIAL,
       },
       include: publishedListingInclude,
       orderBy: [

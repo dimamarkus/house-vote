@@ -1,6 +1,5 @@
 import type { Trip, User } from 'db';
 import { CollaboratorsList } from './CollaboratorsList';
-import { TripImportTokenCard } from './TripImportTokenCard';
 import { VotingAccessCard } from './VotingAccessCard';
 
 interface TripSidebarProps {
@@ -45,8 +44,6 @@ export function TripSidebar({
 }: TripSidebarProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:flex xl:flex-col">
-      {isOwner ? <TripImportTokenCard tripId={trip.id} /> : null}
-
       {isOwner ? (
         <VotingAccessCard
           tripId={trip.id}

@@ -9,10 +9,15 @@ type Listing = PrismaListing & {
 
 import Link from 'next/link';
 import { Badge, BadgeProps } from '@/ui/shadcn/badge';
-import { ExternalLink, BedDouble, Bath, StickyNote, UserCircle, CalendarDays, CheckCircle, XCircle, Image as ImageIcon } from 'lucide-react';
-import { ImageWithFallback } from '@/ui/core/ImageWithFallback';
+import { ExternalLink, BedDouble, Bath, StickyNote, UserCircle, CalendarDays, XCircle } from 'lucide-react';
+import { PhotoCarousel } from '@/ui/core/PhotoCarousel';
 import { cn } from '@/ui/utils/cn';
-import { LISTING_STATUS, type ListingStatusValue } from '../constants/listing-status';
+import {
+  formatListingStatusLabel,
+  isVoteEligibleListingStatus,
+  LISTING_STATUS,
+  type ListingStatusValue,
+} from '../constants/listing-status';
 
 /**
  * Props for the ListingCard component
@@ -61,13 +66,14 @@ export function ListingCard({
   ...props
 }: ListingCardProps) {
   const detailUrl = `${baseUrl}/${listing.id}`;
-  const photoUrls = listing.photos?.map((photo) => photo.url) ?? [];
-  const heroImageUrl = photoUrls[0] ?? listing.imageUrl ?? null;
-  const photoCount = photoUrls.length;
+  const storedPhotos = listing.photos?.map((photo) => photo.url) ?? [];
+  const allPhotos = storedPhotos.length > 0 ? storedPhotos : listing.imageUrl ? [listing.imageUrl] : [];
+  const hasPhotos = allPhotos.length > 0;
+  const photoCount = allPhotos.length;
+  const hasDefaultStatus = isVoteEligibleListingStatus(listing.status);
 
   const getStatusVariant = (status: ListingStatusValue): BadgeProps['variant'] => {
     switch (status) {
-      case LISTING_STATUS.POTENTIAL: return 'primary';
       case LISTING_STATUS.REJECTED: return 'destructive';
       default: return 'secondary';
     }
@@ -75,41 +81,48 @@ export function ListingCard({
 
   const getStatusIcon = (status: ListingStatusValue) => {
     switch (status) {
-      case LISTING_STATUS.POTENTIAL: return <CheckCircle className="h-4 w-4 mr-1" />;
       case LISTING_STATUS.REJECTED: return <XCircle className="h-4 w-4 mr-1" />;
       default: return null;
     }
   };
 
+  const statusBadge = !hasDefaultStatus ? (
+    <Badge variant={getStatusVariant(listing.status)} className="flex items-center shadow-sm">
+      {getStatusIcon(listing.status)}
+      {formatListingStatusLabel(listing.status)}
+    </Badge>
+  ) : null;
+
+  const inlineStatusBadge = hasPhotos ? null : statusBadge;
+  const imageStatusBadge = hasPhotos ? statusBadge : null;
+
   return (
     <Card className={cn("flex flex-col", className)} {...props}>
-      {heroImageUrl && (
-        <div className="relative aspect-video overflow-hidden rounded-t-lg bg-muted">
-          <ImageWithFallback
-            src={heroImageUrl}
-            alt={listing.title || 'Listing image'}
-            width={400}
-            height={225}
-            className="object-cover w-full h-full"
-            FallbackIcon={ImageIcon}
-            fallbackClassName="h-full w-full"
-          />
-          {imageOverlayContent ? (
-            <div className="absolute left-3 top-3">
-              {imageOverlayContent}
-            </div>
-          ) : null}
-          {photoCount > 1 ? (
-            <Badge
-              variant="secondary"
-              className="absolute right-3 top-3 bg-background/85 text-foreground backdrop-blur"
-            >
-              {photoCount} photos
-            </Badge>
-          ) : null}
-        </div>
+      {hasPhotos && (
+        <PhotoCarousel
+          photos={allPhotos}
+          alt={listing.title || 'Listing photos'}
+          overlayTopLeft={
+            imageOverlayContent || imageStatusBadge ? (
+              <div className="flex flex-col items-start gap-2">
+                {imageOverlayContent}
+                {imageStatusBadge}
+              </div>
+            ) : undefined
+          }
+          overlayTopRight={
+            photoCount > 1 ? (
+              <Badge
+                variant="secondary"
+                className="bg-background/85 text-foreground backdrop-blur"
+              >
+                {photoCount} photos
+              </Badge>
+            ) : undefined
+          }
+        />
       )}
-      <CardHeader className={cn(heroImageUrl ? 'pt-4' : 'pt-6')}>
+      <CardHeader className={cn(hasPhotos ? 'pt-4' : 'pt-6')}>
         <CardTitle className="text-lg">
           {showLink ? (
             <Link href={detailUrl} className="hover:underline">
@@ -137,17 +150,16 @@ export function ListingCard({
         )}
       </CardHeader>
       <CardContent className="flex-1 space-y-3 text-sm">
-        <div className="flex items-center justify-between">
-           <Badge variant={getStatusVariant(listing.status)} className="flex items-center">
-               {getStatusIcon(listing.status)}
-               {listing.status}
-            </Badge>
-           {listing.price && (
-            <div className="font-semibold text-lg">
+        {inlineStatusBadge || listing.price ? (
+          <div className={cn("flex items-center", inlineStatusBadge ? "justify-between" : "justify-end")}>
+            {inlineStatusBadge}
+            {listing.price ? (
+              <div className="font-semibold text-lg">
                 ${listing.price.toLocaleString()}
-            </div>
-           )}
-        </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
            {/* Bed/Bath Info - Use ternary and explicit cast */}

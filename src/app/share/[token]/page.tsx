@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { isVoteEligibleListingStatus } from '@/features/listings/constants/listing-status';
 import { formatTripDateRange } from '@/features/trips/utils/formatTripDateRange';
 import { PublishedTripPageClient } from '@/features/trips/components/PublishedTripPageClient';
 import { publishedTrips } from '@/features/trips/publishedDb';
@@ -21,6 +22,7 @@ export default async function PublishedTripPage({ params }: PublishedTripPagePro
 
   const { share, listings } = publishedTrip;
   const tripDateRange = formatTripDateRange(share.trip.startDate, share.trip.endDate);
+  const votingOptionCount = listings.filter((listing) => isVoteEligibleListingStatus(listing.status)).length;
 
   if (!share.isPublished) {
     return (
@@ -75,7 +77,7 @@ export default async function PublishedTripPage({ params }: PublishedTripPagePro
               </div>
             ) : null}
             <div className="inline-flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm font-medium">
-              <span>{listings.length} options</span>
+              <span>{votingOptionCount} option{votingOptionCount === 1 ? '' : 's'}</span>
             </div>
           </CardContent>
         </Card>

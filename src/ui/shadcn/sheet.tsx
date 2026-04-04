@@ -14,7 +14,10 @@ export const SheetOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
-    className={cn("fixed inset-0 z-50 bg-black/60", className)}
+    className={cn(
+      "fixed inset-0 z-50 bg-black/60 data-[state=open]:animate-[sheet-overlay-in_200ms_ease-out] data-[state=closed]:animate-[sheet-overlay-out_150ms_ease-in]",
+      className,
+    )}
     ref={ref}
     {...props}
   />
@@ -38,6 +41,22 @@ function getSideClasses(side: "top" | "right" | "bottom" | "left") {
   return "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm";
 }
 
+function getSideAnimationClasses(side: "top" | "right" | "bottom" | "left") {
+  if (side === "left") {
+    return "data-[state=open]:animate-[sheet-in-left_220ms_cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:animate-[sheet-out-left_180ms_ease-in]";
+  }
+
+  if (side === "top") {
+    return "data-[state=open]:animate-[sheet-in-top_220ms_cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:animate-[sheet-out-top_180ms_ease-in]";
+  }
+
+  if (side === "bottom") {
+    return "data-[state=open]:animate-[sheet-in-bottom_220ms_cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:animate-[sheet-out-bottom_180ms_ease-in]";
+  }
+
+  return "data-[state=open]:animate-[sheet-in-right_220ms_cubic-bezier(0.16,1,0.3,1)] data-[state=closed]:animate-[sheet-out-right_180ms_ease-in]";
+}
+
 export const SheetContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
@@ -49,8 +68,9 @@ export const SheetContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed z-50 gap-4 bg-background p-6 shadow-lg transition ease-in-out",
+        "fixed z-50 gap-4 bg-background p-6 shadow-lg will-change-transform",
         getSideClasses(side),
+        getSideAnimationClasses(side),
         className,
       )}
       {...props}

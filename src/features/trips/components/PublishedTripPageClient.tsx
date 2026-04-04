@@ -8,6 +8,10 @@ import {
   createPublishedTripGuest,
   submitPublishedTripListing,
 } from '@/features/trips/actions/publishedTripActions';
+import {
+  formatListingStatusLabel,
+  isVoteEligibleListingStatus,
+} from '@/features/listings/constants/listing-status';
 import { getPublishedGuestSessionKey, type PublishedGuestSessionValue } from '@/features/trips/constants/publishedGuestSession';
 import type { PublishedTripListingRecord, PublishedTripShareRecord } from '@/features/trips/publishedDb';
 import { ListingCard } from '@/features/listings/components/ListingCard';
@@ -139,6 +143,13 @@ export function PublishedTripPageClient({
 
   const sortedListings = useMemo(() => {
     return [...listings].sort((left, right) => {
+      const leftIsVoteEligible = isVoteEligibleListingStatus(left.status);
+      const rightIsVoteEligible = isVoteEligibleListingStatus(right.status);
+
+      if (leftIsVoteEligible !== rightIsVoteEligible) {
+        return leftIsVoteEligible ? -1 : 1;
+      }
+
       if (right.votes.length !== left.votes.length) {
         return right.votes.length - left.votes.length;
       }
@@ -146,6 +157,12 @@ export function PublishedTripPageClient({
       return left.title.localeCompare(right.title);
     });
   }, [listings]);
+
+  const currentWinnerListingId = useMemo(() => {
+    return sortedListings.find((listing) => (
+      isVoteEligibleListingStatus(listing.status) && listing.votes.length > 0
+    ))?.id ?? null;
+  }, [sortedListings]);
 
   const currentVoteListingId = activeGuest?.votes[0]?.listingId ?? null;
 
@@ -358,12 +375,15 @@ export function PublishedTripPageClient({
 
       {sortedListings.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-          {sortedListings.map((listing, index) => {
+          {sortedListings.map((listing) => {
             const voterNames = listing.votes.map((vote) => vote.guest.guestDisplayName);
+            const isVoteEligible = isVoteEligibleListingStatus(listing.status);
             const isCurrentVote = currentVoteListingId === listing.id;
-            const isCurrentWinner = index === 0 && listing.votes.length > 0;
+            const isCurrentWinner = currentWinnerListingId === listing.id;
             const voteButtonText = !share.votingOpen
               ? 'Voting closed'
+              : !isVoteEligible
+                ? (isCurrentVote ? 'Your vote' : formatListingStatusLabel(listing.status))
               : isCurrentVote
                 ? 'Your vote'
                 : currentVoteListingId
@@ -416,7 +436,7 @@ export function PublishedTripPageClient({
                     </div>
                     <Button
                       onClick={() => handleVote(listing.id)}
-                      disabled={!share.votingOpen || pendingAction === `vote-${listing.id}`}
+                      disabled={!share.votingOpen || !isVoteEligible || pendingAction === `vote-${listing.id}`}
                       weight={isCurrentVote ? 'hollow' : 'solid'}
                     >
                       {pendingAction === `vote-${listing.id}` ? (

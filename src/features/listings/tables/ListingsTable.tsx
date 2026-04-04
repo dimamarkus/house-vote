@@ -11,6 +11,7 @@ import { AirbnbLogotype, GlobeIcon, VrboLogotype } from '../../../components/Tra
 import { LikeButton } from '../../likes/components/LikeButton';
 import { ListingStatusAction } from '../components/ListingStatusAction';
 import { ImageWithFallback } from '@/ui/core/ImageWithFallback';
+import { PhotoLightbox } from '@/ui/core/PhotoLightbox';
 import { ListingFormSheet } from '../forms/ListingFormSheet';
 import { DeleteListingActionButton } from '../components/DeleteListingActionButton';
 
@@ -89,10 +90,11 @@ export function ListingsTable({
     {
       header: "Image",
       cell: (listing) => {
-        const photoCount = listing.photos?.length ?? 0;
-        const heroImageUrl = listing.photos?.[0]?.url ?? listing.imageUrl ?? null;
+        const photoUrls = listing.photos?.map((p) => p.url) ?? [];
+        const photoCount = photoUrls.length;
+        const heroImageUrl = photoUrls[0] ?? listing.imageUrl ?? null;
 
-        return (
+        const thumb = (
           <div className="relative w-16 h-10 overflow-hidden rounded bg-muted flex items-center justify-center">
             <ImageWithFallback
               src={heroImageUrl}
@@ -110,6 +112,16 @@ export function ListingsTable({
             ) : null}
           </div>
         );
+
+        if (photoUrls.length > 0) {
+          return (
+            <PhotoLightbox photos={photoUrls} alt={listing.title || 'Listing photos'}>
+              <div className="cursor-pointer">{thumb}</div>
+            </PhotoLightbox>
+          );
+        }
+
+        return thumb;
       }
     },
     {

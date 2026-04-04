@@ -92,12 +92,13 @@ This repo uses Prisma's standard `@prisma/client` generation flow.
 
 Trip owners can expose a **public voting page** that does not require sign-in. Anyone with the link can pick a guest name, cast **one vote per guest** (they can change which listing they vote for), and optionally suggest a new listing URL when the owner allows it.
 
-- **URL:** `/share/<token>` where `<token>` is a UUID stored on `TripShare`. The route is treated as public in `src/proxy.ts` (no Clerk gate on `/share/*`). The page header card shows trip location, dates, guest capacity when set, and a count of voting **options** (listings); it does not surface guest-list size in the header.
+- **URL:** `/share/<token>` where `<token>` is a UUID stored on `TripShare`. The route is treated as public in `src/proxy.ts` (no Clerk gate on `/share/*`). The page header card shows trip location, dates, guest capacity when set, and a count of current voting **options** (active listings); it does not surface guest-list size in the header.
 - **Owner controls (trip dashboard sidebar):**
   - **Voting** — publish/unpublish, open or close voting, rotate link (invalidates old URLs), copy link and open in a new tab, toggle whether guests may submit listing URLs.
   - **Guests** — trip team (owner + collaborators), add or remove guest names for the public list, invite collaborators by email, and see voting participation when available. Guests can also add their own name on the public page if it is missing (subject to unique name per trip).
 - **Guest identity on the device:** `localStorage` key `housevote_published_guest_<tripId>` holds `{ guestId, guestDisplayName }` (see `src/features/trips/constants/publishedGuestSession.ts`). Clearing storage or using another browser starts a fresh session.
 - **Product vs. dashboard likes:** Signed-in collaborators still use **likes** on the main trip dashboard. **Published votes** are separate rows (`TripVote`) and power the public page tallies and owner-side guest status.
+- **Listing statuses on the public board:** Listings that move out of the active/potential state still stay visible on the public board with a status badge, but they cannot receive new votes. The "Current winner" badge always moves to the highest-voted active listing.
 
 For behavior, data rules, and edge cases in plain language, see [instructions/meta/housevote-overview.md](instructions/meta/housevote-overview.md) (section *Published trip voting*).
 

@@ -13,6 +13,7 @@ import {
 } from '@/ui/shadcn/sheet';
 import { TripFormData } from '../schemas'; // Assuming schemas exist
 import { TripForm } from './TripForm';
+import { TripImportTokenCard } from '../components/TripImportTokenCard';
 import { updateTrip } from '../actions/updateTrip'; // Import the update action
 
 /**
@@ -83,6 +84,10 @@ export function TripFormSheet({
             initialData={initialData}
             onSuccess={() => setOpen(false)}
           />
+        </div>
+
+        <div className="border-t pt-6">
+          <TripImportTokenCard tripId={tripId} />
         </div>
       </SheetContent>
     </Sheet>
