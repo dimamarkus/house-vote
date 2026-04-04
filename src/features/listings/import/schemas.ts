@@ -20,6 +20,19 @@ export const ListingImportCaptureSchema = z.object({
   notes: z.string().trim().nullable().optional(),
   imageUrl: z.string().trim().nullable().optional(),
   photoUrls: z.array(z.string().trim()).optional(),
+  roomBreakdown: z
+    .object({
+      summary: z.string().nullable().optional(),
+      rooms: z.array(
+        z.object({
+          name: z.string(),
+          beds: z.string(),
+          imageUrl: z.string().trim().nullable().optional(),
+        }),
+      ),
+    })
+    .nullable()
+    .optional(),
   rawPayload: z.unknown().optional(),
 });
 

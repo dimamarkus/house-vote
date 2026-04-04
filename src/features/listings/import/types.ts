@@ -43,6 +43,17 @@ export interface ListingImportDebugInfo {
   amenitySummary: string[];
 }
 
+export interface RoomBreakdownEntry {
+  name: string;
+  beds: string;
+  imageUrl?: string | null;
+}
+
+export interface RoomBreakdown {
+  summary: string | null;
+  rooms: RoomBreakdownEntry[];
+}
+
 export interface NormalizedImportedListing {
   canonicalUrl: string;
   title: string;
@@ -54,6 +65,7 @@ export interface NormalizedImportedListing {
   notes: string | null;
   imageUrl: string | null;
   photoUrls: string[];
+  roomBreakdown: RoomBreakdown | null;
   source: ListingImportSourceValue;
   importMethod: ListingImportMethodValue;
   importStatus: ListingImportStatusValue;

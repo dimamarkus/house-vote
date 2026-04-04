@@ -5,6 +5,7 @@ import type {
   ListingImportSourceValue,
   ListingImportStatusValue,
   NormalizedImportedListing,
+  RoomBreakdown,
 } from './types';
 import { detectListingSource } from './detectListingSource';
 
@@ -36,6 +37,32 @@ function parseNumberish(value?: number | string | null): number | null {
   return Math.round(numericValue);
 }
 
+function parseImportedPrice(value?: number | string | null): number | null {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.round(value);
+  }
+
+  const normalizedValue = String(value).trim();
+  if (!normalizedValue) {
+    return null;
+  }
+
+  if (/^[\d,.]+$/.test(normalizedValue)) {
+    return parseNumberish(normalizedValue);
+  }
+
+  const currencyMatch = normalizedValue.match(/\$([0-9][0-9,]*(?:\.\d+)?)/);
+  if (currencyMatch?.[1]) {
+    return parseNumberish(currencyMatch[1]);
+  }
+
+  return null;
+}
+
 function normalizePhotoUrls(imageUrl?: string | null, photoUrls?: string[]): string[] {
   const uniqueUrls = new Set<string>();
 
@@ -54,6 +81,25 @@ function normalizePhotoUrls(imageUrl?: string | null, photoUrls?: string[]): str
   }
 
   return [...uniqueUrls];
+}
+
+function deriveBedCountFromRoomBreakdown(
+  roomBreakdown?: ListingImportCapture['roomBreakdown'],
+): number | null {
+  if (!roomBreakdown?.rooms?.length) {
+    return null;
+  }
+
+  let totalBeds = 0;
+
+  for (const room of roomBreakdown.rooms) {
+    const matches = room.beds.match(/\b\d+\b/g) ?? [];
+    for (const match of matches) {
+      totalBeds += Number(match);
+    }
+  }
+
+  return totalBeds > 0 ? totalBeds : null;
 }
 
 function canonicalizeListingUrl(inputUrl: string, source: ListingImportSourceValue): string {
@@ -171,9 +217,9 @@ export function normalizeImportedListing(
   const title =
     cleanupImportedTitle(normalizeText(capture.title) ?? address, source) ??
     buildFallbackTitle(source, sourceExternalId);
-  const price = parseNumberish(capture.price);
+  const price = parseImportedPrice(capture.price);
   const bedroomCount = parseNumberish(capture.bedroomCount);
-  const bedCount = parseNumberish(capture.bedCount);
+  const bedCount = parseNumberish(capture.bedCount ?? deriveBedCountFromRoomBreakdown(capture.roomBreakdown));
   const bathroomCount = parseNumberish(capture.bathroomCount);
   const importStatus = determineImportStatus({
     title,
@@ -181,6 +227,20 @@ export function normalizeImportedListing(
     price,
     photoUrls: normalizedPhotoUrls,
   });
+
+  const roomBreakdown: RoomBreakdown | null =
+    capture.roomBreakdown &&
+    Array.isArray(capture.roomBreakdown.rooms) &&
+    capture.roomBreakdown.rooms.length > 0
+      ? {
+          summary: capture.roomBreakdown.summary ?? null,
+          rooms: capture.roomBreakdown.rooms.map((r) => ({
+            name: r.name.trim(),
+            beds: r.beds.trim(),
+            imageUrl: normalizeText(r.imageUrl) ?? null,
+          })),
+        }
+      : null;
 
   return {
     canonicalUrl,
@@ -193,6 +253,7 @@ export function normalizeImportedListing(
     notes,
     imageUrl,
     photoUrls: normalizedPhotoUrls,
+    roomBreakdown,
     source,
     importMethod,
     importStatus,

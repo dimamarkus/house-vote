@@ -361,6 +361,121 @@ function summarizeAmenities(jsonLdBlocks: unknown[]): string[] {
   return Array.from(new Set(amenityValues.map((value) => value.trim()).filter(Boolean))).slice(0, 6);
 }
 
+interface RoomEntry {
+  name: string;
+  beds: string;
+  imageUrl?: string | null;
+}
+
+interface RoomBreakdownResult {
+  summary: string | null;
+  rooms: RoomEntry[];
+}
+
+function extractRoomBreakdownFromVrbo($: cheerio.CheerioAPI): RoomBreakdownResult | null {
+  const rooms = $('[data-stid="content-item"]')
+    .toArray()
+    .map((element) => {
+      const item = $(element);
+      const name = normalizeText(item.find('h4').first().text());
+
+      if (!name || !/^(Bedroom|Living Room|Office|Den|Loft|Game Room|Studio)\b/i.test(name)) {
+        return null;
+      }
+
+      const beds =
+        item
+          .find('.uitk-text, [class*="uitk-text"]')
+          .toArray()
+          .map((candidate) => normalizeText($(candidate).text()))
+          .find(
+            (value): value is string =>
+              value !== null &&
+              value !== name &&
+              /\b(beds?|sofa(?:\s+beds?)?|futon|cribs?|mattress(?:es)?)\b/i.test(value),
+          ) ?? null;
+
+      return beds ? { name, beds } : null;
+    })
+    .filter((room): room is RoomEntry => Boolean(room));
+
+  if (rooms.length === 0) return null;
+
+  const summary =
+    getAllTextFromSelectors($, ['h3']).find(
+      (value) => /\bbedrooms?\b/i.test(value) && /\bsleeps\b/i.test(value),
+    ) ?? null;
+
+  return { summary, rooms };
+}
+
+function extractRoomBreakdownFromAirbnb(
+  $: cheerio.CheerioAPI,
+  baseUrl: string,
+): RoomBreakdownResult | null {
+  const carouselRooms: RoomEntry[] = $('[data-section-id="SLEEPING_ARRANGEMENT_WITH_IMAGES"] li[data-key]')
+    .toArray()
+    .flatMap((element) => {
+      const item = $(element);
+      const name = normalizeText(item.attr('data-key'));
+
+      if (!name) {
+        return [];
+      }
+
+      const beds =
+        item
+          .find('div, span')
+          .toArray()
+          .map((candidate) => normalizeText($(candidate).text()))
+          .map((value) => {
+            if (!value) {
+              return null;
+            }
+
+            if (value.startsWith(name)) {
+              return normalizeText(value.slice(name.length));
+            }
+
+            return value;
+          })
+          .find(
+            (value): value is string =>
+              value !== null &&
+              value !== name &&
+              /\b(beds?|cribs?|bunk\s+beds?|sofa(?:\s+beds?)?|futon|mattress(?:es)?)\b/i.test(value),
+          ) ?? null;
+
+      const image = item.find('img').first();
+      const imageUrl =
+        normalizeUrlValue(image.attr('data-original-uri') ?? image.attr('src'), baseUrl, {
+          allowRelative: true,
+          excludeUiAssets: false,
+        }) ??
+        parseSrcSetValues(image.attr('srcset'))
+          .map((value) => normalizeUrlValue(value, baseUrl, { allowRelative: true, excludeUiAssets: false }))
+          .find((value): value is string => Boolean(value)) ??
+        null;
+
+      return beds ? [{ name, beds, imageUrl }] : [];
+    });
+
+  if (carouselRooms.length > 0) {
+    return { summary: null, rooms: carouselRooms };
+  }
+
+  const text = normalizeText($('[data-section-id="SLEEPING_ARRANGEMENT_WITH_IMAGES"]').text()) ?? $('body').text();
+  const rooms: RoomEntry[] = [];
+  const pattern = /(Bedroom \d+)\s+([\d]+ [\w]+ beds?(?:,\s*\d+ [\w]+ beds?)*)/gi;
+  let match;
+  while ((match = pattern.exec(text)) !== null) {
+    rooms.push({ name: match[1], beds: match[2], imageUrl: null });
+  }
+
+  if (rooms.length === 0) return null;
+  return { summary: null, rooms };
+}
+
 function buildAddress(parts: Array<string | null>): string | null {
   return Array.from(new Set(parts.filter((value): value is string => Boolean(value)))).join(', ') || null;
 }
@@ -566,7 +681,10 @@ export function extractListingCaptureFromHtml(
       value: getMetaContent($, 'meta[property="product:price:amount"]'),
     },
     { label: 'structured:offers.price', value: structuredPrice },
-    { label: 'selector:price', value: getTextFromSelectors($, selectors.price) },
+    {
+      label: 'selector:price',
+      value: extractNightlyPriceFromText(getTextFromSelectors($, selectors.price) ?? '', source),
+    },
     { label: 'body:text', value: extractNightlyPriceFromText(pageText, source) },
   ]);
 
@@ -638,6 +756,12 @@ export function extractListingCaptureFromHtml(
       notes: notesParts.join(' | ') || null,
       imageUrl: photoUrls[0] ?? null,
       photoUrls,
+      roomBreakdown:
+        source === 'VRBO'
+          ? extractRoomBreakdownFromVrbo($)
+          : source === 'AIRBNB'
+            ? extractRoomBreakdownFromAirbnb($, inputUrl)
+            : null,
       rawPayload: {
         parserDebug: debug,
       },

@@ -5,7 +5,7 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import type { Listing, ListingPhoto } from 'db';
 import type { ListingWithMedia } from '@/features/listings/types';
 import { ListingsTable } from '@/features/listings/tables/ListingsTable';
-import { ListingCard } from '@/features/listings/components/ListingCard';
+import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
 import { ListingCreateActions } from '@/features/listings/components/ListingCreateActions';
 import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
 import { LikeButton } from '@/features/likes/components/LikeButton';
@@ -47,6 +47,7 @@ interface MapListing {
   importedAt: Listing['importedAt'];
   importError: Listing['importError'];
   rawImportPayload: Listing['rawImportPayload'];
+  roomBreakdown: Listing['roomBreakdown'];
   photos?: ListingPhoto[];
 }
 
@@ -123,6 +124,7 @@ export function TripContentArea({
                 <ListingCard
                   key={listing.id}
                   listing={listing}
+                  roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
                   footerContent={
                     <div className="flex w-full justify-end gap-2">
                       {userId && (

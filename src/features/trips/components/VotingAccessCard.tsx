@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   publishTripShare,
@@ -76,10 +76,13 @@ function VotingSettingRow({
 export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
   const router = useRouter();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [origin, setOrigin] = useState<string | null>(null);
+  const sharePath = share ? `/share/${share.token}` : '';
+  const shareUrl = origin ? `${origin}${sharePath}` : sharePath;
 
-  const shareUrl = share
-    ? (typeof window === 'undefined' ? `/share/${share.token}` : `${window.location.origin}/share/${share.token}`)
-    : '';
+  useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
 
   async function refreshAfterSuccess() {
     router.refresh();
@@ -144,7 +147,7 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
     }
 
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}/share/${share.token}`);
+      await navigator.clipboard.writeText(new URL(sharePath, window.location.origin).toString());
       toast.success('Published link copied.');
     } catch {
       toast.error('Failed to copy the published link.');
@@ -208,7 +211,7 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
                 <span className="sr-only">Copy share link</span>
               </Button>
               <Button asChild weight="hollow">
-                <a href={shareUrl} target="_blank" rel="noopener noreferrer">
+                <a href={sharePath} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
                   <span className="sr-only">Open shared page</span>
                 </a>

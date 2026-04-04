@@ -14,7 +14,7 @@ import {
 } from '@/features/listings/constants/listing-status';
 import { getPublishedGuestSessionKey, type PublishedGuestSessionValue } from '@/features/trips/constants/publishedGuestSession';
 import type { PublishedTripListingRecord, PublishedTripShareRecord } from '@/features/trips/publishedDb';
-import { ListingCard } from '@/features/listings/components/ListingCard';
+import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
@@ -394,6 +394,7 @@ export function PublishedTripPageClient({
               <ListingCard
                 key={listing.id}
                 listing={listing}
+                roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
                 className={isCurrentWinner ? 'border-primary/50 shadow-sm' : undefined}
                 imageOverlayContent={
                   isCurrentWinner ? (

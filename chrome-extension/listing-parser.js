@@ -309,6 +309,93 @@
     return Array.from(new Set(amenityValues.map((value) => value.trim()).filter(Boolean))).slice(0, 6);
   }
 
+  function extractRoomBreakdownFromVrbo() {
+    const rooms = Array.from(document.querySelectorAll('[data-stid="content-item"]'))
+      .map((item) => {
+        const name = normalizeText(item.querySelector('h4')?.textContent || null);
+        if (!name || !/^(Bedroom|Living Room|Office|Den|Loft|Game Room|Studio)\b/i.test(name)) {
+          return null;
+        }
+
+        const beds =
+          Array.from(item.querySelectorAll('.uitk-text, [class*="uitk-text"]'))
+            .map((candidate) => normalizeText(candidate.textContent))
+            .find(
+              (value) =>
+                Boolean(value) &&
+                value !== name &&
+                /\b(beds?|sofa(?:\s+beds?)?|futon|cribs?|mattress(?:es)?)\b/i.test(value),
+            ) || null;
+
+        return beds ? { name, beds } : null;
+      })
+      .filter(Boolean);
+
+    if (rooms.length === 0) return null;
+
+    const summary =
+      Array.from(document.querySelectorAll('h3'))
+        .map((heading) => normalizeText(heading.textContent))
+        .find((value) => value && /\bbedrooms?\b/i.test(value) && /\bsleeps\b/i.test(value)) || null;
+
+    return { summary, rooms };
+  }
+
+  function extractRoomBreakdownFromAirbnb() {
+    const carouselRooms = Array.from(
+      document.querySelectorAll('[data-section-id="SLEEPING_ARRANGEMENT_WITH_IMAGES"] li[data-key]'),
+    )
+      .map((item) => {
+        const name = normalizeText(item.getAttribute('data-key'));
+        if (!name) {
+          return null;
+        }
+
+        const beds =
+          Array.from(item.querySelectorAll('div, span'))
+            .map((candidate) => normalizeText(candidate.textContent))
+            .map((value) => {
+              if (!value) {
+                return null;
+              }
+
+              if (value.startsWith(name)) {
+                return normalizeText(value.slice(name.length));
+              }
+
+              return value;
+            })
+            .find(
+              (value) =>
+                Boolean(value) &&
+                value !== name &&
+                /\b(beds?|cribs?|bunk\s+beds?|sofa(?:\s+beds?)?|futon|mattress(?:es)?)\b/i.test(value),
+            ) || null;
+
+        const image = item.querySelector('img');
+        const imageUrl =
+          normalizeImageUrl(image?.getAttribute('data-original-uri') || image?.currentSrc || image?.getAttribute('src')) ||
+          null;
+
+        return beds ? { name, beds, imageUrl } : null;
+      })
+      .filter(Boolean);
+
+    if (carouselRooms.length > 0) {
+      return { summary: null, rooms: carouselRooms };
+    }
+
+    const rooms = [];
+    const bodyText = document.body ? document.body.innerText : '';
+    const pattern = /(Bedroom \d+)\s+([\d]+ [\w]+ beds?(?:,\s*\d+ [\w]+ beds?)*)/gi;
+    let match;
+    while ((match = pattern.exec(bodyText)) !== null) {
+      rooms.push({ name: match[1], beds: match[2], imageUrl: null });
+    }
+    if (rooms.length === 0) return null;
+    return { summary: null, rooms };
+  }
+
   function buildAddress(parts) {
     return Array.from(new Set(parts.filter(Boolean))).join(', ') || null;
   }
@@ -461,7 +548,10 @@
       { label: 'source-hint', value: sourceHints.price },
       { label: 'meta:product-price', value: getMetaContent('meta[property="product:price:amount"]') },
       { label: 'structured:offers.price', value: structuredPrice },
-      { label: 'selector:price', value: getTextFromSelectors(selectors.price) },
+      {
+        label: 'selector:price',
+        value: extractNightlyPriceFromText(getTextFromSelectors(selectors.price) || '', source),
+      },
       { label: 'body:text', value: extractNightlyPriceFromText(pageText, source) },
     ]);
     const structuredImages = parseStructuredImageValues(deepCollectByKey(jsonLdBlocks, ['image']));
@@ -533,6 +623,12 @@
       notes: notesParts.join(' | ') || null,
       imageUrl: photoUrls[0] || null,
       photoUrls,
+      roomBreakdown:
+        source === 'VRBO'
+          ? extractRoomBreakdownFromVrbo()
+          : source === 'AIRBNB'
+            ? extractRoomBreakdownFromAirbnb()
+            : null,
       rawPayload: {
         parserDebug,
       },

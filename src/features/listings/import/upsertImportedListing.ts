@@ -52,6 +52,7 @@ export async function upsertImportedListing(
     importedAt,
     importError: null,
     rawImportPayload: toJsonValue(listing.rawImportPayload),
+    roomBreakdown: listing.roomBreakdown ? toJsonValue(listing.roomBreakdown) : Prisma.JsonNull,
   } satisfies Prisma.ListingUncheckedUpdateInput;
 
   return db.$transaction(async (tx) => {

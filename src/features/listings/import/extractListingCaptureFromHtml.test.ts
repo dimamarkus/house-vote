@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { extractListingCaptureFromHtml } from './extractListingCaptureFromHtml';
+import { normalizeImportedListing } from './normalizeImportedListing';
 
 function readFixture(filename: string): string {
   return readFileSync(resolve(process.cwd(), filename), 'utf8');
@@ -20,6 +21,17 @@ describe('extractListingCaptureFromHtml', () => {
     expect(result.capture.price).toBe('2,800');
     expect(result.capture.bedroomCount).toBe('7');
     expect(result.capture.bedCount).toBe('13');
+    expect(result.capture.roomBreakdown?.rooms.length ?? 0).toBe(7);
+    expect(result.capture.roomBreakdown?.rooms[0]).toEqual({
+      name: 'Bedroom 1',
+      beds: '1 king bed',
+      imageUrl: expect.stringContaining('muscache.com'),
+    });
+    expect(result.capture.roomBreakdown?.rooms.at(-1)).toEqual({
+      name: 'Bedroom 7',
+      beds: '2 queen beds, 1 bunk bed, 3 cribs',
+      imageUrl: expect.stringContaining('muscache.com'),
+    });
     expect(result.capture.photoUrls?.length ?? 0).toBeGreaterThan(3);
     expect(result.debug.title.winner).toBe('source-hint');
     expect(result.debug.price.winner).toBe('source-hint');
@@ -39,9 +51,39 @@ describe('extractListingCaptureFromHtml', () => {
     expect(result.capture.price).toBe('2,204');
     expect(result.capture.bedroomCount).toBe('6');
     expect(result.capture.bathroomCount).toBe('4');
+    expect(result.capture.roomBreakdown?.summary).toContain('6 bedrooms');
+    expect(result.capture.roomBreakdown?.rooms.length ?? 0).toBeGreaterThan(5);
+    expect(result.capture.roomBreakdown?.rooms[0]).toEqual({
+      name: 'Bedroom 1',
+      beds: '1 King Bed and 1 Queen Bed',
+    });
+    expect(result.capture.roomBreakdown?.rooms.at(-1)).toEqual({
+      name: 'Office 1',
+      beds: '2 Twin Beds',
+    });
+    expect(normalizeImportedListing(result.capture, 'URL_FETCH').bedCount).toBe(19);
     expect(result.capture.photoUrls?.length ?? 0).toBeGreaterThan(1);
     expect((result.capture.photoUrls ?? []).every((url) => !url.endsWith('.svg'))).toBe(true);
     expect(result.capture.notes).toContain('VRBO property id: 120034881');
     expect(result.debug.price.winner).toBe('source-hint');
+  });
+
+  it('ignores non-price Airbnb widget text during normalization', () => {
+    const normalized = normalizeImportedListing(
+      {
+        url: 'https://www.airbnb.com/rooms/1100864767632011687',
+        source: 'AIRBNB',
+        title: 'Parkside Retreat with Pickleball Access',
+        address: 'Entire home in Arvada, Colorado',
+        price: 'Check-in7/21/2026Checkout7/26/2026Guests25 guestsReduce the guest count to continueFree cancellation before June 21Change guests',
+        bedroomCount: '6',
+        bedCount: '10',
+        bathroomCount: '3.5',
+        photoUrls: [],
+      },
+      'EXTENSION',
+    );
+
+    expect(normalized.price).toBeNull();
   });
 });

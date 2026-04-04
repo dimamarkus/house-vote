@@ -118,6 +118,10 @@ function formatCapturePreview(capture, debugMode) {
     beds: capture.bedCount,
     bathrooms: capture.bathroomCount,
     photoCount: Array.isArray(capture.photoUrls) ? capture.photoUrls.length : 0,
+    roomSummary: capture.roomBreakdown ? capture.roomBreakdown.summary : null,
+    roomCount: capture.roomBreakdown && Array.isArray(capture.roomBreakdown.rooms)
+      ? capture.roomBreakdown.rooms.length
+      : 0,
     url: capture.url,
   };
 
@@ -128,6 +132,7 @@ function formatCapturePreview(capture, debugMode) {
   return JSON.stringify(
     {
       ...baseSummary,
+      roomBreakdown: capture.roomBreakdown ?? null,
       parserDebug: capture.rawPayload && capture.rawPayload.parserDebug ? capture.rawPayload.parserDebug : null,
     },
     null,
