@@ -70,6 +70,7 @@ export function TripDetailsCard({ trip }: TripDetailsCardProps) {
               numberOfPeople: trip.numberOfPeople
             })}
             icon=""
+            target="_blank"
             className="bg-white hover:bg-rose-50 text-rose-600 border-rose-200 w-1/2"
             weight="hollow"
             size="sm"
@@ -84,6 +85,7 @@ export function TripDetailsCard({ trip }: TripDetailsCardProps) {
               numberOfPeople: trip.numberOfPeople
             })}
             icon=""
+            target="_blank"
             className="bg-white hover:bg-blue-50 text-blue-600 border-blue-200 w-1/2"
           >
             <span className="inline-flex items-center gap-2"><VrboIcon /> Search Vrbo</span>
