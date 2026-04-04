@@ -60,6 +60,7 @@ export async function upsertImportedListing(
       },
       select: {
         id: true,
+        addedById: true,
       },
     });
 
@@ -68,7 +69,10 @@ export async function upsertImportedListing(
           where: {
             id: existingListing.id,
           },
-          data: listingData,
+          data: {
+            ...listingData,
+            ...(options?.addedById && !existingListing.addedById ? { addedById: options.addedById } : {}),
+          },
           include: {
             photos: true,
           },

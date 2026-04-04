@@ -404,6 +404,19 @@ export const trips = {
         throw new Error('Invalid import token.');
       }
 
+      const trip = await db.trip.findUnique({
+        where: {
+          id: tripId,
+        },
+        select: {
+          userId: true,
+        },
+      });
+
+      if (!trip) {
+        throw new Error('Trip not found.');
+      }
+
       await db.tripImportToken.update({
         where: {
           tripId,
@@ -415,6 +428,7 @@ export const trips = {
 
       return {
         tripId,
+        ownerId: trip.userId,
       };
     }, 'Failed to validate trip import token:', ErrorCode.FORBIDDEN);
   },

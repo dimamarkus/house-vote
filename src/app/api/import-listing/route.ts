@@ -63,7 +63,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const savedListing = await upsertImportedListing(tripId, normalizedListing);
+    const savedListing = await upsertImportedListing(tripId, normalizedListing, {
+      addedById: importTokenResult.data.ownerId,
+    });
     const missingFields = getMissingImportedListingFields(normalizedListing);
 
     return NextResponse.json(
