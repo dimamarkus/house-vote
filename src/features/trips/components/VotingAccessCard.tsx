@@ -8,12 +8,12 @@ import {
   unpublishTripShare,
   updateTripShareSettings,
 } from '@/features/trips/actions/publishedTripActions';
-import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Input } from '@/ui/shadcn/input';
+import { cn } from '@/ui/utils/cn';
 import { toast } from 'sonner';
-import { Copy, ExternalLink, Globe, Lock, RotateCcw, Unlock, Vote } from 'lucide-react';
+import { Copy, ExternalLink, Globe, RotateCcw } from 'lucide-react';
 
 interface VotingAccessCardProps {
   tripId: string;
@@ -23,6 +23,54 @@ interface VotingAccessCardProps {
     votingOpen: boolean;
     allowGuestSuggestions: boolean;
   } | null;
+}
+
+interface VotingSettingRowProps {
+  title: string;
+  checked: boolean;
+  disabled?: boolean;
+  pending?: boolean;
+  onToggle: () => void;
+}
+
+function VotingSettingRow({
+  title,
+  checked,
+  disabled = false,
+  pending = false,
+  onToggle,
+}: VotingSettingRowProps) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border bg-muted/20 p-3">
+      <div>
+        <p className="text-sm font-medium">{title}</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={title}
+        onClick={onToggle}
+        disabled={disabled}
+        className={cn(
+          'relative inline-flex h-7 w-12 shrink-0 cursor-pointer items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+          checked
+            ? 'border-emerald-300 bg-emerald-100'
+            : 'border-border bg-muted'
+        )}
+      >
+        <span
+          className={cn(
+            'inline-block size-5 rounded-full bg-background shadow-sm transition-transform',
+            checked ? 'translate-x-6' : 'translate-x-1'
+          )}
+        />
+        <span className="sr-only">
+          {pending ? `Updating ${title}` : `Toggle ${title}`}
+        </span>
+      </button>
+    </div>
+  );
 }
 
 export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
@@ -76,27 +124,6 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
     await refreshAfterSuccess();
   }
 
-  async function handleGuestSuggestionToggle() {
-    if (!share) {
-      return;
-    }
-
-    setPendingAction('suggestions');
-    const result = await updateTripShareSettings({
-      tripId,
-      allowGuestSuggestions: !share.allowGuestSuggestions,
-    });
-    setPendingAction(null);
-
-    if (!result.success) {
-      toast.error(typeof result.error === 'string' ? result.error : 'Unable to update guest suggestions.');
-      return;
-    }
-
-    toast.success(result.data.allowGuestSuggestions ? 'Guest suggestions enabled.' : 'Guest suggestions disabled.');
-    await refreshAfterSuccess();
-  }
-
   async function handleRotateLink() {
     setPendingAction('rotate');
     const result = await rotateTripShareToken({ tripId });
@@ -132,59 +159,46 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
           Voting
         </CardTitle>
         <CardDescription>
-          Control the public voting page, share link, and whether guests can keep adding listings.
+          Control the public voting page and whether guests can cast votes right now.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={handlePublishToggle} disabled={pendingAction === 'publish'} size="sm">
-            <Vote className="mr-2 h-4 w-4" />
-            {share?.isPublished ? 'Unpublish' : 'Publish'}
-          </Button>
-          <Button
-            weight="hollow"
-            onClick={handleVotingToggle}
+        <div className="grid gap-3 md:grid-cols-2">
+          <VotingSettingRow
+            title="Public voting page"
+            checked={Boolean(share?.isPublished)}
+            disabled={pendingAction === 'publish'}
+            pending={pendingAction === 'publish'}
+            onToggle={handlePublishToggle}
+          />
+          <VotingSettingRow
+            title="Voting open"
+            checked={Boolean(share?.votingOpen)}
             disabled={!share || pendingAction === 'voting'}
-            size="sm"
-          >
-            {share?.votingOpen ? <Lock className="mr-2 h-4 w-4" /> : <Unlock className="mr-2 h-4 w-4" />}
-            {share?.votingOpen ? 'Close voting' : 'Open voting'}
-          </Button>
-          <Button
-            weight="hollow"
-            onClick={handleGuestSuggestionToggle}
-            disabled={!share || pendingAction === 'suggestions'}
-            size="sm"
-          >
-            {share?.allowGuestSuggestions ? 'Disable guest listings' : 'Enable guest listings'}
-          </Button>
-          <Button
-            weight="hollow"
-            onClick={handleRotateLink}
-            disabled={!share || pendingAction === 'rotate'}
-            size="sm"
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Rotate link
-          </Button>
+            pending={pendingAction === 'voting'}
+            onToggle={handleVotingToggle}
+          />
         </div>
 
         {share ? (
-          <div className="space-y-2 rounded-lg border p-3">
+          <div className="space-y-3 rounded-lg border p-3">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-medium">Published link</p>
                 <p className="text-xs text-muted-foreground">
-                  {share.isPublished ? 'Guests can open this link right now.' : 'The link exists, but voting is currently unpublished.'}
+                  Share this URL with guests. Rotating the link will invalidate the current one.
                 </p>
               </div>
               <div className="flex gap-2">
-                <Badge variant={share.isPublished ? 'primary' : 'secondary'}>
-                  {share.isPublished ? 'Live' : 'Hidden'}
-                </Badge>
-                <Badge variant={share.votingOpen ? 'secondary' : 'destructive'}>
-                  {share.votingOpen ? 'Voting open' : 'Voting closed'}
-                </Badge>
+                <Button
+                  weight="hollow"
+                  onClick={handleRotateLink}
+                  disabled={pendingAction === 'rotate'}
+                  size="sm"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Rotate link
+                </Button>
               </div>
             </div>
             <div className="flex gap-2">
@@ -203,7 +217,7 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
           </div>
         ) : (
           <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-            Publish voting to create a share link for guests.
+            Turn on the public voting page to create a share link for guests.
           </div>
         )}
       </CardContent>

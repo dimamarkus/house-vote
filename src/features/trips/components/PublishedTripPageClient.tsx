@@ -323,11 +323,8 @@ export function PublishedTripPageClient({
   }
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="flex w-full flex-col gap-6">
       <div className="flex flex-wrap items-center gap-2 text-sm">
-        <Badge variant={share.votingOpen ? 'primary' : 'destructive'}>
-          {share.votingOpen ? 'Voting open' : 'Voting closed'}
-        </Badge>
         <span className="text-muted-foreground">
           Voting as <strong className="text-foreground">{activeGuest.guestDisplayName}</strong>
         </span>
@@ -360,7 +357,7 @@ export function PublishedTripPageClient({
       ) : null}
 
       {sortedListings.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {sortedListings.map((listing, index) => {
             const voterNames = listing.votes.map((vote) => vote.guest.guestDisplayName);
             const isCurrentVote = currentVoteListingId === listing.id;
@@ -378,6 +375,13 @@ export function PublishedTripPageClient({
                 key={listing.id}
                 listing={listing}
                 className={isCurrentWinner ? 'border-primary/50 shadow-sm' : undefined}
+                imageOverlayContent={
+                  isCurrentWinner ? (
+                    <Badge className="bg-emerald-600 text-white shadow-sm">
+                      Current winner
+                    </Badge>
+                  ) : undefined
+                }
                 footerContent={
                   <div className="flex w-full flex-col gap-3">
                     <div className="flex items-center justify-between gap-2">
@@ -399,11 +403,6 @@ export function PublishedTripPageClient({
                         </a>
                       ) : null}
                     </div>
-                    {isCurrentWinner ? (
-                      <div>
-                        <Badge variant="primary">Current winner</Badge>
-                      </div>
-                    ) : null}
                     <div className="flex min-h-9 flex-wrap gap-2">
                       {voterNames.length > 0 ? (
                         voterNames.map((voterName) => (

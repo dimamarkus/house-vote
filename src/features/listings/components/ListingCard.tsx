@@ -31,6 +31,10 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
    */
   footerContent?: React.ReactNode;
   /**
+   * Optional content rendered over the top-left of the hero image.
+   */
+  imageOverlayContent?: React.ReactNode;
+  /**
    * Show a link to the detail page? Uses listing id.
    */
   showLink?: boolean;
@@ -51,6 +55,7 @@ export function ListingCard({
   listing,
   className,
   footerContent,
+  imageOverlayContent,
   showLink = false,
   baseUrl = '/listings',
   ...props
@@ -89,6 +94,11 @@ export function ListingCard({
             FallbackIcon={ImageIcon}
             fallbackClassName="h-full w-full"
           />
+          {imageOverlayContent ? (
+            <div className="absolute left-3 top-3">
+              {imageOverlayContent}
+            </div>
+          ) : null}
           {photoCount > 1 ? (
             <Badge
               variant="secondary"
@@ -126,7 +136,7 @@ export function ListingCard({
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-3 text-sm">
+      <CardContent className="flex-1 space-y-3 text-sm">
         <div className="flex items-center justify-between">
            <Badge variant={getStatusVariant(listing.status)} className="flex items-center">
                {getStatusIcon(listing.status)}
@@ -178,7 +188,7 @@ export function ListingCard({
 
       </CardContent>
       {footerContent && (
-        <CardFooter>
+        <CardFooter className="mt-auto">
           {footerContent}
         </CardFooter>
       )}

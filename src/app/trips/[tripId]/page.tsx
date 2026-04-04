@@ -207,22 +207,26 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
     <div className="p-6">
       <TripHeader trip={trip} />
 
-      <div className="space-y-6">
-        <TripSidebar
-          trip={trip}
-          guestNames={guestNames}
-          currentGuestName={currentGuestName}
-          isOwner={isOwner}
-          publishedShareSummary={publishedShareSummary}
-        />
-        <TripContentArea
-          tripId={currentTripId}
-          viewMode={view}
-          listings={listings}
-          isOwner={isOwner}
-          userLikes={userLikes}
-          userId={userId}
-        />
+      <div className="space-y-6 xl:grid xl:grid-cols-[minmax(0,1fr)_560px] xl:items-start xl:gap-6 xl:space-y-0">
+        <aside className="xl:order-2 xl:self-start">
+          <TripSidebar
+            trip={trip}
+            guestNames={guestNames}
+            currentGuestName={currentGuestName}
+            isOwner={isOwner}
+            publishedShareSummary={publishedShareSummary}
+          />
+        </aside>
+        <div className="xl:order-1">
+          <TripContentArea
+            tripId={currentTripId}
+            viewMode={view}
+            listings={listings}
+            isOwner={isOwner}
+            userLikes={userLikes}
+            userId={userId}
+          />
+        </div>
       </div>
     </div>
   );

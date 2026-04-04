@@ -1,11 +1,12 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/ui/shadcn/card';
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import type { Listing, ListingPhoto } from 'db';
 import type { ListingWithMedia } from '@/features/listings/types';
 import { ListingsTable } from '@/features/listings/tables/ListingsTable';
 import { ListingCard } from '@/features/listings/components/ListingCard';
+import { ListingCreateActions } from '@/features/listings/components/ListingCreateActions';
 import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
 import { LikeButton } from '@/features/likes/components/LikeButton';
 import { TripViewToggle } from './TripViewToggle';
@@ -89,13 +90,21 @@ export function TripContentArea({
     <div className={cn("space-y-6", className)}>
       {/* Card for Potential Listings */}
       <Card>
-        <CardHeader>
-          <CardTitle>Potential Housing Options</CardTitle>
-          <CardAction>
-            <TripViewToggle tripId={tripId} />
-          </CardAction>
+        <CardHeader className="gap-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-1">
+              <CardTitle>Potential Housing Options</CardTitle>
+              <CardDescription>
+                Compare saved places and add new ones without leaving the shortlist.
+              </CardDescription>
+            </div>
+            <CardAction>
+              <TripViewToggle tripId={tripId} />
+            </CardAction>
+          </div>
+          <ListingCreateActions tripId={tripId} />
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {viewMode === 'table' && (
             <ListingsTable
               listings={potentialListings}
@@ -109,7 +118,7 @@ export function TripContentArea({
             <ListingsMap listings={listingsForMap} />
           )}
           {viewMode === 'card' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
               {potentialListings.map((listing) => (
                 <ListingCard
                   key={listing.id}

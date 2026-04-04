@@ -73,6 +73,8 @@ export function CollaboratorsList({
   const [isInviteFormOpen, setIsInviteFormOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const votedBadgeClassName = 'bg-teal-50 text-teal-700';
+  const ownerBadgeClassName = 'bg-amber-50 text-amber-700';
 
   // Re-add useUser hook
   const { isLoaded, user } = useUser();
@@ -211,7 +213,10 @@ export function CollaboratorsList({
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="truncate font-medium">{guest.guestDisplayName}</p>
-                      <Badge variant={hasVoted ? 'primary' : 'secondary'}>
+                      <Badge
+                        variant="secondary"
+                        className={hasVoted ? votedBadgeClassName : undefined}
+                      >
                         {hasVoted ? 'Voted' : 'Waiting'}
                       </Badge>
                       {guest.source === 'SELF_ADDED' ? <Badge weight="hollow">Self added</Badge> : null}
@@ -279,7 +284,7 @@ export function CollaboratorsList({
                   <p className="font-medium">{ownerDetails.name}</p>
                   <p className="text-sm text-muted-foreground">{ownerDetails.email || 'No email'}</p>
                 </div>
-                <Badge>Owner</Badge>
+                <Badge variant="secondary" className={ownerBadgeClassName}>Owner</Badge>
               </div>
 
               {collaborators.length > 0 ? (
@@ -308,7 +313,7 @@ export function CollaboratorsList({
                 <p className="font-medium">{ownerDetails.name}</p>
                 <p className="text-sm text-muted-foreground">{ownerDetails.email || 'No email'}</p>
               </div>
-              <Badge>Owner</Badge>
+              <Badge variant="secondary" className={ownerBadgeClassName}>Owner</Badge>
             </div>
           )}
 

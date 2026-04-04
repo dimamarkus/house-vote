@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import { formatTripDateRange } from '@/features/trips/utils/formatTripDateRange';
 import { PublishedTripPageClient } from '@/features/trips/components/PublishedTripPageClient';
 import { publishedTrips } from '@/features/trips/publishedDb';
-import { Badge } from '@/ui/shadcn/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { CalendarDays, MapPin, Users } from 'lucide-react';
 
@@ -39,16 +38,10 @@ export default async function PublishedTripPage({ params }: PublishedTripPagePro
   }
 
   return (
-    <div className="px-6 py-8">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6">
+    <div className="px-6 py-8 xl:px-8">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-6">
         <Card>
           <CardHeader className="gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="primary">Live voting</Badge>
-              <Badge variant={share.votingOpen ? 'secondary' : 'destructive'}>
-                {share.votingOpen ? 'Voting open' : 'Voting closed'}
-              </Badge>
-            </div>
             <div className="space-y-2">
               <CardTitle className="text-3xl">{share.trip.name}</CardTitle>
               {share.trip.description ? (

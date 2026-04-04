@@ -1,9 +1,7 @@
 import type { Trip, User } from 'db';
-import { TripActionsCard } from './TripActionsCard';
 import { CollaboratorsList } from './CollaboratorsList';
 import { TripImportTokenCard } from './TripImportTokenCard';
 import { VotingAccessCard } from './VotingAccessCard';
-import { generateAirbnbUrl, generateVrboUrl } from '../utils/travelLinks';
 
 interface TripSidebarProps {
   trip: Pick<Trip, 'id' | 'userId' | 'location' | 'startDate' | 'endDate' | 'numberOfPeople' | 'name' | 'description'> & {
@@ -36,7 +34,7 @@ interface TripSidebarProps {
 }
 
 /**
- * Renders the trip action and collaboration cards above the dashboard content.
+ * Renders the trip management cards alongside the dashboard content.
  */
 export function TripSidebar({
   trip,
@@ -45,23 +43,8 @@ export function TripSidebar({
   isOwner,
   publishedShareSummary,
 }: TripSidebarProps) {
-  const airbnbUrl = generateAirbnbUrl({
-    location: trip.location,
-    startDate: trip.startDate,
-    endDate: trip.endDate,
-    numberOfPeople: trip.numberOfPeople,
-  });
-  const vrboUrl = generateVrboUrl({
-    location: trip.location,
-    startDate: trip.startDate,
-    endDate: trip.endDate,
-    numberOfPeople: trip.numberOfPeople,
-  });
-
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-4">
-      <TripActionsCard trip={trip} airbnbUrl={airbnbUrl} vrboUrl={vrboUrl} />
-
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:flex xl:flex-col">
       {isOwner ? <TripImportTokenCard tripId={trip.id} /> : null}
 
       {isOwner ? (
