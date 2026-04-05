@@ -1,15 +1,15 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
-import type { Trip } from 'db';
 import { createErrorResponse, createSuccessResponse } from '@/core/responses';
 import { ErrorCode } from '@/core/errors';
 import { cache } from 'react';
 import { trips } from '../db';
 import { ApiResponse } from '@/core/types';
+import type { TripWithCounts } from '../types';
 
 // Use standard ApiResponse type
-type GetTripsResponse = ApiResponse<Trip[]>;
+type GetTripsResponse = ApiResponse<TripWithCounts[]>;
 
 // Interface for options
 interface GetTripsOptions {

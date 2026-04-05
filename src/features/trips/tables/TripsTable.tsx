@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { Calendar, ArrowRight, Eye, Edit, Users } from 'lucide-react';
-import type { Trip } from 'db';
+import type { TripWithCounts } from '@/features/trips/types';
 import { GenericTable } from '@/ui/core/GenericTable';
 import { Badge } from '@/ui/shadcn/badge';
 import { ColumnDef } from '@/ui/core/GenericTable';
@@ -11,7 +11,7 @@ import { useAuth } from '@clerk/nextjs';
 import { LinkButton } from '@/ui/core/LinkButton';
 
 interface TripsTableProps {
-  trips: Trip[];
+  trips: TripWithCounts[];
   currentUserId?: string;
 }
 
@@ -20,7 +20,7 @@ export function TripsTable({ trips, currentUserId }: TripsTableProps) {
   const { userId } = useAuth() || {};
   const userIdToUse = currentUserId || userId;
 
-  const columns: ColumnDef<Trip>[] = [
+  const columns: ColumnDef<TripWithCounts>[] = [
     {
       header: "Trip Name",
       accessorKey: "name",
@@ -63,13 +63,15 @@ export function TripsTable({ trips, currentUserId }: TripsTableProps) {
     },
     {
       header: "Listings",
-      cell: () => (
-        <div className="flex items-center">
-          <Badge variant="secondary">
-            0 Listings
-          </Badge>
-        </div>
-      )
+      cell: (trip) => {
+        const count = trip._count?.listings ?? 0;
+        const label = count === 1 ? '1 Listing' : `${count} Listings`;
+        return (
+          <div className="flex items-center">
+            <Badge variant="secondary">{label}</Badge>
+          </div>
+        );
+      }
     },
     {
       header: "Created",

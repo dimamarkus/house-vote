@@ -95,7 +95,19 @@ export const trips = {
 
       const skip = (page - 1) * limit;
 
-      const include = options?.includes;
+      const includeFlags = options?.includes;
+
+      const include: Prisma.TripInclude = {
+        _count: {
+          select: { listings: true },
+        },
+      };
+      if (includeFlags?.listings) {
+        include.listings = true;
+      }
+      if (includeFlags?.collaborators) {
+        include.collaborators = true;
+      }
 
       // Also find trips where the user is a collaborator
       return dbClient.trip.findMany({
@@ -105,10 +117,7 @@ export const trips = {
             { collaborators: { some: { id: userId } } } // User is collaborator
           ]
         },
-        include: include ? {
-          listings: include.listings,
-          collaborators: include.collaborators
-        } : undefined,
+        include,
         orderBy: { [sortBy]: sortOrder },
         skip,
         take: limit,

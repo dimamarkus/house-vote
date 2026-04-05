@@ -46,10 +46,7 @@ export default async function TripsPage({
     // limit: limit // Use limit from processSearchParams if needed
   });
 
-  console.log('tripsResponse', tripsResponse);
   const trips = tripsResponse.success ? tripsResponse.data : [];
-
-  console.log('trips', trips);
   // Define the action button component
   const CreateTripButton = (
     <LinkButton href="/trips/create">
