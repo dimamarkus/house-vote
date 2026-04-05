@@ -6,7 +6,7 @@
     "dev": "next dev",
     "prebuild": "prisma generate",
     "build": "next build",
-    "vercel-build": "prisma migrate resolve --applied 20260404113105_add_room_breakdown && prisma migrate deploy && pnpm build",
+    "vercel-build": "prisma migrate deploy && pnpm build",
     "precheck-types": "prisma generate",
     "start": "next start",
     "lint": "eslint . --max-warnings 0",
