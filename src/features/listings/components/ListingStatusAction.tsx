@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Button } from "@/ui/shadcn/button";
+import { Button, type ButtonVariant, type ButtonWeight } from "@/ui/shadcn/button";
+import { cn } from "@/ui/utils/cn";
 import { toast } from "sonner";
 import { Ban, Check } from "lucide-react";
 import { updateListingStatus } from "../actions/updateListingStatus";
@@ -13,15 +14,24 @@ interface ListingStatusActionProps {
   currentStatus: ListingStatusValue;
   size?: "sm" | "md" | "lg";
   onStatusUpdate?: (newStatus: ListingStatusValue) => void;
+  buttonClassName?: string;
+  variant?: ButtonVariant;
+  weight?: ButtonWeight;
 }
 
 // Submit button with loading state
 function SubmitButton({
   isRejected,
-  size = "md"
+  size = "md",
+  buttonClassName,
+  variant,
+  weight,
 }: {
   isRejected: boolean;
   size?: "sm" | "md" | "lg";
+  buttonClassName?: string;
+  variant?: ButtonVariant;
+  weight?: ButtonWeight;
 }) {
   const { pending } = useFormStatus();
 
@@ -42,10 +52,10 @@ function SubmitButton({
   return (
     <Button
       type="submit"
-      variant="destructive"
-      weight={isRejected ? "hollow" : "solid"}
+      variant={variant ?? "destructive"}
+      weight={weight ?? (isRejected ? "hollow" : "solid")}
       size={size === "lg" ? "default" : "sm"}
-      className={sizeClasses[size]}
+      className={cn(sizeClasses[size], buttonClassName)}
       disabled={pending}
     >
       {isRejected ? (
@@ -68,6 +78,9 @@ export function ListingStatusAction({
   currentStatus,
   size = "md",
   onStatusUpdate,
+  buttonClassName,
+  variant,
+  weight,
 }: ListingStatusActionProps) {
   const [status, setStatus] = useState(currentStatus);
   const isRejected = status === LISTING_STATUS.REJECTED;
@@ -110,7 +123,13 @@ export function ListingStatusAction({
     <form action={handleAction} className="inline-flex">
       <input type="hidden" name="listingId" value={listingId} />
       <input type="hidden" name="status" value={newStatus} />
-      <SubmitButton isRejected={isRejected} size={size} />
+      <SubmitButton
+        isRejected={isRejected}
+        size={size}
+        buttonClassName={buttonClassName}
+        variant={variant}
+        weight={weight}
+      />
     </form>
   );
 }

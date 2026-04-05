@@ -82,7 +82,7 @@ export function GenericTable<TItem extends Record<string, unknown>>({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border">
+    <div className="overflow-visible rounded-lg border">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-border text-sm">
           <thead className="bg-muted/50">

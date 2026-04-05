@@ -1,19 +1,14 @@
 'use client';
 
 import { format } from 'date-fns';
-import { Eye, Edit, DollarSign, Bed, BedDouble, Bath, Image as ImageIcon } from 'lucide-react';
+import { DollarSign, Bed, BedDouble, Bath, Image as ImageIcon } from 'lucide-react';
 import type { Listing, User as PrismaUser, Trip, Like, ListingPhoto } from 'db';
 import { GenericTable, ColumnDef } from '@/ui/core/GenericTable';
-import { Button } from '@/ui/shadcn/button';
-import { Badge } from '@/ui/shadcn/badge';
-import { LinkButton } from '@/ui/core/LinkButton';
 import { LikeButton } from '../../likes/components/LikeButton';
-import { ListingStatusAction } from '../components/ListingStatusAction';
 import { ImageWithFallback } from '@/ui/core/ImageWithFallback';
 import { PhotoLightbox } from '@/ui/core/PhotoLightbox';
-import { ListingFormSheet } from '../forms/ListingFormSheet';
-import { DeleteListingActionButton } from '../components/DeleteListingActionButton';
 import { ListingSourceBadge } from '../components/ListingSourceBadge';
+import { ListingActionsMenu } from '../components/ListingActionsMenu';
 
 // Requires getListings action to include: addedBy, likes: { select: { id: true }}
 // to satisfy these types fully.
@@ -195,27 +190,6 @@ export function ListingsTable({
       }
     },
     {
-      header: "Status",
-      accessorKey: "status",
-      sortable: true,
-      cell: (listing) => {
-        return (
-          <div className="flex items-center gap-2">
-            <Badge variant={listing.status === 'REJECTED' ? 'destructive' : 'secondary'}>
-              {listing.status}
-            </Badge>
-            {currentUserId && (
-              <ListingStatusAction
-                listingId={listing.id}
-                currentStatus={listing.status}
-                size="sm"
-              />
-            )}
-          </div>
-        );
-      }
-    },
-    {
       header: "Likes",
       accessorKey: "likes",
       cell: (listing) => {
@@ -260,55 +234,19 @@ export function ListingsTable({
       cell: (listing) => {
         const canEdit = !!currentUserId && currentUserId === listing.addedById;
         const canDelete = !!currentUserId && (currentUserIsOwner || currentUserId === listing.addedById);
-        const canViewSource = typeof listing.url === "string" && listing.url.length > 0;
 
         return (
-          <div className="flex items-center justify-end gap-1 pr-4">
-            {canViewSource ? (
-              <LinkButton
-                href={listing.url ?? '#'}
-                target="_blank"
-                size="icon"
-                weight="ghost"
-                title="View Original Listing"
-                className="size-8 p-0"
-              >
-                <span className="sr-only">View original listing</span>
-                <Eye className="h-4 w-4" />
-              </LinkButton>
-            ) : (
-              <Button
-                size="icon"
-                weight="ghost"
-                title="No source URL available"
-                className="size-8 p-0"
-                disabled
-              >
-                <span className="sr-only">No source URL available</span>
-                <Eye className="h-4 w-4" />
-              </Button>
-            )}
-
-            {canEdit && (
-              <ListingFormSheet listingId={listing.id} tripId={listing.tripId} initialState={listing}>
-                <Button size="icon" weight="ghost" title="Edit Listing" className="size-8 p-0">
-                  <span className="sr-only">Edit</span>
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </ListingFormSheet>
-            )}
-
-            {canDelete && (
-              <div className="text-destructive hover:text-destructive hover:bg-destructive/10 size-8 p-0 flex items-center justify-center">
-                <DeleteListingActionButton
-                  listingId={listing.id}
-                  listingTitle={listing.title}
-                  buttonSize="sm"
-                  buttonWeight="ghost"
-                />
-              </div>
-            )}
-          </div>
+          <ListingActionsMenu
+            canDelete={canDelete}
+            canEdit={canEdit}
+            canToggleStatus={Boolean(currentUserId)}
+            initialStateForEdit={listing}
+            listingId={listing.id}
+            listingStatus={listing.status}
+            listingTitle={listing.title}
+            listingUrl={listing.url}
+            tripId={listing.tripId}
+          />
         );
       }
     }
