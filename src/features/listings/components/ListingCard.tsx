@@ -15,15 +15,24 @@ import { Badge, BadgeProps } from '@/ui/shadcn/badge';
 import {
   BedDouble,
   Bath,
+  DoorOpen,
   StickyNote,
-  CalendarDays,
   XCircle,
   LayoutGrid,
   Image as ImageIcon,
+  Users,
 } from 'lucide-react';
 import { PhotoCarousel } from '@/ui/core/PhotoCarousel';
 import { RoomBreakdownGrid } from '@/ui/core/RoomBreakdownGrid';
 import { cn } from '@/ui/utils/cn';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/ui/shadcn/dialog';
 import { ListingSourceBadge } from './ListingSourceBadge';
 import {
   formatListingStatusLabel,
@@ -31,6 +40,7 @@ import {
   LISTING_STATUS,
   type ListingStatusValue,
 } from '../constants/listing-status';
+import { extractBedCountFromRoomBreakdown, extractSleepsCount } from '../utils/extractSleepsCount';
 
 interface RoomEntry {
   name: string;
@@ -63,7 +73,9 @@ export function ListingCard({
   roomBreakdown,
   ...props
 }: ListingCardProps) {
-  const [face, setFace] = useState<'default' | 'rooms'>('default');
+  const [face, setFace] = useState<'default' | 'rooms'>(
+    roomBreakdown?.rooms?.length ? 'rooms' : 'default',
+  );
 
   const detailUrl = `${baseUrl}/${listing.id}`;
   const storedPhotos = listing.photos?.map((photo) => photo.url) ?? [];
@@ -73,6 +85,8 @@ export function ListingCard({
   const hasDefaultStatus = isVoteEligibleListingStatus(listing.status);
   const hasRooms = roomBreakdown && roomBreakdown.rooms.length > 0;
   const showingRooms = face === 'rooms' && hasRooms;
+  const sleepsCount = extractSleepsCount({ title: listing.title, roomBreakdown });
+  const bedCount = listing.bedCount ?? extractBedCountFromRoomBreakdown(roomBreakdown);
 
   const getStatusVariant = (status: ListingStatusValue): BadgeProps['variant'] => {
     switch (status) {
@@ -104,6 +118,40 @@ export function ListingCard({
       showManual={false}
     />
   );
+  const notesPreview =
+    listing.notes && listing.notes.length > 160
+      ? `${listing.notes.slice(0, 160).trimEnd()}...`
+      : listing.notes;
+  const hasLongDescription = Boolean(listing.notes && listing.notes.length > 160);
+  const descriptionBlock = listing.notes ? (
+    <Dialog>
+      <div className="col-span-2 flex items-start gap-1">
+        <StickyNote className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+        <div className="min-w-0">
+          <p className="text-muted-foreground break-words">{notesPreview}</p>
+          {hasLongDescription ? (
+            <DialogTrigger asChild>
+              <button
+                type="button"
+                className="mt-1 text-xs font-medium text-muted-foreground/90 hover:text-foreground hover:underline"
+              >
+                Read Full Description
+              </button>
+            </DialogTrigger>
+          ) : null}
+        </div>
+      </div>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Listing Description</DialogTitle>
+          <DialogDescription>{listing.title}</DialogDescription>
+        </DialogHeader>
+        <div className="max-h-[65vh] overflow-y-auto pr-1">
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{listing.notes}</p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  ) : null;
 
   return (
     <Card className={cn("flex flex-col", className)} {...props}>
@@ -177,52 +225,83 @@ export function ListingCard({
             ) : null}
           </div>
         ) : null}
+        <p className="text-xs text-muted-foreground/70">
+          Added {format(listing.createdAt, 'MMM d, yyyy')}
+        </p>
       </CardHeader>
 
       <CardContent className="flex-1 space-y-3 text-sm">
         {showingRooms ? (
           <div className="space-y-3">
-            {(listing.bedroomCount != null || listing.bedCount != null || listing.bathroomCount != null) && (
-              <div className="flex items-center gap-3 text-muted-foreground">
+            {(listing.bedroomCount != null ||
+              bedCount != null ||
+              listing.bathroomCount != null ||
+              sleepsCount != null) && (
+              <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
                 {listing.bedroomCount != null && (
-                  <span className="flex items-center gap-1"><BedDouble className="h-4 w-4" /> {listing.bedroomCount} bd</span>
+                  <span className="flex items-center gap-1">
+                    <DoorOpen className="h-4 w-4" />
+                    {listing.bedroomCount === 1 ? '1 Room' : `${listing.bedroomCount} Rooms`}
+                  </span>
                 )}
-                {listing.bedCount != null && (
-                  <span className="flex items-center gap-1"><BedDouble className="h-4 w-4" /> {listing.bedCount} bed</span>
+                {bedCount != null && (
+                  <span className="flex items-center gap-1">
+                    <BedDouble className="h-4 w-4" />
+                    {bedCount === 1 ? '1 Bed' : `${bedCount} Beds`}
+                  </span>
                 )}
                 {listing.bathroomCount != null && (
-                  <span className="flex items-center gap-1"><Bath className="h-4 w-4" /> {listing.bathroomCount} ba</span>
+                  <span className="flex items-center gap-1">
+                    <Bath className="h-4 w-4" />
+                    {listing.bathroomCount === 1 ? '1 Bath' : `${listing.bathroomCount} Baths`}
+                  </span>
+                )}
+                {sleepsCount != null && (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    {`Sleeps ${sleepsCount}`}
+                  </span>
                 )}
               </div>
             )}
-            <RoomBreakdownGrid
-              summary={roomBreakdown.summary}
-              rooms={roomBreakdown.rooms}
-            />
+            <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
+            {descriptionBlock}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            {('bedroomCount' in listing || 'bedCount' in listing || 'bathroomCount' in listing) ? (
-              <div className="col-span-2 flex items-center gap-3 text-muted-foreground">
-                {'bedroomCount' in listing && listing.bedroomCount != null ? <span className="flex items-center gap-1"><BedDouble className="h-4 w-4" /> {listing.bedroomCount as number} bd</span> : null}
-                {'bedCount' in listing && listing.bedCount != null ? <span className="flex items-center gap-1"><BedDouble className="h-4 w-4" /> {listing.bedCount as number} bed</span> : null}
-                {'bathroomCount' in listing && listing.bathroomCount != null ? <span className="flex items-center gap-1"><Bath className="h-4 w-4" /> {listing.bathroomCount as number} ba</span> : null}
+            {('bedroomCount' in listing ||
+              bedCount != null ||
+              'bathroomCount' in listing ||
+              sleepsCount != null) ? (
+              <div className="col-span-2 flex flex-wrap items-center gap-3 text-muted-foreground">
+                {'bedroomCount' in listing && listing.bedroomCount != null ? (
+                  <span className="flex items-center gap-1">
+                    <DoorOpen className="h-4 w-4" />
+                    {(listing.bedroomCount as number) === 1 ? '1 Room' : `${listing.bedroomCount as number} Rooms`}
+                  </span>
+                ) : null}
+                {bedCount != null ? (
+                  <span className="flex items-center gap-1">
+                    <BedDouble className="h-4 w-4" />
+                    {bedCount === 1 ? '1 Bed' : `${bedCount} Beds`}
+                  </span>
+                ) : null}
+                {'bathroomCount' in listing && listing.bathroomCount != null ? (
+                  <span className="flex items-center gap-1">
+                    <Bath className="h-4 w-4" />
+                    {(listing.bathroomCount as number) === 1 ? '1 Bath' : `${listing.bathroomCount as number} Baths`}
+                  </span>
+                ) : null}
+                {sleepsCount != null ? (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-4 w-4" />
+                    {`Sleeps ${sleepsCount}`}
+                  </span>
+                ) : null}
               </div>
             ) : null}
 
-            {listing.notes && (
-              <div className="col-span-2 flex items-start gap-1">
-                <StickyNote className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
-                <p className="text-muted-foreground break-words">{listing.notes}</p>
-              </div>
-            )}
-
-            <div className="col-span-2 flex items-center gap-1">
-              <CalendarDays className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-muted-foreground">
-                Added: {format(listing.createdAt, 'MMM d, yyyy')}
-              </span>
-            </div>
+            {descriptionBlock}
           </div>
         )}
       </CardContent>

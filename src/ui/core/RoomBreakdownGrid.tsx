@@ -8,7 +8,6 @@ interface RoomEntry {
 }
 
 interface RoomBreakdownGridProps {
-  summary?: string | null;
   rooms: RoomEntry[];
   className?: string;
 }
@@ -31,14 +30,11 @@ function BedIcons({ count }: { count: number }) {
   );
 }
 
-export function RoomBreakdownGrid({ summary, rooms, className }: RoomBreakdownGridProps) {
+export function RoomBreakdownGrid({ rooms, className }: RoomBreakdownGridProps) {
   if (rooms.length === 0) return null;
 
   return (
     <div className={cn("space-y-3", className)}>
-      {summary && (
-        <p className="text-sm font-medium text-muted-foreground">{summary}</p>
-      )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {rooms.map((room) => (
           <div key={room.name} className="space-y-1">
