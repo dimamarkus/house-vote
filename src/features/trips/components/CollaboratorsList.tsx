@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
+import { Form } from '@/ui/form/Form';
 import {
   Card,
   CardContent,
@@ -10,8 +11,7 @@ import {
   CardTitle
 } from '@/ui/shadcn/card';
 import { Badge } from '@/ui/shadcn/badge';
-import { Users, UserPlus, Plus, Trash2 } from 'lucide-react';
-import { InviteCollaboratorForm } from '../forms/InviteCollaboratorForm';
+import { Users, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { useUser } from '@clerk/nextjs';
@@ -20,6 +20,7 @@ import {
   addPublishedTripGuest,
   removePublishedTripGuest,
 } from '../actions/publishedTripActions';
+import { createInvitation } from '../actions/createInvitation';
 
 interface CollaboratorsListProps {
   tripId: string;
@@ -70,7 +71,6 @@ export function CollaboratorsList({
   isOwner,
   publishedShareSummary,
 }: CollaboratorsListProps) {
-  const [isInviteFormOpen, setIsInviteFormOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const votedBadgeClassName = 'bg-teal-50 text-teal-700';
@@ -152,6 +152,10 @@ export function CollaboratorsList({
     await refreshAfterSuccess();
   }
 
+  function handleInvitationCreated() {
+    toast.success('Invitation sent successfully');
+  }
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -164,40 +168,60 @@ export function CollaboratorsList({
             ? 'Manage the guest list, see who has voted, and invite collaborators by email.'
             : 'People with access to this trip'}
         </CardDescription>
-          {isOwner && (
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Button
-                onClick={() => setIsInviteFormOpen(true)}
-                weight="hollow"
-                size="sm"
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite by Email
-              </Button>
-            </div>
-          )}
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
           {isOwner ? (
-            <form onSubmit={handleAddGuest} className="space-y-2">
-              <p className="text-sm font-medium">Add guests</p>
-              <div className="flex gap-2">
-                <Input
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  placeholder="Add guest name"
-                  disabled={pendingAction === 'add-guest'}
-                />
-                <Button type="submit" disabled={pendingAction === 'add-guest'}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Guests can also add themselves from the public page if their name is missing.
-              </p>
-            </form>
+            <>
+              <Form
+                action={createInvitation}
+                className="space-y-2"
+                errorMessage="Failed to send invitation"
+                onSuccess={handleInvitationCreated}
+                resetOnSuccess
+              >
+                {(formState) => (
+                  <>
+                    <input type="hidden" name="tripId" value={tripId} />
+                    <p className="text-sm font-medium">Invite collaborator</p>
+                    <div className="flex gap-2">
+                      <Input
+                        name="email"
+                        type="email"
+                        placeholder="collaborator@example.com"
+                        disabled={formState.isSubmitting}
+                        aria-invalid={Boolean(formState.fieldErrors?.email?.[0])}
+                      />
+                      <Button type="submit" disabled={formState.isSubmitting}>
+                        Invite
+                      </Button>
+                    </div>
+                    {formState.fieldErrors?.email?.[0] ? (
+                      <p className="text-sm text-destructive">{formState.fieldErrors.email[0]}</p>
+                    ) : null}
+                  </>
+                )}
+              </Form>
+
+              <form onSubmit={handleAddGuest} className="space-y-2">
+                <p className="text-sm font-medium">Add guests</p>
+                <div className="flex gap-2">
+                  <Input
+                    value={displayName}
+                    onChange={(event) => setDisplayName(event.target.value)}
+                    placeholder="Add guest name"
+                    disabled={pendingAction === 'add-guest'}
+                  />
+                  <Button type="submit" disabled={pendingAction === 'add-guest'}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Guests can also add themselves from the public page if their name is missing.
+                </p>
+              </form>
+            </>
           ) : null}
 
           {/* Published guests with vote state */}
@@ -322,17 +346,6 @@ export function CollaboratorsList({
             <div className="flex items-center justify-center py-6 text-muted-foreground">
               <Users className="h-5 w-5 mr-2" />
               <span>No collaborators or guests yet</span>
-            </div>
-          )}
-
-          {/* Invite form */}
-          {isInviteFormOpen && (
-            <div className="pt-4 border-t">
-              <InviteCollaboratorForm
-                tripId={tripId}
-                onCancel={() => setIsInviteFormOpen(false)}
-                onSuccess={() => setIsInviteFormOpen(false)}
-              />
             </div>
           )}
         </div>

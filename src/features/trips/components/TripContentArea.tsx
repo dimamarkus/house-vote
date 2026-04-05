@@ -8,7 +8,9 @@ import { ListingsTable } from '@/features/listings/tables/ListingsTable';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
 import { ListingCreateActions } from '@/features/listings/components/ListingCreateActions';
 import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
+import { ListingFormSheet } from '@/features/listings/forms/ListingFormSheet';
 import { LikeButton } from '@/features/likes/components/LikeButton';
+import { Button } from '@/ui/shadcn/button';
 import { TripViewToggle } from './TripViewToggle';
 import { cn } from '@/ui/utils/cn';
 import { LISTING_STATUS, type ListingStatusValue } from '@/features/listings/constants/listing-status';
@@ -126,22 +128,31 @@ export function TripContentArea({
                   listing={listing}
                   roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
                   footerContent={
-                    <div className="flex w-full justify-end gap-2">
+                    <div className="flex w-full items-center justify-between gap-3">
                       {userId && (
                         <LikeButton
                           listingId={listing.id}
                           initialLiked={userLikes[listing.id] || false}
                         />
                       )}
-                      {userId && (isOwner || userId === listing.addedById) && (
-                        <DeleteListingActionButton
-                          listingId={listing.id}
-                          listingTitle={listing.title}
-                          buttonText="Delete"
-                          buttonVariant="destructive"
-                          buttonWeight="hollow"
-                        />
-                      )}
+                      <div className="ml-auto flex items-center gap-2">
+                        {userId && userId === listing.addedById ? (
+                          <ListingFormSheet listingId={listing.id} tripId={listing.tripId} initialState={listing}>
+                            <Button size="sm" weight="hollow">
+                              Edit
+                            </Button>
+                          </ListingFormSheet>
+                        ) : null}
+                        {userId && (isOwner || userId === listing.addedById) && (
+                          <DeleteListingActionButton
+                            listingId={listing.id}
+                            listingTitle={listing.title}
+                            buttonText="Delete"
+                            buttonVariant="destructive"
+                            buttonWeight="hollow"
+                          />
+                        )}
+                      </div>
                     </div>
                   }
                 />

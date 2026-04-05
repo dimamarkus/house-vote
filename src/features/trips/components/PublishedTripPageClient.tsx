@@ -19,8 +19,9 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Input } from '@/ui/shadcn/input';
+import { cn } from '@/ui/utils/cn';
 import { toast } from 'sonner';
-import { ExternalLink, Plus, RefreshCcw, Users } from 'lucide-react';
+import { Heart, Plus, RefreshCcw, Users } from 'lucide-react';
 
 interface PublishedTripPageClientProps {
   token: string;
@@ -380,7 +381,7 @@ export function PublishedTripPageClient({
             const isVoteEligible = isVoteEligibleListingStatus(listing.status);
             const isCurrentVote = currentVoteListingId === listing.id;
             const isCurrentWinner = currentWinnerListingId === listing.id;
-            const voteButtonText = !share.votingOpen
+            const voteButtonLabel = !share.votingOpen
               ? 'Voting closed'
               : !isVoteEligible
                 ? (isCurrentVote ? 'Your vote' : formatListingStatusLabel(listing.status))
@@ -395,7 +396,7 @@ export function PublishedTripPageClient({
                 key={listing.id}
                 listing={listing}
                 roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
-                className={isCurrentWinner ? 'border-primary/50 shadow-sm' : undefined}
+                className={isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined}
                 imageOverlayContent={
                   isCurrentWinner ? (
                     <Badge className="bg-emerald-600 text-white shadow-sm">
@@ -406,23 +407,34 @@ export function PublishedTripPageClient({
                 footerContent={
                   <div className="flex w-full flex-col gap-3">
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span>
-                          {listing.votes.length} vote{listing.votes.length === 1 ? '' : 's'}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">Votes</span>
+                        <div className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                          <span>{listing.votes.length}</span>
+                        </div>
                       </div>
-                      {listing.url ? (
-                        <a
-                          href={listing.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:underline"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          Original
-                        </a>
-                      ) : null}
+                      <Button
+                        onClick={() => handleVote(listing.id)}
+                        disabled={!share.votingOpen || !isVoteEligible || pendingAction === `vote-${listing.id}`}
+                        weight="ghost"
+                        size="icon"
+                        aria-label={voteButtonLabel}
+                        aria-pressed={isCurrentVote}
+                        title={voteButtonLabel}
+                        className={cn(
+                          'rounded-full border',
+                          isCurrentVote
+                            ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
+                            : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
+                        )}
+                      >
+                        {pendingAction === `vote-${listing.id}` ? (
+                          <RefreshCcw className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
+                        )}
+                        <span className="sr-only">{voteButtonLabel}</span>
+                      </Button>
                     </div>
                     <div className="flex min-h-9 flex-wrap gap-2">
                       {voterNames.length > 0 ? (
@@ -431,24 +443,8 @@ export function PublishedTripPageClient({
                             {voterName}
                           </Badge>
                         ))
-                      ) : (
-                        <span className="text-sm text-muted-foreground">No votes yet</span>
-                      )}
+                      ) : null}
                     </div>
-                    <Button
-                      onClick={() => handleVote(listing.id)}
-                      disabled={!share.votingOpen || !isVoteEligible || pendingAction === `vote-${listing.id}`}
-                      weight={isCurrentVote ? 'hollow' : 'solid'}
-                    >
-                      {pendingAction === `vote-${listing.id}` ? (
-                        <>
-                          <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
-                          Updating vote
-                        </>
-                      ) : (
-                        voteButtonText
-                      )}
-                    </Button>
                   </div>
                 }
               />

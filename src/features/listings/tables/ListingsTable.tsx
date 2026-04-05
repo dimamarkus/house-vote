@@ -7,13 +7,13 @@ import { GenericTable, ColumnDef } from '@/ui/core/GenericTable';
 import { Button } from '@/ui/shadcn/button';
 import { Badge } from '@/ui/shadcn/badge';
 import { LinkButton } from '@/ui/core/LinkButton';
-import { AirbnbLogotype, GlobeIcon, VrboLogotype } from '../../../components/TravelSourceIcons';
 import { LikeButton } from '../../likes/components/LikeButton';
 import { ListingStatusAction } from '../components/ListingStatusAction';
 import { ImageWithFallback } from '@/ui/core/ImageWithFallback';
 import { PhotoLightbox } from '@/ui/core/PhotoLightbox';
 import { ListingFormSheet } from '../forms/ListingFormSheet';
 import { DeleteListingActionButton } from '../components/DeleteListingActionButton';
+import { ListingSourceBadge } from '../components/ListingSourceBadge';
 
 // Requires getListings action to include: addedBy, likes: { select: { id: true }}
 // to satisfy these types fully.
@@ -39,42 +39,6 @@ interface ListingsTableProps {
   currentUserIsOwner?: boolean;
   currentUserLikes?: Record<string, boolean>;
   basePath?: string;
-}
-
-interface SourceBadgeProps {
-  href?: string | null;
-  title: string;
-  className: string;
-  children: React.ReactNode;
-}
-
-function SourceBadge({ href, title, className, children }: SourceBadgeProps) {
-  const badge = (
-    <Badge
-      weight="hollow"
-      className={className}
-      title={href ? `Open original ${title} listing` : title}
-    >
-      {children}
-    </Badge>
-  );
-
-  if (!href) {
-    return badge;
-  }
-
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-      aria-label={`Open original ${title} listing`}
-      title={`Open original ${title} listing`}
-    >
-      {badge}
-    </a>
-  );
 }
 
 export function ListingsTable({
@@ -146,47 +110,11 @@ export function ListingsTable({
       header: "Source",
       accessorKey: "source",
       cell: (listing) => {
-        const source = listing.source ?? 'MANUAL';
-        const sourceUrl = typeof listing.url === 'string' && listing.url.length > 0 ? listing.url : null;
-
-        if (source === 'AIRBNB') {
-          return (
-            <SourceBadge
-              href={sourceUrl}
-              title="Airbnb"
-              className="border-rose-200 bg-rose-50 px-2.5 py-1 text-rose-700"
-            >
-              <AirbnbLogotype />
-            </SourceBadge>
-          );
-        }
-
-        if (source === 'VRBO') {
-          return (
-            <SourceBadge
-              href={sourceUrl}
-              title="Vrbo"
-              className="border-blue-200 bg-blue-50 px-2.5 py-1 text-blue-700"
-            >
-              <VrboLogotype />
-            </SourceBadge>
-          );
-        }
-
-        if (source === 'UNKNOWN') {
-          return (
-            <SourceBadge
-              href={sourceUrl}
-              title="Imported"
-              className="border-slate-200 bg-slate-50 px-2 text-slate-700"
-            >
-              <GlobeIcon className="h-3.5 w-3.5 shrink-0" />
-            </SourceBadge>
-          );
-        }
-
         return (
-          <Badge weight="hollow">Manual</Badge>
+          <ListingSourceBadge
+            source={listing.source}
+            href={listing.url}
+          />
         );
       }
     },

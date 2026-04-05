@@ -13,11 +13,9 @@ type Listing = PrismaListing & {
 import Link from 'next/link';
 import { Badge, BadgeProps } from '@/ui/shadcn/badge';
 import {
-  ExternalLink,
   BedDouble,
   Bath,
   StickyNote,
-  UserCircle,
   CalendarDays,
   XCircle,
   LayoutGrid,
@@ -26,6 +24,7 @@ import {
 import { PhotoCarousel } from '@/ui/core/PhotoCarousel';
 import { RoomBreakdownGrid } from '@/ui/core/RoomBreakdownGrid';
 import { cn } from '@/ui/utils/cn';
+import { ListingSourceBadge } from './ListingSourceBadge';
 import {
   formatListingStatusLabel,
   isVoteEligibleListingStatus,
@@ -98,6 +97,13 @@ export function ListingCard({
 
   const inlineStatusBadge = hasPhotos ? null : statusBadge;
   const imageStatusBadge = hasPhotos ? statusBadge : null;
+  const sourceBadge = (
+    <ListingSourceBadge
+      source={listing.source}
+      href={listing.url}
+      showManual={false}
+    />
+  );
 
   return (
     <Card className={cn("flex flex-col", className)} {...props}>
@@ -153,36 +159,27 @@ export function ListingCard({
             </button>
           )}
         </div>
-        {(listing.address || listing.url) && (
-          <div className="space-y-1 text-sm text-muted-foreground">
-            {listing.address ? <p>{listing.address}</p> : null}
-            {listing.url ? (
-              <a
-                href={listing.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                View Original Listing
-              </a>
-            ) : null}
+        {listing.address ? (
+          <div className="text-sm text-muted-foreground">
+            <p>{listing.address}</p>
           </div>
-        )}
-      </CardHeader>
-
-      <CardContent className="flex-1 space-y-3 text-sm">
-        {inlineStatusBadge || listing.price ? (
-          <div className={cn("flex items-center", inlineStatusBadge ? "justify-between" : "justify-end")}>
-            {inlineStatusBadge}
+        ) : null}
+        {(inlineStatusBadge || sourceBadge || listing.price) ? (
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              {inlineStatusBadge}
+              {sourceBadge}
+            </div>
             {listing.price ? (
-              <div className="font-semibold text-lg">
+              <div className="shrink-0 text-lg font-semibold tracking-tight">
                 ${listing.price.toLocaleString()}
               </div>
             ) : null}
           </div>
         ) : null}
+      </CardHeader>
 
+      <CardContent className="flex-1 space-y-3 text-sm">
         {showingRooms ? (
           <div className="space-y-3">
             {(listing.bedroomCount != null || listing.bedCount != null || listing.bathroomCount != null) && (
@@ -217,15 +214,6 @@ export function ListingCard({
               <div className="col-span-2 flex items-start gap-1">
                 <StickyNote className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
                 <p className="text-muted-foreground break-words">{listing.notes}</p>
-              </div>
-            )}
-
-            {(listing.addedById || listing.addedByGuestName) && (
-              <div className="col-span-2 flex items-center gap-1">
-                <UserCircle className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                <span className="text-muted-foreground">
-                  Added by: {listing.addedByGuestName || `User ID: ${listing.addedById?.substring(0, 8)}...`}
-                </span>
               </div>
             )}
 
