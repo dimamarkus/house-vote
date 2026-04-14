@@ -475,7 +475,6 @@ export const publishedTrips = {
     }
 
     await assertGuestInTrip(share.tripId, guestId, db);
-    await assertPotentialListing(share.tripId, listingId, db);
 
     return db.$transaction(async (tx) => {
       const existingVote = await tx.tripVote.findUnique({
@@ -500,6 +499,8 @@ export const publishedTrips = {
           listingId: null,
         };
       }
+
+      await assertPotentialListing(share.tripId, listingId, tx);
 
       const vote = await tx.tripVote.upsert({
         where: {
