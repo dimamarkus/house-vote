@@ -498,7 +498,6 @@ export const publishedTrips = {
           tripId: share.tripId,
           guestId,
           listingId: null,
-          removed: true,
         };
       }
 
@@ -523,7 +522,6 @@ export const publishedTrips = {
         tripId: vote.tripId,
         guestId: vote.guestId,
         listingId: vote.listingId,
-        removed: false,
       };
     });
   },

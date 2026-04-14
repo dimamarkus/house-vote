@@ -79,7 +79,6 @@ type PublishedVoteResult = {
   tripId: string;
   guestId: string;
   listingId: string | null;
-  removed: boolean;
 };
 
 type PublishedListingResult = {
@@ -450,7 +449,6 @@ export async function castPublishedTripVote(
         tripId: vote.tripId,
         guestId: vote.guestId,
         listingId: vote.listingId,
-        removed: vote.removed,
       },
     });
   } catch (error) {
