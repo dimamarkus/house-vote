@@ -160,28 +160,28 @@ export function ListingCard({
     bedCount != null ||
     listing.bathroomCount != null ||
     sleepsCount != null) ? (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-2 pt-1">
       {listing.bedroomCount != null && (
-        <span className="flex items-center gap-1">
-          <DoorOpen className="h-3.5 w-3.5" />
+        <span className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs font-medium text-foreground">
+          <DoorOpen className="h-3.5 w-3.5 text-muted-foreground" />
           {listing.bedroomCount === 1 ? '1 Room' : `${listing.bedroomCount} Rooms`}
         </span>
       )}
       {bedCount != null && (
-        <span className="flex items-center gap-1">
-          <BedDouble className="h-3.5 w-3.5" />
+        <span className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs font-medium text-foreground">
+          <BedDouble className="h-3.5 w-3.5 text-muted-foreground" />
           {bedCount === 1 ? '1 Bed' : `${bedCount} Beds`}
         </span>
       )}
       {listing.bathroomCount != null && (
-        <span className="flex items-center gap-1">
-          <Bath className="h-3.5 w-3.5" />
+        <span className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs font-medium text-foreground">
+          <Bath className="h-3.5 w-3.5 text-muted-foreground" />
           {listing.bathroomCount === 1 ? '1 Bath' : `${listing.bathroomCount} Baths`}
         </span>
       )}
       {sleepsCount != null && (
-        <span className="flex items-center gap-1">
-          <Users className="h-3.5 w-3.5" />
+        <span className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs font-medium text-foreground">
+          <Users className="h-3.5 w-3.5 text-muted-foreground" />
           {`Sleeps ${sleepsCount}`}
         </span>
       )}
@@ -234,7 +234,9 @@ export function ListingCard({
 
           <div className="flex shrink-0 flex-col items-end gap-2">
             {listing.price ? (
-              <p className="text-lg font-semibold tracking-tight">${listing.price.toLocaleString()}</p>
+              <div className="rounded-md bg-primary/10 px-2.5 py-1 text-lg font-bold tracking-tight text-primary">
+                ${listing.price.toLocaleString()}
+              </div>
             ) : null}
             {hasRooms && !showAllMetadata && (
               <button
