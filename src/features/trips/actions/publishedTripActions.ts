@@ -14,6 +14,7 @@ const tripIdSchema = z.object({
 
 const updatePublishedTripSettingsSchema = tripIdSchema.extend({
   votingOpen: z.boolean().optional(),
+  commentsOpen: z.boolean().optional(),
   allowGuestSuggestions: z.boolean().optional(),
 });
 
@@ -23,6 +24,11 @@ const guestNameSchema = tripIdSchema.extend({
 
 const removeGuestSchema = tripIdSchema.extend({
   guestId: z.string().cuid('A valid guest id is required.'),
+});
+
+const moderateCommentSchema = tripIdSchema.extend({
+  commentId: z.string().cuid('A valid comment id is required.'),
+  hidden: z.boolean(),
 });
 
 const publishedGuestSessionSchema = z.object({
@@ -47,11 +53,19 @@ const submitListingSchema = z.object({
   url: z.string().url('A valid listing URL is required.'),
 });
 
+const addCommentSchema = z.object({
+  token: z.string().uuid('A valid published trip link is required.'),
+  guestId: z.string().cuid('A valid guest id is required.'),
+  listingId: z.string().cuid('A valid listing id is required.'),
+  body: z.string().trim().min(1, 'Comment is required.').max(1000, 'Comment is too long.'),
+});
+
 type PublishedTripShareState = {
   tripId: string;
   token: string;
   isPublished: boolean;
   votingOpen: boolean;
+  commentsOpen: boolean;
   allowGuestSuggestions: boolean;
 };
 
@@ -70,6 +84,19 @@ type PublishedVoteResult = {
 type PublishedListingResult = {
   tripId: string;
   listingId: string;
+};
+
+type PublishedCommentResult = {
+  tripId: string;
+  guestId: string;
+  listingId: string;
+  commentId: string;
+};
+
+type PublishedCommentModerationResult = {
+  tripId: string;
+  commentId: string;
+  hidden: boolean;
 };
 
 function revalidatePublishedTripPaths(tripId: string, token?: string) {
@@ -113,6 +140,7 @@ export async function publishTripShare(input: { tripId: string }): Promise<Basic
         token: share.token,
         isPublished: share.isPublished,
         votingOpen: share.votingOpen,
+        commentsOpen: share.commentsOpen,
         allowGuestSuggestions: share.allowGuestSuggestions,
       },
     });
@@ -147,6 +175,7 @@ export async function unpublishTripShare(input: { tripId: string }): Promise<Bas
         token: share.token,
         isPublished: share.isPublished,
         votingOpen: share.votingOpen,
+        commentsOpen: share.commentsOpen,
         allowGuestSuggestions: share.allowGuestSuggestions,
       },
     });
@@ -163,6 +192,7 @@ export async function updateTripShareSettings(
   input: {
     tripId: string;
     votingOpen?: boolean;
+    commentsOpen?: boolean;
     allowGuestSuggestions?: boolean;
   },
 ): Promise<BasicApiResponse<PublishedTripShareState>> {
@@ -177,6 +207,7 @@ export async function updateTripShareSettings(
 
   if (
     typeof validation.data.votingOpen === 'undefined' &&
+    typeof validation.data.commentsOpen === 'undefined' &&
     typeof validation.data.allowGuestSuggestions === 'undefined'
   ) {
     return createErrorResponse({
@@ -189,6 +220,7 @@ export async function updateTripShareSettings(
     const ownerId = await requireOwnerUserId();
     const share = await publishedTrips.updateSettings(validation.data.tripId, ownerId, {
       votingOpen: validation.data.votingOpen,
+      commentsOpen: validation.data.commentsOpen,
       allowGuestSuggestions: validation.data.allowGuestSuggestions,
     });
 
@@ -200,6 +232,7 @@ export async function updateTripShareSettings(
         token: share.token,
         isPublished: share.isPublished,
         votingOpen: share.votingOpen,
+        commentsOpen: share.commentsOpen,
         allowGuestSuggestions: share.allowGuestSuggestions,
       },
     });
@@ -234,6 +267,7 @@ export async function rotateTripShareToken(input: { tripId: string }): Promise<B
         token: share.token,
         isPublished: share.isPublished,
         votingOpen: share.votingOpen,
+        commentsOpen: share.commentsOpen,
         allowGuestSuggestions: share.allowGuestSuggestions,
       },
     });
@@ -462,6 +496,93 @@ export async function submitPublishedTripListing(
       error,
       code: ErrorCode.PROCESSING_ERROR,
       prefix: 'Failed to submit guest listing:',
+    });
+  }
+}
+
+export async function addPublishedTripComment(
+  input: {
+    token: string;
+    guestId: string;
+    listingId: string;
+    body: string;
+  },
+): Promise<BasicApiResponse<PublishedCommentResult>> {
+  const validation = addCommentSchema.safeParse(input);
+
+  if (!validation.success) {
+    return createErrorResponse({
+      error: validation.error.issues[0]?.message ?? 'Invalid comment request.',
+      code: ErrorCode.VALIDATION_ERROR,
+    });
+  }
+
+  try {
+    const comment = await publishedTrips.addComment(
+      validation.data.token,
+      validation.data.guestId,
+      validation.data.listingId,
+      validation.data.body,
+    );
+
+    revalidatePublishedTripPaths(comment.tripId, validation.data.token);
+
+    return createSuccessResponse({
+      data: {
+        tripId: comment.tripId,
+        guestId: comment.guestId,
+        listingId: comment.listingId,
+        commentId: comment.id,
+      },
+    });
+  } catch (error) {
+    return createErrorResponse({
+      error,
+      code: ErrorCode.PROCESSING_ERROR,
+      prefix: 'Failed to add comment:',
+    });
+  }
+}
+
+export async function setPublishedTripCommentHidden(
+  input: {
+    tripId: string;
+    commentId: string;
+    hidden: boolean;
+  },
+): Promise<BasicApiResponse<PublishedCommentModerationResult>> {
+  const validation = moderateCommentSchema.safeParse(input);
+
+  if (!validation.success) {
+    return createErrorResponse({
+      error: validation.error.issues[0]?.message ?? 'Invalid comment moderation request.',
+      code: ErrorCode.VALIDATION_ERROR,
+    });
+  }
+
+  try {
+    const ownerId = await requireOwnerUserId();
+    const result = await publishedTrips.setCommentHidden(
+      validation.data.tripId,
+      ownerId,
+      validation.data.commentId,
+      validation.data.hidden,
+    );
+
+    revalidatePublishedTripPaths(validation.data.tripId, result.shareToken ?? undefined);
+
+    return createSuccessResponse({
+      data: {
+        tripId: validation.data.tripId,
+        commentId: result.comment.id,
+        hidden: result.comment.hiddenAt !== null,
+      },
+    });
+  } catch (error) {
+    return createErrorResponse({
+      error,
+      code: ErrorCode.PROCESSING_ERROR,
+      prefix: 'Failed to moderate comment:',
     });
   }
 }

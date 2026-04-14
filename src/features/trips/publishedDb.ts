@@ -12,10 +12,28 @@ const publishedVoteInclude = Prisma.validator<Prisma.TripVoteInclude>()({
   },
 });
 
+const publishedCommentInclude = Prisma.validator<Prisma.ListingCommentInclude>()({
+  guest: {
+    select: {
+      id: true,
+      guestDisplayName: true,
+    },
+  },
+});
+
 const publishedListingInclude = Prisma.validator<Prisma.ListingInclude>()({
   photos: true,
   votes: {
     include: publishedVoteInclude,
+    orderBy: {
+      createdAt: 'asc',
+    },
+  },
+  comments: {
+    where: {
+      hiddenAt: null,
+    },
+    include: publishedCommentInclude,
     orderBy: {
       createdAt: 'asc',
     },
@@ -28,6 +46,7 @@ const publishedTripShareSelect = Prisma.validator<Prisma.TripShareSelect>()({
   token: true,
   isPublished: true,
   votingOpen: true,
+  commentsOpen: true,
   allowGuestSuggestions: true,
   publishedAt: true,
   trip: {
@@ -61,6 +80,25 @@ const ownerShareListingSelect = Prisma.validator<Prisma.ListingSelect>()({
   status: true,
 });
 
+const ownerCommentSelect = Prisma.validator<Prisma.ListingCommentSelect>()({
+  id: true,
+  body: true,
+  createdAt: true,
+  hiddenAt: true,
+  guest: {
+    select: {
+      id: true,
+      guestDisplayName: true,
+    },
+  },
+  listing: {
+    select: {
+      id: true,
+      title: true,
+    },
+  },
+});
+
 type DbClient = typeof db | Prisma.TransactionClient;
 
 type PublishedTripShareQueryRecord = Prisma.TripShareGetPayload<{
@@ -69,6 +107,10 @@ type PublishedTripShareQueryRecord = Prisma.TripShareGetPayload<{
 
 export type PublishedTripListingRecord = Prisma.ListingGetPayload<{
   include: typeof publishedListingInclude;
+}>;
+
+export type PublishedTripCommentRecord = Prisma.ListingCommentGetPayload<{
+  include: typeof publishedCommentInclude;
 }>;
 
 export type PublishedTripGuestRecord = PublishedTripShareQueryRecord['trip']['guests'][number];
@@ -80,6 +122,10 @@ export type PublishedTripShareRecord = Omit<PublishedTripShareQueryRecord, 'trip
 
 export type OwnerTripShareListingRecord = Prisma.ListingGetPayload<{
   select: typeof ownerShareListingSelect;
+}>;
+
+export type OwnerTripCommentRecord = Prisma.ListingCommentGetPayload<{
+  select: typeof ownerCommentSelect;
 }>;
 
 function mapPublishedTripShareRecord(share: PublishedTripShareQueryRecord): PublishedTripShareRecord {
@@ -177,6 +223,15 @@ async function getShareByToken(token: string) {
   });
 }
 
+async function getShareByTripId(tripId: string, dbClient: DbClient) {
+  return dbClient.tripShare.findUnique({
+    where: { tripId },
+    select: {
+      token: true,
+    },
+  });
+}
+
 async function assertPublishedShare(token: string) {
   const share = await getShareByToken(token);
 
@@ -219,6 +274,22 @@ async function assertPotentialListing(tripId: string, listingId: string, dbClien
 
   if (listing.status !== ListingStatus.POTENTIAL) {
     throw new Error('Only active listings can receive votes.');
+  }
+
+  return listing;
+}
+
+async function assertListingInTrip(tripId: string, listingId: string, dbClient: DbClient) {
+  const listing = await dbClient.listing.findUnique({
+    where: { id: listingId },
+    select: {
+      id: true,
+      tripId: true,
+    },
+  });
+
+  if (!listing || listing.tripId !== tripId) {
+    throw new Error('Listing not found for this trip.');
   }
 
   return listing;
@@ -272,9 +343,22 @@ export const publishedTrips = {
       ],
     });
 
+    const comments = await db.listingComment.findMany({
+      where: {
+        tripId,
+      },
+      select: ownerCommentSelect,
+      orderBy: [
+        {
+          createdAt: 'desc',
+        },
+      ],
+    });
+
     return {
       share: share ? mapPublishedTripShareRecord(share) : null,
       listings,
+      comments,
     };
   },
 
@@ -314,6 +398,7 @@ export const publishedTrips = {
     ownerId: string,
     data: {
       votingOpen?: boolean;
+      commentsOpen?: boolean;
       allowGuestSuggestions?: boolean;
     },
   ) => {
@@ -409,6 +494,67 @@ export const publishedTrips = {
       },
       include: publishedVoteInclude,
     });
+  },
+
+  addComment: async (token: string, guestId: string, listingId: string, body: string) => {
+    const share = await assertPublishedShare(token);
+
+    if (!share.commentsOpen) {
+      throw new Error('Comments are closed for this trip.');
+    }
+
+    const normalizedBody = body.trim();
+
+    if (!normalizedBody) {
+      throw new Error('Comment cannot be empty.');
+    }
+
+    await assertGuestInTrip(share.tripId, guestId, db);
+    await assertListingInTrip(share.tripId, listingId, db);
+
+    return db.listingComment.create({
+      data: {
+        tripId: share.tripId,
+        guestId,
+        listingId,
+        body: normalizedBody,
+      },
+      include: publishedCommentInclude,
+    });
+  },
+
+  setCommentHidden: async (tripId: string, ownerId: string, commentId: string, hidden: boolean) => {
+    await assertTripOwner(tripId, ownerId, db);
+
+    const comment = await db.listingComment.findUnique({
+      where: {
+        id: commentId,
+      },
+      select: {
+        id: true,
+        tripId: true,
+      },
+    });
+
+    if (!comment || comment.tripId !== tripId) {
+      throw new Error('Comment not found for this trip.');
+    }
+
+    const updatedComment = await db.listingComment.update({
+      where: {
+        id: comment.id,
+      },
+      data: {
+        hiddenAt: hidden ? new Date() : null,
+      },
+    });
+
+    const share = await getShareByTripId(tripId, db);
+
+    return {
+      comment: updatedComment,
+      shareToken: share?.token ?? null,
+    };
   },
 
   submitGuestListingUrl: async (token: string, guestId: string, url: string) => {

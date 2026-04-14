@@ -42,6 +42,7 @@ model Trip {
   collaborators  User[]           @relation("TripCollaborators")
   listings       Listing[]
   votes          TripVote[]
+  comments       ListingComment[]
   guests         TripGuest[]
   share          TripShare?
   importToken    TripImportToken?
@@ -52,7 +53,7 @@ model Trip {
 }
 
 model Listing {
-  id               String        @id @default(cuid())
+  id               String              @id @default(cuid())
   /// @zod.min(1, { message: "Title cannot be empty" })
   title            String // Required
   address          String? // Optional
@@ -73,19 +74,20 @@ model Listing {
   importError      String?
   rawImportPayload Json?
   roomBreakdown    Json?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
   addedById        String? // Optional
-  addedBy          User?         @relation("AddedByUser", fields: [addedById], references: [id], onDelete: Cascade)
+  addedBy          User?               @relation("AddedByUser", fields: [addedById], references: [id], onDelete: Cascade)
   addedByGuestId   String?
-  addedByGuest     TripGuest?    @relation("AddedByGuest", fields: [addedByGuestId], references: [id], onDelete: SetNull)
+  addedByGuest     TripGuest?          @relation("AddedByGuest", fields: [addedByGuestId], references: [id], onDelete: SetNull)
   addedByGuestName String?
   tripId           String
-  trip             Trip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  trip             Trip                @relation(fields: [tripId], references: [id], onDelete: Cascade)
   likes            Like[]
   votes            TripVote[]
+  comments         ListingComment[]
   photos           ListingPhoto[]
-  status           ListingStatus @default(POTENTIAL)
+  status           ListingStatus       @default(POTENTIAL)
 
   @@index([addedById])
   @@index([addedByGuestId])
@@ -103,8 +105,8 @@ model ListingPhoto {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([listingId])
   @@unique([listingId, position])
+  @@index([listingId])
 }
 
 model Like {
@@ -172,47 +174,67 @@ enum InviteStatus {
 
 // New model to track guests who joined via shareable link
 model TripGuest {
-  id               String   @id @default(cuid())
+  id               String           @id @default(cuid())
   tripId           String
   guestDisplayName String // Name the guest provided
-  source           TripGuestSource @default(SELF_ADDED)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  trip             Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  addedListings    Listing[] @relation("AddedByGuest")
+  source           TripGuestSource  @default(SELF_ADDED)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  trip             Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  addedListings    Listing[]        @relation("AddedByGuest")
   votes            TripVote[]
+  comments         ListingComment[]
 
   @@unique([tripId, guestDisplayName]) // Prevent duplicate names per trip
   @@index([tripId])
 }
 
 model TripShare {
-  id                    String   @id @default(cuid())
-  tripId                String   @unique
-  token                 String   @unique
-  isPublished           Boolean  @default(false)
-  votingOpen            Boolean  @default(true)
-  allowGuestSuggestions Boolean  @default(true)
+  id                    String    @id @default(cuid())
+  tripId                String    @unique
+  token                 String    @unique
+  isPublished           Boolean   @default(false)
+  votingOpen            Boolean   @default(true)
+  commentsOpen          Boolean   @default(true)
+  allowGuestSuggestions Boolean   @default(true)
   publishedAt           DateTime?
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
-  trip                  Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  trip                  Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
 
   @@index([token])
 }
 
 model TripVote {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   tripId    String
   guestId   String
   listingId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  trip      Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  trip      Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
   guest     TripGuest @relation(fields: [guestId], references: [id], onDelete: Cascade)
-  listing   Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  listing   Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
   @@unique([tripId, guestId])
+  @@index([tripId])
+  @@index([guestId])
+  @@index([listingId])
+}
+
+model ListingComment {
+  id        String    @id @default(cuid())
+  tripId    String
+  guestId   String
+  listingId String
+  body      String
+  hiddenAt  DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  trip      Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  guest     TripGuest @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  listing   Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
   @@index([tripId])
   @@index([guestId])
   @@index([listingId])
@@ -224,12 +246,12 @@ enum TripGuestSource {
 }
 
 model TripImportToken {
-  id         String   @id @default(cuid())
-  tripId     String   @unique
-  trip       Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  tokenHash  String   @unique
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id         String    @id @default(cuid())
+  tripId     String    @unique
+  trip       Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
   lastUsedAt DateTime?
 
   @@index([tripId])
