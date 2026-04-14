@@ -5,6 +5,7 @@ import {
   getPublishedGuestSessionKey,
 } from '@/features/trips/constants/publishedGuestSession';
 import { PublishedTripGuestPicker } from '@/features/trips/components/PublishedTripGuestPicker';
+import { PublishedTripGuestsSheet } from '@/features/trips/components/PublishedTripGuestsSheet';
 import { PublishedTripMasthead } from '@/features/trips/components/PublishedTripMasthead';
 import { PublishedTripTopBar } from '@/features/trips/components/PublishedTripTopBar';
 import { formatTripDateRange } from '@/features/trips/utils/formatTripDateRange';
@@ -25,7 +26,7 @@ export default async function PublishedTripJoinPage({ params }: PublishedTripJoi
     notFound();
   }
 
-  const { share } = publishedTrip;
+  const { listings, share } = publishedTrip;
   const tripDateRange = formatTripDateRange(share.trip.startDate, share.trip.endDate);
 
   if (!share.isPublished) {
@@ -60,6 +61,13 @@ export default async function PublishedTripJoinPage({ params }: PublishedTripJoi
         <PublishedTripMasthead
           share={share}
           tripDateRange={tripDateRange}
+          guestDetailsSlot={(
+            <PublishedTripGuestsSheet
+              share={share}
+              listings={listings}
+              initialSession={initialSession}
+            />
+          )}
         />
         <PublishedTripGuestPicker
           token={token}

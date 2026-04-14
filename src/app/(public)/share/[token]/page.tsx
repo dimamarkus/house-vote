@@ -5,6 +5,7 @@ import {
   getPublishedGuestSessionKey,
 } from '@/features/trips/constants/publishedGuestSession';
 import { PublishedTripHeaderListingForm } from '@/features/trips/components/PublishedTripHeaderListingForm';
+import { PublishedTripGuestsSheet } from '@/features/trips/components/PublishedTripGuestsSheet';
 import { PublishedTripMasthead } from '@/features/trips/components/PublishedTripMasthead';
 import { PublishedTripTopBar } from '@/features/trips/components/PublishedTripTopBar';
 import { formatTripDateRange } from '@/features/trips/utils/formatTripDateRange';
@@ -65,6 +66,13 @@ export default async function PublishedTripPage({ params }: PublishedTripPagePro
         <PublishedTripMasthead
           share={share}
           tripDateRange={tripDateRange}
+          guestDetailsSlot={(
+            <PublishedTripGuestsSheet
+              share={share}
+              listings={listings}
+              initialSession={initialSession}
+            />
+          )}
           actionSlot={(
             <PublishedTripHeaderListingForm
               token={token}

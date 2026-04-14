@@ -8,6 +8,7 @@ interface PublishedTripMastheadProps {
   tripDateRange: string | null;
   actionSlot?: ReactNode;
   contextSlot?: ReactNode;
+  guestDetailsSlot?: ReactNode;
 }
 
 const detailPillClassName = 'inline-flex max-w-full items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm font-medium leading-snug';
@@ -17,6 +18,7 @@ export function PublishedTripMasthead({
   tripDateRange,
   actionSlot,
   contextSlot,
+  guestDetailsSlot,
 }: PublishedTripMastheadProps) {
   return (
     <section className="w-full rounded-3xl border border-border/60 bg-card shadow-sm">
@@ -46,12 +48,14 @@ export function PublishedTripMasthead({
                   <span className="wrap-break-word">{tripDateRange}</span>
                 </div>
               ) : null}
-              {share.trip.numberOfPeople ? (
-                <div className={detailPillClassName}>
-                  <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="wrap-break-word">{share.trip.numberOfPeople} guests</span>
-                </div>
-              ) : null}
+              {guestDetailsSlot ?? (
+                share.trip.numberOfPeople ? (
+                  <div className={detailPillClassName}>
+                    <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="wrap-break-word">{share.trip.numberOfPeople} guests</span>
+                  </div>
+                ) : null
+              )}
             </div>
           </div>
         </div>
