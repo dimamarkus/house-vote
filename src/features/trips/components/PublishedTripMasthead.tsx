@@ -19,7 +19,7 @@ export function PublishedTripMasthead({
   contextSlot,
 }: PublishedTripMastheadProps) {
   return (
-    <section className="rounded-3xl border border-border/60 bg-card shadow-sm">
+    <section className="w-full rounded-3xl border border-border/60 bg-card shadow-sm">
       <div className="flex flex-col gap-6 p-6 sm:p-8">
         <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="min-w-0 flex-1 space-y-4">
