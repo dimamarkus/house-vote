@@ -128,7 +128,7 @@ export function PublishedTripPageClient({
   return (
     <div className="flex w-full flex-col gap-6">
       {sortedListings.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sortedListings.map((listing) => {
             const voterNames = listing.votes.map((vote) => vote.guest.guestDisplayName);
             const isVoteEligible = isVoteEligibleListingStatus(listing.status);
@@ -150,7 +150,7 @@ export function PublishedTripPageClient({
                 listing={listing}
                 roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
                 showAllMetadata
-                className={isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined}
+                className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
                 imageOverlayContent={
                   isCurrentWinner ? (
                     <Badge className="bg-emerald-600 text-white shadow-sm">
