@@ -46,7 +46,7 @@ Optional but recommended for production migrations:
 - `DIRECT_DATABASE_URL`
 
 The app uses Prisma with a Postgres datasource. Without a valid `DATABASE_URL`, Prisma generation and runtime DB access will fail.
-If your host gives you a pooled runtime URL and a separate direct connection URL, keep `DATABASE_URL` for runtime and use `DIRECT_DATABASE_URL` for Prisma CLI commands such as migrations. `prisma.config.ts` prefers `DIRECT_DATABASE_URL` when it is set.
+If your host gives you a pooled runtime URL and a separate direct connection URL, keep `DATABASE_URL` for runtime and use `DIRECT_DATABASE_URL` for migrations.
 
 ### Clerk
 
