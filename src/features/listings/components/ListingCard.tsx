@@ -83,7 +83,6 @@ export function ListingCard({
   const storedPhotos = listing.photos?.map((photo) => photo.url) ?? [];
   const allPhotos = storedPhotos.length > 0 ? storedPhotos : listing.imageUrl ? [listing.imageUrl] : [];
   const hasPhotos = allPhotos.length > 0;
-  const photoCount = allPhotos.length;
   const hasDefaultStatus = isVoteEligibleListingStatus(listing.status);
   const hasRooms = roomBreakdown && roomBreakdown.rooms.length > 0;
   const showingRooms = hasRooms && (showAllMetadata || face === 'rooms');
@@ -118,8 +117,11 @@ export function ListingCard({
       source={listing.source}
       href={listing.url}
       showManual={false}
+      badgeClassName="border-background/60 bg-background/90 shadow-sm backdrop-blur"
     />
   );
+  const imageSourceBadge = hasPhotos ? sourceBadge : null;
+  const inlineSourceBadge = hasPhotos ? null : sourceBadge;
   const notesPreview =
     listing.notes && listing.notes.length > 160
       ? `${listing.notes.slice(0, 160).trimEnd()}...`
@@ -154,6 +156,37 @@ export function ListingCard({
       </DialogContent>
     </Dialog>
   ) : null;
+  const summaryMetrics = (listing.bedroomCount != null ||
+    bedCount != null ||
+    listing.bathroomCount != null ||
+    sleepsCount != null) ? (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-muted-foreground">
+      {listing.bedroomCount != null && (
+        <span className="flex items-center gap-1">
+          <DoorOpen className="h-4 w-4" />
+          {listing.bedroomCount === 1 ? '1 Room' : `${listing.bedroomCount} Rooms`}
+        </span>
+      )}
+      {bedCount != null && (
+        <span className="flex items-center gap-1">
+          <BedDouble className="h-4 w-4" />
+          {bedCount === 1 ? '1 Bed' : `${bedCount} Beds`}
+        </span>
+      )}
+      {listing.bathroomCount != null && (
+        <span className="flex items-center gap-1">
+          <Bath className="h-4 w-4" />
+          {listing.bathroomCount === 1 ? '1 Bath' : `${listing.bathroomCount} Baths`}
+        </span>
+      )}
+      {sleepsCount != null && (
+        <span className="flex items-center gap-1">
+          <Users className="h-4 w-4" />
+          {`Sleeps ${sleepsCount}`}
+        </span>
+      )}
+    </div>
+  ) : null;
 
   return (
     <Card className={cn("flex flex-col", className)} {...props}>
@@ -169,20 +202,11 @@ export function ListingCard({
               </div>
             ) : undefined
           }
-          overlayTopRight={
-            photoCount > 1 ? (
-              <Badge
-                variant="secondary"
-                className="bg-background/85 text-foreground backdrop-blur"
-              >
-                {photoCount} photos
-              </Badge>
-            ) : undefined
-          }
+          overlayTopRight={imageSourceBadge || undefined}
         />
       ) : null}
 
-      <CardHeader className={cn(hasPhotos ? 'pt-4' : 'pt-6')}>
+      <CardHeader className={cn(hasPhotos ? 'gap-3 pt-4' : 'gap-3 pt-6')}>
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-lg flex-1 min-w-0">
             {showLink ? (
@@ -214,15 +238,15 @@ export function ListingCard({
             <p>{listing.address}</p>
           </div>
         ) : null}
-        {(inlineStatusBadge || sourceBadge || listing.price) ? (
-          <div className="flex items-center justify-between gap-3">
+        {(listing.price || inlineStatusBadge || inlineSourceBadge) ? (
+          <div className="flex items-start justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               {inlineStatusBadge}
-              {sourceBadge}
+              {inlineSourceBadge}
             </div>
             {listing.price ? (
-              <div className="shrink-0 text-lg font-semibold tracking-tight">
-                ${listing.price.toLocaleString()}
+              <div className="shrink-0 text-right">
+                <p className="text-lg font-semibold tracking-tight">${listing.price.toLocaleString()}</p>
               </div>
             ) : null}
           </div>
@@ -232,78 +256,23 @@ export function ListingCard({
         </p>
       </CardHeader>
 
-      <CardContent className="flex-1 space-y-3 text-sm">
+      <CardContent className="flex-1 space-y-4 text-sm">
         {showingRooms ? (
-          <div className="space-y-3">
-            {(listing.bedroomCount != null ||
-              bedCount != null ||
-              listing.bathroomCount != null ||
-              sleepsCount != null) && (
-              <div className="flex flex-wrap items-center gap-3 text-muted-foreground">
-                {listing.bedroomCount != null && (
-                  <span className="flex items-center gap-1">
-                    <DoorOpen className="h-4 w-4" />
-                    {listing.bedroomCount === 1 ? '1 Room' : `${listing.bedroomCount} Rooms`}
-                  </span>
-                )}
-                {bedCount != null && (
-                  <span className="flex items-center gap-1">
-                    <BedDouble className="h-4 w-4" />
-                    {bedCount === 1 ? '1 Bed' : `${bedCount} Beds`}
-                  </span>
-                )}
-                {listing.bathroomCount != null && (
-                  <span className="flex items-center gap-1">
-                    <Bath className="h-4 w-4" />
-                    {listing.bathroomCount === 1 ? '1 Bath' : `${listing.bathroomCount} Baths`}
-                  </span>
-                )}
-                {sleepsCount != null && (
-                  <span className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    {`Sleeps ${sleepsCount}`}
-                  </span>
-                )}
-              </div>
-            )}
-            <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
-            {descriptionBlock}
+          <div className="space-y-4">
+            {summaryMetrics}
+            <div className="space-y-4 border-t border-border/60 pt-4">
+              <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
+              {descriptionBlock}
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            {('bedroomCount' in listing ||
-              bedCount != null ||
-              'bathroomCount' in listing ||
-              sleepsCount != null) ? (
-              <div className="col-span-2 flex flex-wrap items-center gap-3 text-muted-foreground">
-                {'bedroomCount' in listing && listing.bedroomCount != null ? (
-                  <span className="flex items-center gap-1">
-                    <DoorOpen className="h-4 w-4" />
-                    {(listing.bedroomCount as number) === 1 ? '1 Room' : `${listing.bedroomCount as number} Rooms`}
-                  </span>
-                ) : null}
-                {bedCount != null ? (
-                  <span className="flex items-center gap-1">
-                    <BedDouble className="h-4 w-4" />
-                    {bedCount === 1 ? '1 Bed' : `${bedCount} Beds`}
-                  </span>
-                ) : null}
-                {'bathroomCount' in listing && listing.bathroomCount != null ? (
-                  <span className="flex items-center gap-1">
-                    <Bath className="h-4 w-4" />
-                    {(listing.bathroomCount as number) === 1 ? '1 Bath' : `${listing.bathroomCount as number} Baths`}
-                  </span>
-                ) : null}
-                {sleepsCount != null ? (
-                  <span className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    {`Sleeps ${sleepsCount}`}
-                  </span>
-                ) : null}
+          <div className="space-y-4">
+            {summaryMetrics}
+            {descriptionBlock ? (
+              <div className="border-t border-border/60 pt-4">
+                {descriptionBlock}
               </div>
             ) : null}
-
-            {descriptionBlock}
           </div>
         )}
       </CardContent>
