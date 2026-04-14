@@ -4,7 +4,6 @@ import { Inter } from 'next/font/google';
 import { ThemeProvider } from '@/ui/core/ThemeProvider';
 import { Toaster } from '@/ui/shadcn/sonner';
 import { ClerkProvider } from '@clerk/nextjs';
-import { Header } from '/src/components/Header';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,10 +27,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            <div className="relative flex min-h-screen flex-col bg-background">
-              <Header />
-              <main className="flex-1">{children}</main>
-            </div>
+            <div className="relative flex min-h-screen flex-col bg-background">{children}</div>
             <Toaster className="toaster group" />
           </ThemeProvider>
         </body>

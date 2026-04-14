@@ -77,6 +77,7 @@ function revalidatePublishedTripPaths(tripId: string, token?: string) {
 
   if (token) {
     revalidatePath(`/share/${token}`);
+    revalidatePath(`/share/${token}/join`);
   }
 }
 
