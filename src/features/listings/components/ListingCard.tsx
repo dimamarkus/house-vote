@@ -61,6 +61,7 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   showLink?: boolean;
   baseUrl?: string;
   roomBreakdown?: RoomBreakdown | null;
+  showAllMetadata?: boolean;
 }
 
 export function ListingCard({
@@ -71,6 +72,7 @@ export function ListingCard({
   showLink = false,
   baseUrl = '/listings',
   roomBreakdown,
+  showAllMetadata = false,
   ...props
 }: ListingCardProps) {
   const [face, setFace] = useState<'default' | 'rooms'>(
@@ -84,7 +86,7 @@ export function ListingCard({
   const photoCount = allPhotos.length;
   const hasDefaultStatus = isVoteEligibleListingStatus(listing.status);
   const hasRooms = roomBreakdown && roomBreakdown.rooms.length > 0;
-  const showingRooms = face === 'rooms' && hasRooms;
+  const showingRooms = hasRooms && (showAllMetadata || face === 'rooms');
   const sleepsCount = extractSleepsCount({ title: listing.title, roomBreakdown });
   const bedCount = listing.bedCount ?? extractBedCountFromRoomBreakdown(roomBreakdown);
 
@@ -126,9 +128,9 @@ export function ListingCard({
   const descriptionBlock = listing.notes ? (
     <Dialog>
       <div className="col-span-2 flex items-start gap-1">
-        <StickyNote className="h-4 w-4 mt-0.5 text-muted-foreground flex-shrink-0" />
+        <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0">
-          <p className="text-muted-foreground break-words">{notesPreview}</p>
+          <p className="text-muted-foreground wrap-break-word">{notesPreview}</p>
           {hasLongDescription ? (
             <DialogTrigger asChild>
               <button
@@ -191,7 +193,7 @@ export function ListingCard({
               listing.title
             )}
           </CardTitle>
-          {hasRooms && (
+          {hasRooms && !showAllMetadata && (
             <button
               type="button"
               onClick={() => setFace((f) => f === 'default' ? 'rooms' : 'default')}

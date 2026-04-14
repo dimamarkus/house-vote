@@ -61,7 +61,7 @@ export default async function PublishedTripPage({ params }: PublishedTripPagePro
         initialSession={initialSession}
         mode="board"
       />
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-8 xl:px-8">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-6 px-6 py-8 2xl:px-10">
         <PublishedTripMasthead
           share={share}
           tripDateRange={tripDateRange}

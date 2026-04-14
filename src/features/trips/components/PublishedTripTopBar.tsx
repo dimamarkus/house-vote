@@ -27,7 +27,7 @@ export function PublishedTripTopBar({
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between xl:px-8">
+      <div className="mx-auto flex w-full max-w-none flex-col gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between 2xl:px-10">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground sm:text-base">{share.trip.name}</p>
         </div>
