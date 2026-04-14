@@ -127,7 +127,7 @@ export function PublishedTripPageClient({
   return (
     <div className="flex w-full flex-col gap-6">
       {sortedListings.length > 0 ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sortedListings.map((listing) => {
             const voterNames = listing.votes.map((vote) => vote.guest.guestDisplayName);
             const isVoteEligible = isVoteEligibleListingStatus(listing.status);
