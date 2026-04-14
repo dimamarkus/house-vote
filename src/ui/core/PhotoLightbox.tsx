@@ -26,10 +26,6 @@ export function PhotoLightboxDialog({
   const count = photos.length;
   const hasMultiple = count > 1;
 
-  useEffect(() => {
-    if (open) setIndex(startIndex);
-  }, [open, startIndex]);
-
   const goPrev = useCallback(() => {
     setIndex((i) => (i - 1 + count) % count);
   }, [count]);
@@ -49,7 +45,7 @@ export function PhotoLightboxDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, hasMultiple, goPrev, goNext]);
 
-  if (count === 0) return null;
+  if (!open || count === 0) return null;
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
