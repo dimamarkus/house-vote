@@ -81,12 +81,27 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
           token: string;
           isPublished: boolean;
           votingOpen: boolean;
+          commentsOpen: boolean;
           allowGuestSuggestions: boolean;
         } | null;
         listings: Array<{
           id: string;
           title: string;
           status: string;
+        }>;
+        comments: Array<{
+          id: string;
+          body: string;
+          createdAt: Date;
+          hiddenAt: Date | null;
+          guest: {
+            id: string;
+            guestDisplayName: string;
+          };
+          listing: {
+            id: string;
+            title: string;
+          };
         }>;
         guests: Array<{
           id: string;
@@ -123,12 +138,27 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
             token: shareSummary.share.token,
             isPublished: shareSummary.share.isPublished,
             votingOpen: shareSummary.share.votingOpen,
+            commentsOpen: shareSummary.share.commentsOpen,
             allowGuestSuggestions: shareSummary.share.allowGuestSuggestions,
           } : null,
           listings: shareSummary.listings.map((listing) => ({
             id: listing.id,
             title: listing.title,
             status: listing.status,
+          })),
+          comments: shareSummary.comments.map((comment) => ({
+            id: comment.id,
+            body: comment.body,
+            createdAt: comment.createdAt,
+            hiddenAt: comment.hiddenAt,
+            guest: {
+              id: comment.guest.id,
+              guestDisplayName: comment.guest.guestDisplayName,
+            },
+            listing: {
+              id: comment.listing.id,
+              title: comment.listing.title,
+            },
           })),
           guests: shareSummary.share?.guests.map((guest) => ({
             id: guest.id,

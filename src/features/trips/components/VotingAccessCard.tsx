@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   publishTripShare,
@@ -21,6 +21,7 @@ interface VotingAccessCardProps {
     token: string;
     isPublished: boolean;
     votingOpen: boolean;
+    commentsOpen: boolean;
     allowGuestSuggestions: boolean;
   } | null;
 }
@@ -76,13 +77,11 @@ function VotingSettingRow({
 export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
   const router = useRouter();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
-  const [origin, setOrigin] = useState<string | null>(null);
+  const [origin] = useState<string | null>(() => (
+    typeof window === 'undefined' ? null : window.location.origin
+  ));
   const sharePath = share ? `/share/${share.token}` : '';
   const shareUrl = origin ? `${origin}${sharePath}` : sharePath;
-
-  useEffect(() => {
-    setOrigin(window.location.origin);
-  }, []);
 
   async function refreshAfterSuccess() {
     router.refresh();
@@ -124,6 +123,27 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
     }
 
     toast.success(result.data.votingOpen ? 'Voting reopened.' : 'Voting closed.');
+    await refreshAfterSuccess();
+  }
+
+  async function handleCommentsToggle() {
+    if (!share) {
+      return;
+    }
+
+    setPendingAction('comments');
+    const result = await updateTripShareSettings({
+      tripId,
+      commentsOpen: !share.commentsOpen,
+    });
+    setPendingAction(null);
+
+    if (!result.success) {
+      toast.error(typeof result.error === 'string' ? result.error : 'Unable to update comment status.');
+      return;
+    }
+
+    toast.success(result.data.commentsOpen ? 'Comments reopened.' : 'Comments closed.');
     await refreshAfterSuccess();
   }
 
@@ -180,6 +200,13 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
             disabled={!share || pendingAction === 'voting'}
             pending={pendingAction === 'voting'}
             onToggle={handleVotingToggle}
+          />
+          <VotingSettingRow
+            title="Comments open"
+            checked={Boolean(share?.commentsOpen)}
+            disabled={!share || pendingAction === 'comments'}
+            pending={pendingAction === 'comments'}
+            onToggle={handleCommentsToggle}
           />
         </div>
 

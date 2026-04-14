@@ -44,6 +44,7 @@ interface CollaboratorsListProps {
       token: string;
       isPublished: boolean;
       votingOpen: boolean;
+      commentsOpen: boolean;
       allowGuestSuggestions: boolean;
     } | null;
     listings: Array<{

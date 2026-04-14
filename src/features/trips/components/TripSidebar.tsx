@@ -1,5 +1,6 @@
 import type { Trip, User } from 'db';
 import { CollaboratorsList } from './CollaboratorsList';
+import { PublishedCommentsModerationCard } from './PublishedCommentsModerationCard';
 import { VotingAccessCard } from './VotingAccessCard';
 
 interface TripSidebarProps {
@@ -14,12 +15,27 @@ interface TripSidebarProps {
       token: string;
       isPublished: boolean;
       votingOpen: boolean;
+      commentsOpen: boolean;
       allowGuestSuggestions: boolean;
     } | null;
     listings: Array<{
       id: string;
       title: string;
       status: string;
+    }>;
+    comments: Array<{
+      id: string;
+      body: string;
+      createdAt: Date;
+      hiddenAt: Date | null;
+      guest: {
+        id: string;
+        guestDisplayName: string;
+      };
+      listing: {
+        id: string;
+        title: string;
+      };
     }>;
     guests: Array<{
       id: string;
@@ -48,6 +64,13 @@ export function TripSidebar({
         <VotingAccessCard
           tripId={trip.id}
           share={publishedShareSummary?.share ?? null}
+        />
+      ) : null}
+
+      {isOwner && (publishedShareSummary?.share || (publishedShareSummary?.comments.length ?? 0) > 0) ? (
+        <PublishedCommentsModerationCard
+          tripId={trip.id}
+          comments={publishedShareSummary?.comments ?? []}
         />
       ) : null}
 

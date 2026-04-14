@@ -8,6 +8,7 @@ import {
   formatListingStatusLabel,
   isVoteEligibleListingStatus,
 } from '@/features/listings/constants/listing-status';
+import { PublishedListingCommentsSheet } from '@/features/trips/components/PublishedListingCommentsSheet';
 import { usePublishedGuestSession } from '@/features/trips/hooks/usePublishedGuestSession';
 import type { PublishedTripListingRecord, PublishedTripShareRecord } from '@/features/trips/publishedDb';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
@@ -166,28 +167,36 @@ export function PublishedTripPageClient({
                           <span>{listing.votes.length}</span>
                         </div>
                       </div>
-                      <Button
-                        onClick={() => handleVote(listing.id)}
-                        disabled={!share.votingOpen || !isVoteEligible || pendingAction === `vote-${listing.id}`}
-                        weight="ghost"
-                        size="icon"
-                        aria-label={voteButtonLabel}
-                        aria-pressed={isCurrentVote}
-                        title={voteButtonLabel}
-                        className={cn(
-                          'rounded-full border',
-                          isCurrentVote
-                            ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
-                            : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
-                        )}
-                      >
-                        {pendingAction === `vote-${listing.id}` ? (
-                          <RefreshCcw className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
-                        )}
-                        <span className="sr-only">{voteButtonLabel}</span>
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <PublishedListingCommentsSheet
+                          token={token}
+                          listing={listing}
+                          activeGuest={activeGuest}
+                          commentsOpen={share.commentsOpen}
+                        />
+                        <Button
+                          onClick={() => handleVote(listing.id)}
+                          disabled={!share.votingOpen || !isVoteEligible || pendingAction === `vote-${listing.id}`}
+                          weight="ghost"
+                          size="icon"
+                          aria-label={voteButtonLabel}
+                          aria-pressed={isCurrentVote}
+                          title={voteButtonLabel}
+                          className={cn(
+                            'rounded-full border',
+                            isCurrentVote
+                              ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
+                              : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
+                          )}
+                        >
+                          {pendingAction === `vote-${listing.id}` ? (
+                            <RefreshCcw className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
+                          )}
+                          <span className="sr-only">{voteButtonLabel}</span>
+                        </Button>
+                      </div>
                     </div>
                     <div className="flex min-h-9 flex-wrap gap-2">
                       {voterNames.length > 0 ? (
