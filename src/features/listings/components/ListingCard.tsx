@@ -160,28 +160,28 @@ export function ListingCard({
     bedCount != null ||
     listing.bathroomCount != null ||
     sleepsCount != null) ? (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
       {listing.bedroomCount != null && (
         <span className="flex items-center gap-1">
-          <DoorOpen className="h-4 w-4" />
+          <DoorOpen className="h-3.5 w-3.5" />
           {listing.bedroomCount === 1 ? '1 Room' : `${listing.bedroomCount} Rooms`}
         </span>
       )}
       {bedCount != null && (
         <span className="flex items-center gap-1">
-          <BedDouble className="h-4 w-4" />
+          <BedDouble className="h-3.5 w-3.5" />
           {bedCount === 1 ? '1 Bed' : `${bedCount} Beds`}
         </span>
       )}
       {listing.bathroomCount != null && (
         <span className="flex items-center gap-1">
-          <Bath className="h-4 w-4" />
+          <Bath className="h-3.5 w-3.5" />
           {listing.bathroomCount === 1 ? '1 Bath' : `${listing.bathroomCount} Baths`}
         </span>
       )}
       {sleepsCount != null && (
         <span className="flex items-center gap-1">
-          <Users className="h-4 w-4" />
+          <Users className="h-3.5 w-3.5" />
           {`Sleeps ${sleepsCount}`}
         </span>
       )}
@@ -206,79 +206,74 @@ export function ListingCard({
         />
       ) : null}
 
-      <CardHeader className={cn(hasPhotos ? 'gap-3 pt-4' : 'gap-3 pt-6')}>
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-lg flex-1 min-w-0">
-            {showLink ? (
-              <Link href={detailUrl} className="hover:underline">
-                {listing.title}
-              </Link>
-            ) : (
-              listing.title
-            )}
-          </CardTitle>
-          {hasRooms && !showAllMetadata && (
-            <button
-              type="button"
-              onClick={() => setFace((f) => f === 'default' ? 'rooms' : 'default')}
-              className={cn(
-                "shrink-0 rounded-md p-1.5 transition-colors",
-                "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                showingRooms ? "bg-muted text-foreground" : "text-muted-foreground",
-              )}
-              aria-label={showingRooms ? "Show photos" : "Show rooms & beds"}
-              title={showingRooms ? "Show photos" : "Show rooms & beds"}
-            >
-              {showingRooms ? <ImageIcon className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
-            </button>
-          )}
-        </div>
-        {listing.address ? (
-          <div className="text-sm text-muted-foreground">
-            <p>{listing.address}</p>
+      <CardHeader className={cn(hasPhotos ? 'gap-4 pt-4' : 'gap-4 pt-6', 'pb-4')}>
+        {(inlineStatusBadge || inlineSourceBadge) ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {inlineStatusBadge}
+            {inlineSourceBadge}
           </div>
         ) : null}
-        {(listing.price || inlineStatusBadge || inlineSourceBadge) ? (
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-2">
-              {inlineStatusBadge}
-              {inlineSourceBadge}
-            </div>
-            {listing.price ? (
-              <div className="shrink-0 text-right">
-                <p className="text-lg font-semibold tracking-tight">${listing.price.toLocaleString()}</p>
-              </div>
+
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <CardTitle className="line-clamp-2 text-lg leading-tight">
+              {showLink ? (
+                <Link href={detailUrl} className="hover:underline" title={listing.title}>
+                  {listing.title}
+                </Link>
+              ) : (
+                <span title={listing.title}>{listing.title}</span>
+              )}
+            </CardTitle>
+            {listing.address ? (
+              <p className="truncate text-sm text-muted-foreground" title={listing.address}>
+                {listing.address}
+              </p>
             ) : null}
           </div>
-        ) : null}
-        <p className="text-xs text-muted-foreground/70">
-          Added {format(listing.createdAt, 'MMM d, yyyy')}
-        </p>
+
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            {listing.price ? (
+              <p className="text-lg font-semibold tracking-tight">${listing.price.toLocaleString()}</p>
+            ) : null}
+            {hasRooms && !showAllMetadata && (
+              <button
+                type="button"
+                onClick={() => setFace((f) => f === 'default' ? 'rooms' : 'default')}
+                className={cn(
+                  "rounded-md p-1.5 transition-colors",
+                  "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  showingRooms ? "bg-muted text-foreground" : "text-muted-foreground",
+                )}
+                aria-label={showingRooms ? "Show photos" : "Show rooms & beds"}
+                title={showingRooms ? "Show photos" : "Show rooms & beds"}
+              >
+                {showingRooms ? <ImageIcon className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+              </button>
+            )}
+          </div>
+        </div>
+
+        {summaryMetrics}
       </CardHeader>
 
-      <CardContent className="flex-1 space-y-4 text-sm">
-        {showingRooms ? (
-          <div className="space-y-4">
-            {summaryMetrics}
-            <div className="space-y-4 border-t border-border/60 pt-4">
-              <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
-              {descriptionBlock}
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {summaryMetrics}
-            {descriptionBlock ? (
-              <div className="border-t border-border/60 pt-4">
-                {descriptionBlock}
-              </div>
-            ) : null}
-          </div>
-        )}
+      <CardContent className="flex flex-1 flex-col text-sm">
+        <div className="space-y-4">
+          {showingRooms && hasRooms && (
+            <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
+          )}
+          {descriptionBlock}
+        </div>
+
+        <div className="mt-auto pt-6">
+          <p className="text-[11px] text-muted-foreground/50">
+            Added {format(listing.createdAt, 'MMM d, yyyy')}
+          </p>
+        </div>
       </CardContent>
 
       {footerContent && (
-        <CardFooter className="mt-auto">
+        <CardFooter className="border-t border-border/50 pt-4">
           {footerContent}
         </CardFooter>
       )}
