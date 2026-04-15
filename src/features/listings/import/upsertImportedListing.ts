@@ -1,12 +1,6 @@
 import { db, Prisma } from 'db';
 import type { NormalizedImportedListing } from './types';
 
-interface UpsertImportedListingOptions {
-  addedById?: string;
-  addedByGuestId?: string;
-  addedByGuestName?: string;
-}
-
 function toJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
   if (value === null) {
     return Prisma.JsonNull;
@@ -27,6 +21,74 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.Json
   }
 
   return String(value);
+}
+
+function buildImportedListingUpdateInput(
+  listing: NormalizedImportedListing,
+  importedAt: Date,
+): Prisma.ListingUncheckedUpdateInput {
+  return {
+    title: listing.title,
+    address: listing.address,
+    url: listing.canonicalUrl,
+    price: listing.price,
+    bedroomCount: listing.bedroomCount,
+    bedCount: listing.bedCount,
+    bathroomCount: listing.bathroomCount,
+    sourceDescription: listing.sourceDescription,
+    notes: listing.notes,
+    imageUrl: listing.imageUrl,
+    source: listing.source,
+    importMethod: listing.importMethod,
+    importStatus: listing.importStatus,
+    sourceExternalId: listing.sourceExternalId,
+    importedAt,
+    importError: null,
+    rawImportPayload: toJsonValue(listing.rawImportPayload),
+    roomBreakdown: listing.roomBreakdown ? toJsonValue(listing.roomBreakdown) : Prisma.JsonNull,
+  };
+}
+
+export async function applyNormalizedImportToListingId(
+  listingId: string,
+  listing: NormalizedImportedListing,
+) {
+  const importedAt = new Date();
+  const listingData = buildImportedListingUpdateInput(listing, importedAt);
+
+  return db.$transaction(async (tx) => {
+    await tx.listing.update({
+      where: { id: listingId },
+      data: listingData,
+    });
+
+    if (listing.photoUrls.length > 0) {
+      await tx.listingPhoto.deleteMany({
+        where: { listingId },
+      });
+
+      await tx.listingPhoto.createMany({
+        data: listing.photoUrls.map((url, index) => ({
+          listingId,
+          url,
+          position: index,
+        })),
+      });
+    }
+
+    return tx.listing.findUniqueOrThrow({
+      where: { id: listingId },
+      include: {
+        photos: true,
+      },
+    });
+  });
+}
+
+interface UpsertImportedListingOptions {
+  addedById?: string;
+  addedByGuestId?: string;
+  addedByGuestName?: string;
 }
 
 export async function upsertImportedListing(

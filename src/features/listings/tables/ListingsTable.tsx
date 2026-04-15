@@ -234,11 +234,13 @@ export function ListingsTable({
       cell: (listing) => {
         const canEdit = !!currentUserId && currentUserId === listing.addedById;
         const canDelete = !!currentUserId && (currentUserIsOwner || currentUserId === listing.addedById);
+        const canRefreshFromSource = canDelete && Boolean(listing.url?.trim());
 
         return (
           <ListingActionsMenu
             canDelete={canDelete}
             canEdit={canEdit}
+            canRefreshFromSource={canRefreshFromSource}
             canToggleStatus={Boolean(currentUserId)}
             initialStateForEdit={listing}
             listingId={listing.id}
