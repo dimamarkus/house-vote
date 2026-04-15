@@ -97,6 +97,11 @@ function resolveRefreshedRoomBreakdown(
   return refreshedRoomBreakdown ?? parseStoredRoomBreakdown(existingRoomBreakdown);
 }
 
+/** Keep the existing value when a refresh scrape comes back empty. */
+function keepExisting<T>(refreshed: T | null | undefined, existing: T | null | undefined): T | null {
+  return (refreshed ?? existing ?? null) as T | null;
+}
+
 export async function refreshListingFromSourceUrl(input: unknown) {
   const authData = await auth();
   const userId = authData?.userId;
@@ -124,6 +129,13 @@ export async function refreshListingFromSourceUrl(input: unknown) {
         tripId: true,
         url: true,
         addedById: true,
+        title: true,
+        address: true,
+        price: true,
+        bedroomCount: true,
+        bedCount: true,
+        bathroomCount: true,
+        imageUrl: true,
         sourceDescription: true,
         roomBreakdown: true,
       },
@@ -182,6 +194,12 @@ export async function refreshListingFromSourceUrl(input: unknown) {
       listing.roomBreakdown,
       normalizedListing.roomBreakdown,
     );
+    normalizedListing.price = keepExisting(normalizedListing.price, listing.price);
+    normalizedListing.bedroomCount = keepExisting(normalizedListing.bedroomCount, listing.bedroomCount);
+    normalizedListing.bedCount = keepExisting(normalizedListing.bedCount, listing.bedCount);
+    normalizedListing.bathroomCount = keepExisting(normalizedListing.bathroomCount, listing.bathroomCount);
+    normalizedListing.address = keepExisting(normalizedListing.address, listing.address);
+    normalizedListing.imageUrl = keepExisting(normalizedListing.imageUrl, listing.imageUrl);
 
     await applyNormalizedImportToListingId(listingId, normalizedListing);
 
