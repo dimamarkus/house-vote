@@ -9,7 +9,10 @@ import { createErrorResponse, createSuccessResponse } from '@/core/responses';
 import { trips } from '@/features/trips/db';
 import { LISTING_IMPORT_UNSUPPORTED_SOURCE_MESSAGE } from '../import/constants';
 import type { RoomBreakdown } from '../import/types';
-import { getMissingImportedListingFields } from '../import/normalizeImportedListing';
+import {
+  getMissingImportedListingFields,
+  recalculateImportStatus,
+} from '../import/normalizeImportedListing';
 import { scrapeListingMetadataFromUrl } from '../import/scrapeListingMetadataFromUrl';
 import { applyNormalizedImportToListingId } from '../import/upsertImportedListing';
 import { listings } from '../db';
@@ -200,6 +203,7 @@ export async function refreshListingFromSourceUrl(input: unknown) {
     normalizedListing.bathroomCount = keepExisting(normalizedListing.bathroomCount, listing.bathroomCount);
     normalizedListing.address = keepExisting(normalizedListing.address, listing.address);
     normalizedListing.imageUrl = keepExisting(normalizedListing.imageUrl, listing.imageUrl);
+    normalizedListing.importStatus = recalculateImportStatus(normalizedListing);
 
     await applyNormalizedImportToListingId(listingId, normalizedListing);
 

@@ -417,6 +417,7 @@ function extractRoomBreakdownFromVrbo($: cheerio.CheerioAPI): RoomBreakdownResul
 }
 
 function extractRoomBreakdownFromAirbnbJson($: cheerio.CheerioAPI): RoomBreakdownResult | null {
+  const seenKeys = new Set<string>();
   const arrangementItems: Array<{ title: string; subtitle: string; baseUrl?: string }> = [];
 
   $('script[type="application/json"]').each((_, el) => {
@@ -435,6 +436,12 @@ function extractRoomBreakdownFromAirbnbJson($: cheerio.CheerioAPI): RoomBreakdow
           const title = typeof record.title === 'string' ? record.title.trim() : '';
           const subtitle = typeof record.subtitle === 'string' ? record.subtitle.trim() : '';
           if (!title || !subtitle) continue;
+
+          const dedupeKey = `${title}\0${subtitle}`;
+          if (seenKeys.has(dedupeKey)) {
+            continue;
+          }
+          seenKeys.add(dedupeKey);
 
           let baseUrl: string | undefined;
           const images = record.images;
