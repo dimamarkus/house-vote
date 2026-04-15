@@ -62,6 +62,7 @@ model Listing {
   bedroomCount     Int? // Optional
   bedCount         Int? // Optional
   bathroomCount    Int? // Optional
+  sourceDescription String?
   notes            String?
   imageUrl         String? // Optional
   latitude         Float?
