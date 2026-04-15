@@ -110,7 +110,7 @@ export function PublishedTripPageClient({
     }
 
     router.refresh();
-    toast.success(currentVoteListingId === listingId ? 'Your vote is still here.' : 'Vote updated.');
+    toast.success(result.data.listingId === null ? 'Vote removed.' : 'Vote updated.');
   }
 
   if (!activeGuest) {

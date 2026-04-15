@@ -476,24 +476,55 @@ export const publishedTrips = {
     }
 
     await assertGuestInTrip(share.tripId, guestId, db);
-    await assertPotentialListing(share.tripId, listingId, db);
 
-    return db.tripVote.upsert({
-      where: {
-        tripId_guestId: {
+    return db.$transaction(async (tx) => {
+      const existingVote = await tx.tripVote.findUnique({
+        where: {
+          tripId_guestId: {
+            tripId: share.tripId,
+            guestId,
+          },
+        },
+      });
+
+      if (existingVote?.listingId === listingId) {
+        await tx.tripVote.delete({
+          where: {
+            id: existingVote.id,
+          },
+        });
+
+        return {
           tripId: share.tripId,
           guestId,
+          listingId: null,
+        };
+      }
+
+      await assertPotentialListing(share.tripId, listingId, tx);
+
+      const vote = await tx.tripVote.upsert({
+        where: {
+          tripId_guestId: {
+            tripId: share.tripId,
+            guestId,
+          },
         },
-      },
-      update: {
-        listingId,
-      },
-      create: {
-        tripId: share.tripId,
-        guestId,
-        listingId,
-      },
-      include: publishedVoteInclude,
+        update: {
+          listingId,
+        },
+        create: {
+          tripId: share.tripId,
+          guestId,
+          listingId,
+        },
+      });
+
+      return {
+        tripId: vote.tripId,
+        guestId: vote.guestId,
+        listingId: vote.listingId,
+      };
     });
   },
 
