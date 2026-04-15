@@ -28,7 +28,7 @@ A collaborative trip-planning app for comparing, discussing, and voting on renta
 2. Install dependencies with `pnpm install`.
 3. Generate the Prisma client with `pnpm db:generate`.
 4. Ensure your Postgres database is reachable via `DATABASE_URL`.
-5. Apply schema changes with `pnpm db:push` or your preferred Prisma migration workflow.
+5. Apply schema changes with `pnpm db:push` for local-only prototyping, or create a real Prisma migration for anything that will ship.
 6. Start the app with `pnpm dev`.
 
 ## Env
@@ -66,6 +66,8 @@ Use a custom Vercel build command so production deploys apply pending Prisma mig
 - Node is pinned via `package.json` engines and `.nvmrc`
 - pnpm is pinned via `packageManager`
 - `pnpm vercel-build` runs `prisma migrate deploy` only for production deploys, then runs the normal app build
+- Important: if you add or rename Prisma fields, do not rely on `pnpm db:push` alone. `db:push` updates your local database but does not create a tracked migration, so production can deploy code that expects columns that do not exist yet.
+- For production schema changes, create and commit a Prisma migration, review the SQL, and let deploys apply it through `pnpm vercel-build` / `prisma migrate deploy`.
 
 ### Vercel Setup
 
