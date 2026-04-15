@@ -9,6 +9,7 @@ export const ListingSchema = z.object({
   bedroomCount: z.number().int().nullable().optional(),
   bedCount: z.number().int().nullable().optional(),
   bathroomCount: z.number().int().nullable().optional(),
+  sourceDescription: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
   imageUrl: z.string().nullable().optional(),
   latitude: z.number().nullable().optional(),
