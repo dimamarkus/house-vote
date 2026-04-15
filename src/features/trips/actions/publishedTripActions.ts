@@ -78,7 +78,7 @@ type PublishedGuestSession = {
 type PublishedVoteResult = {
   tripId: string;
   guestId: string;
-  listingId: string;
+  listingId: string | null;
 };
 
 type PublishedListingResult = {
