@@ -31,6 +31,7 @@ interface MapListing {
   bedroomCount: number | null;
   bedCount: number | null;
   bathroomCount: number | null;
+  sourceDescription: string | null;
   notes: string | null;
   imageUrl: string | null;
   latitude: number | null;

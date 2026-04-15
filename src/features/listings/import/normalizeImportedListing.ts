@@ -211,6 +211,7 @@ export function normalizeImportedListing(
   const canonicalUrl = canonicalizeListingUrl(capture.url, source);
   const sourceExternalId = extractSourceExternalId(canonicalUrl, source);
   const address = normalizeText(capture.address);
+  const sourceDescription = normalizeText(capture.sourceDescription);
   const notes = normalizeText(capture.notes);
   const normalizedPhotoUrls = normalizePhotoUrls(capture.imageUrl, capture.photoUrls);
   const imageUrl = normalizedPhotoUrls[0] ?? null;
@@ -250,6 +251,7 @@ export function normalizeImportedListing(
     bedroomCount,
     bedCount,
     bathroomCount,
+    sourceDescription,
     notes,
     imageUrl,
     photoUrls: normalizedPhotoUrls,

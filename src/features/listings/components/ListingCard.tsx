@@ -122,24 +122,28 @@ export function ListingCard({
   );
   const imageSourceBadge = hasPhotos ? sourceBadge : null;
   const inlineSourceBadge = hasPhotos ? null : sourceBadge;
-  const notesPreview =
-    listing.notes && listing.notes.length > 160
-      ? `${listing.notes.slice(0, 160).trimEnd()}...`
-      : listing.notes;
-  const hasLongDescription = Boolean(listing.notes && listing.notes.length > 160);
-  const descriptionBlock = listing.notes ? (
+  const trimmedSourceDescription = listing.sourceDescription?.trim() ?? '';
+  const trimmedNotes = listing.notes?.trim() ?? '';
+  const detailText = trimmedSourceDescription || trimmedNotes || null;
+  const detailLabel = trimmedSourceDescription ? 'Description' : 'Notes';
+  const detailPreview =
+    detailText && detailText.length > 160
+      ? `${detailText.slice(0, 160).trimEnd()}...`
+      : detailText;
+  const hasLongDescription = Boolean(detailText && detailText.length > 160);
+  const descriptionBlock = detailText ? (
     <Dialog>
       <div className="col-span-2 flex items-start gap-1">
         <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0">
-          <p className="text-muted-foreground wrap-break-word">{notesPreview}</p>
+          <p className="text-muted-foreground wrap-break-word">{detailPreview}</p>
           {hasLongDescription ? (
             <DialogTrigger asChild>
               <button
                 type="button"
                 className="mt-1 text-xs font-medium text-muted-foreground/90 hover:text-foreground hover:underline"
               >
-                Read Full Description
+                {`Read Full ${detailLabel}`}
               </button>
             </DialogTrigger>
           ) : null}
@@ -147,11 +151,11 @@ export function ListingCard({
       </div>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Listing Description</DialogTitle>
+          <DialogTitle>{`Listing ${detailLabel}`}</DialogTitle>
           <DialogDescription>{listing.title}</DialogDescription>
         </DialogHeader>
         <div className="max-h-[65vh] overflow-y-auto pr-1">
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{listing.notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{detailText}</p>
         </div>
       </DialogContent>
     </Dialog>
