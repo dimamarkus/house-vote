@@ -23,7 +23,8 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.Json
   return String(value);
 }
 
-function buildImportedListingUpdateInput(
+/** Shared field map for URL import writes (create + update). */
+function buildImportedListingImportPayload(
   listing: NormalizedImportedListing,
   importedAt: Date,
 ): Prisma.ListingUncheckedUpdateInput {
@@ -54,7 +55,7 @@ export async function applyNormalizedImportToListingId(
   listing: NormalizedImportedListing,
 ) {
   const importedAt = new Date();
-  const listingData = buildImportedListingUpdateInput(listing, importedAt);
+  const listingData = buildImportedListingImportPayload(listing, importedAt);
 
   return db.$transaction(async (tx) => {
     await tx.listing.update({
@@ -97,26 +98,7 @@ export async function upsertImportedListing(
   options?: UpsertImportedListingOptions,
 ) {
   const importedAt = new Date();
-  const listingData = {
-    title: listing.title,
-    address: listing.address,
-    url: listing.canonicalUrl,
-    price: listing.price,
-    bedroomCount: listing.bedroomCount,
-    bedCount: listing.bedCount,
-    bathroomCount: listing.bathroomCount,
-    sourceDescription: listing.sourceDescription,
-    notes: listing.notes,
-    imageUrl: listing.imageUrl,
-    source: listing.source,
-    importMethod: listing.importMethod,
-    importStatus: listing.importStatus,
-    sourceExternalId: listing.sourceExternalId,
-    importedAt,
-    importError: null,
-    rawImportPayload: toJsonValue(listing.rawImportPayload),
-    roomBreakdown: listing.roomBreakdown ? toJsonValue(listing.roomBreakdown) : Prisma.JsonNull,
-  } satisfies Prisma.ListingUncheckedUpdateInput;
+  const listingData = buildImportedListingImportPayload(listing, importedAt);
 
   return db.$transaction(async (tx) => {
     const existingListing = await tx.listing.findFirst({
@@ -153,7 +135,8 @@ export async function upsertImportedListing(
             ...(options?.addedById ? { addedById: options.addedById } : {}),
             ...(options?.addedByGuestId ? { addedByGuestId: options.addedByGuestId } : {}),
             ...(options?.addedByGuestName ? { addedByGuestName: options.addedByGuestName } : {}),
-          },
+            // Prisma uses distinct Create vs Update input types; scalar payload is the same at runtime.
+          } as Prisma.ListingUncheckedCreateInput,
           include: {
             photos: true,
           },
