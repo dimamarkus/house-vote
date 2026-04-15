@@ -7,6 +7,7 @@ import { LinkButton } from '@/ui/core/LinkButton';
 import { ListingFormSheet } from '@/features/listings/forms/ListingFormSheet';
 import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
 import { ListingStatusAction } from '@/features/listings/components/ListingStatusAction';
+import { RefreshListingFromSourceButton } from '@/features/listings/components/RefreshListingFromSourceButton';
 import { LISTING_STATUS, type ListingStatusValue } from '@/features/listings/constants/listing-status';
 import type { ListingFormValues } from '@/features/listings/schemas';
 
@@ -18,6 +19,7 @@ interface ListingActionsMenuProps {
   listingStatus: ListingStatusValue;
   canEdit: boolean;
   canDelete: boolean;
+  canRefreshFromSource: boolean;
   canToggleStatus: boolean;
   initialStateForEdit: ListingFormValues;
 }
@@ -30,6 +32,7 @@ export function ListingActionsMenu({
   listingStatus,
   canEdit,
   canDelete,
+  canRefreshFromSource,
   canToggleStatus,
   initialStateForEdit,
 }: ListingActionsMenuProps) {
@@ -127,6 +130,19 @@ export function ListingActionsMenu({
             </ListingFormSheet>
           ) : null}
 
+          {canRefreshFromSource ? (
+            <div className="px-1 py-0.5" role="menuitem">
+              <RefreshListingFromSourceButton
+                listingId={listingId}
+                className="h-auto min-h-8 w-full justify-start px-1 py-1.5 text-left font-normal"
+                size="sm"
+                variant="neutral"
+                weight="ghost"
+                onRefreshStart={() => setIsOpen(false)}
+              />
+            </div>
+          ) : null}
+
           {canDelete ? (
             <DeleteListingActionButton
               buttonClassName="h-8 w-full justify-start gap-2 px-2 text-left"
@@ -151,7 +167,7 @@ export function ListingActionsMenu({
             />
           ) : null}
 
-          {!canEdit && !canDelete && !canToggleStatus && !canViewSource ? (
+          {!canEdit && !canDelete && !canRefreshFromSource && !canToggleStatus && !canViewSource ? (
             <div className="flex h-8 items-center px-2 text-xs text-muted-foreground">
               No actions available
             </div>

@@ -1,12 +1,6 @@
 import { db, Prisma } from 'db';
 import type { NormalizedImportedListing } from './types';
 
-interface UpsertImportedListingOptions {
-  addedById?: string;
-  addedByGuestId?: string;
-  addedByGuestName?: string;
-}
-
 function toJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
   if (value === null) {
     return Prisma.JsonNull;
@@ -29,13 +23,12 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.Json
   return String(value);
 }
 
-export async function upsertImportedListing(
-  tripId: string,
+/** Shared field map for URL import writes (create + update). */
+function buildImportedListingImportPayload(
   listing: NormalizedImportedListing,
-  options?: UpsertImportedListingOptions,
-) {
-  const importedAt = new Date();
-  const listingData = {
+  importedAt: Date,
+): Prisma.ListingUncheckedUpdateInput {
+  return {
     title: listing.title,
     address: listing.address,
     url: listing.canonicalUrl,
@@ -54,7 +47,58 @@ export async function upsertImportedListing(
     importError: null,
     rawImportPayload: toJsonValue(listing.rawImportPayload),
     roomBreakdown: listing.roomBreakdown ? toJsonValue(listing.roomBreakdown) : Prisma.JsonNull,
-  } satisfies Prisma.ListingUncheckedUpdateInput;
+  };
+}
+
+export async function applyNormalizedImportToListingId(
+  listingId: string,
+  listing: NormalizedImportedListing,
+) {
+  const importedAt = new Date();
+  const listingData = buildImportedListingImportPayload(listing, importedAt);
+
+  return db.$transaction(async (tx) => {
+    await tx.listing.update({
+      where: { id: listingId },
+      data: listingData,
+    });
+
+    if (listing.photoUrls.length > 0) {
+      await tx.listingPhoto.deleteMany({
+        where: { listingId },
+      });
+
+      await tx.listingPhoto.createMany({
+        data: listing.photoUrls.map((url, index) => ({
+          listingId,
+          url,
+          position: index,
+        })),
+      });
+    }
+
+    return tx.listing.findUniqueOrThrow({
+      where: { id: listingId },
+      include: {
+        photos: true,
+      },
+    });
+  });
+}
+
+interface UpsertImportedListingOptions {
+  addedById?: string;
+  addedByGuestId?: string;
+  addedByGuestName?: string;
+}
+
+export async function upsertImportedListing(
+  tripId: string,
+  listing: NormalizedImportedListing,
+  options?: UpsertImportedListingOptions,
+) {
+  const importedAt = new Date();
+  const listingData = buildImportedListingImportPayload(listing, importedAt);
 
   return db.$transaction(async (tx) => {
     const existingListing = await tx.listing.findFirst({
@@ -91,7 +135,8 @@ export async function upsertImportedListing(
             ...(options?.addedById ? { addedById: options.addedById } : {}),
             ...(options?.addedByGuestId ? { addedByGuestId: options.addedByGuestId } : {}),
             ...(options?.addedByGuestName ? { addedByGuestName: options.addedByGuestName } : {}),
-          },
+            // Prisma uses distinct Create vs Update input types; scalar payload is the same at runtime.
+          } as Prisma.ListingUncheckedCreateInput,
           include: {
             photos: true,
           },

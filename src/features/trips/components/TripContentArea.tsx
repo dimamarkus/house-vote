@@ -7,6 +7,7 @@ import type { ListingWithMedia } from '@/features/listings/types';
 import { ListingsTable } from '@/features/listings/tables/ListingsTable';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
 import { ListingCreateActions } from '@/features/listings/components/ListingCreateActions';
+import { RefreshListingFromSourceButton } from '@/features/listings/components/RefreshListingFromSourceButton';
 import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
 import { ListingFormSheet } from '@/features/listings/forms/ListingFormSheet';
 import { LikeButton } from '@/features/likes/components/LikeButton';
@@ -136,7 +137,10 @@ export function TripContentArea({
                           initialLiked={userLikes[listing.id] || false}
                         />
                       )}
-                      <div className="ml-auto flex items-center gap-2">
+                      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
+                        {userId && (isOwner || userId === listing.addedById) && listing.url?.trim() ? (
+                          <RefreshListingFromSourceButton listingId={listing.id} />
+                        ) : null}
                         {userId && userId === listing.addedById ? (
                           <ListingFormSheet listingId={listing.id} tripId={listing.tripId} initialState={listing}>
                             <Button size="sm" weight="hollow">
