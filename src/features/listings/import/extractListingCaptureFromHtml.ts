@@ -510,7 +510,7 @@ function extractFormattedTextFromElement(element: HtmlNode | null | undefined): 
     return null;
   }
 
-  const blockTags = new Set(['p', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
+  const blockTags = new Set(['p', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'section']);
   const extractNodeText = (node: HtmlNode): string => {
     if (node.type === 'text') {
       return node.data ?? '';
