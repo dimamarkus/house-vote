@@ -17,6 +17,7 @@ export const ListingImportCaptureSchema = z.object({
   bedroomCount: ImportedNumericFieldSchema,
   bedCount: ImportedNumericFieldSchema,
   bathroomCount: ImportedNumericFieldSchema,
+  sourceDescription: z.string().trim().nullable().optional(),
   notes: z.string().trim().nullable().optional(),
   imageUrl: z.string().trim().nullable().optional(),
   photoUrls: z.array(z.string().trim()).optional(),

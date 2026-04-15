@@ -21,6 +21,8 @@ describe('extractListingCaptureFromHtml', () => {
     expect(result.capture.price).toBe('2,800');
     expect(result.capture.bedroomCount).toBe('7');
     expect(result.capture.bedCount).toBe('13');
+    expect(result.capture.sourceDescription).toContain('Welcome to Emberwood Social Club');
+    expect(result.capture.sourceDescription).toContain('The space');
     expect(result.capture.roomBreakdown?.rooms.length ?? 0).toBe(7);
     expect(result.capture.roomBreakdown?.rooms[0]).toEqual({
       name: 'Bedroom 1',
@@ -51,6 +53,7 @@ describe('extractListingCaptureFromHtml', () => {
     expect(result.capture.price).toBe('2,204');
     expect(result.capture.bedroomCount).toBe('6');
     expect(result.capture.bathroomCount).toBe('4');
+    expect(result.capture.sourceDescription).toContain('Party-ready lodging with chefs, shuttles & curated fun');
     expect(result.capture.roomBreakdown?.summary).toContain('6 bedrooms');
     expect(result.capture.roomBreakdown?.rooms.length ?? 0).toBeGreaterThan(5);
     expect(result.capture.roomBreakdown?.rooms[0]).toEqual({

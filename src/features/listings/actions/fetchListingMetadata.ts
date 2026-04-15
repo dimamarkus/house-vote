@@ -18,6 +18,7 @@ interface ListingMetadata {
   bedroomCount?: number | null;
   bedCount?: number | null;
   bathroomCount?: number | null;
+  sourceDescription?: string | null;
   notes?: string | null;
   imageUrl?: string | null;
   photoUrls?: string[];
@@ -61,6 +62,7 @@ export async function fetchListingMetadata(
       bedroomCount: scrapedListing.bedroomCount,
       bedCount: scrapedListing.bedCount,
       bathroomCount: scrapedListing.bathroomCount,
+      sourceDescription: scrapedListing.sourceDescription,
       notes: scrapedListing.notes,
       imageUrl: scrapedListing.imageUrl,
       photoUrls: scrapedListing.photoUrls,

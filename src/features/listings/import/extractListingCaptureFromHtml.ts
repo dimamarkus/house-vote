@@ -20,6 +20,13 @@ interface ExtractListingCaptureFromHtmlResult {
   debug: ListingImportDebugInfo;
 }
 
+interface HtmlNode {
+  type: string;
+  name?: string;
+  data?: string;
+  children?: HtmlNode[];
+}
+
 function normalizeText(value?: string | null): string | null {
   const trimmedValue = value?.replace(/\s+/g, ' ').trim();
   return trimmedValue ? trimmedValue : null;
@@ -480,6 +487,91 @@ function buildAddress(parts: Array<string | null>): string | null {
   return Array.from(new Set(parts.filter((value): value is string => Boolean(value)))).join(', ') || null;
 }
 
+function normalizeMultilineText(value?: string | null): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const normalizedValue = value
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .join('\n')
+    .trim();
+
+  return normalizedValue || null;
+}
+
+function extractFormattedTextFromElement(element: HtmlNode | null | undefined): string | null {
+  if (!element) {
+    return null;
+  }
+
+  const blockTags = new Set(['p', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']);
+  const extractNodeText = (node: HtmlNode): string => {
+    if (node.type === 'text') {
+      return node.data ?? '';
+    }
+
+    if (node.type !== 'tag') {
+      return '';
+    }
+
+    const tagName = node.name?.toLowerCase() ?? '';
+
+    if (tagName === 'br') {
+      return '\n';
+    }
+
+    if (tagName === 'button' || tagName === 'script' || tagName === 'style') {
+      return '';
+    }
+
+    const childText = (node.children ?? []).map((child) => extractNodeText(child)).join('');
+
+    if (blockTags.has(tagName)) {
+      return `${childText}\n\n`;
+    }
+
+    return childText;
+  };
+
+  return normalizeMultilineText(extractNodeText(element));
+}
+
+function extractAirbnbDescription($: cheerio.CheerioAPI): string | null {
+  const section = $('[data-section-id="DESCRIPTION_DEFAULT"], [data-plugin-in-point-id="DESCRIPTION_DEFAULT"]').first();
+
+  if (!section.length) {
+    return null;
+  }
+
+  const contentBlock =
+    section.find('div[style*="-webkit-line-clamp"]').first().get(0) ??
+    section.find('span').first().get(0) ??
+    section.get(0);
+
+  return extractFormattedTextFromElement(contentBlock);
+}
+
+function extractVrboDescription($: cheerio.CheerioAPI): string | null {
+  const section = $('section')
+    .filter((_, element) => normalizeText($(element).find('h2').first().text()) === 'About this property')
+    .first();
+
+  if (!section.length) {
+    return null;
+  }
+
+  const contentBlock = section.clone();
+  contentBlock.find('h2').first().remove();
+
+  return extractFormattedTextFromElement(contentBlock.get(0));
+}
+
 function pickCandidate(candidates: LabeledCandidate[]): {
   value: string | null;
   winner: string | null;
@@ -519,6 +611,7 @@ function extractAirbnbHints($: cheerio.CheerioAPI) {
     '[data-testid="book-it-default"]',
     '[data-testid="book-it-hover-target"]',
   ]);
+  const sourceDescription = extractAirbnbDescription($);
 
   return {
     title:
@@ -533,12 +626,14 @@ function extractAirbnbHints($: cheerio.CheerioAPI) {
         '[data-plugin-in-point-id="TITLE_DEFAULT"] h2',
         'main h2',
       ]) ?? null,
+    sourceDescription,
     roomSummaryText: summaryText || titleSectionText || '',
     price: extractNightlyPriceFromText(priceContainerText || '', 'AIRBNB'),
     rawSignals: {
       titleSectionText,
       summaryText,
       priceContainerText,
+      sourceDescription,
     },
   };
 }
@@ -550,6 +645,7 @@ function extractVrboHints($: cheerio.CheerioAPI) {
     '#product-headline',
     '[data-stid="content-hotel-title"]',
   ]);
+  const sourceDescription = extractVrboDescription($);
 
   return {
     title:
@@ -563,6 +659,7 @@ function extractVrboHints($: cheerio.CheerioAPI) {
       getMetaItempropContent($, 'addressLocality'),
       getMetaItempropContent($, 'addressRegion'),
     ]),
+    sourceDescription,
     roomSummaryText: [headlineText, ...priceSummaryTexts.slice(0, 4)].filter(Boolean).join(' '),
     price: extractNightlyPriceFromText(
       [priceSummaryText, ...priceSummaryTexts].filter(Boolean).join('\n'),
@@ -571,6 +668,7 @@ function extractVrboHints($: cheerio.CheerioAPI) {
     rawSignals: {
       headlineText,
       priceSummaryTexts: priceSummaryTexts.slice(0, 6),
+      sourceDescription,
     },
   };
 }
@@ -594,6 +692,7 @@ export function extractListingCaptureFromHtml(
         : {
             title: null,
             address: null,
+            sourceDescription: null,
             roomSummaryText: '',
             price: null,
             rawSignals: {},
@@ -704,7 +803,6 @@ export function extractListingCaptureFromHtml(
     source === 'VRBO' && getMetaItempropContent($, 'identifier')
       ? `VRBO property id: ${getMetaItempropContent($, 'identifier')}`
       : null,
-    getMetaContent($, 'meta[name="description"]'),
     amenitySummary.length > 0 ? `Amenities: ${amenitySummary.join(', ')}` : null,
   ].filter((value): value is string => Boolean(value));
 
@@ -753,6 +851,7 @@ export function extractListingCaptureFromHtml(
       bedroomCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+bedrooms?\b/i]),
       bedCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+beds?\b/i]),
       bathroomCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+(?:bathrooms?|baths?)\b/i]),
+      sourceDescription: sourceHints.sourceDescription,
       notes: notesParts.join(' | ') || null,
       imageUrl: photoUrls[0] ?? null,
       photoUrls,

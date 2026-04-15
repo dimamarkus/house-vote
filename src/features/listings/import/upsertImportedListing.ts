@@ -43,6 +43,7 @@ export async function upsertImportedListing(
     bedroomCount: listing.bedroomCount,
     bedCount: listing.bedCount,
     bathroomCount: listing.bathroomCount,
+    sourceDescription: listing.sourceDescription,
     notes: listing.notes,
     imageUrl: listing.imageUrl,
     source: listing.source,

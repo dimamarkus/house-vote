@@ -46,6 +46,7 @@ export async function importListingFromUrl(inputData: { url: string; tripId: str
         bedroomCount: normalizedListing.bedroomCount,
         bedCount: normalizedListing.bedCount,
         bathroomCount: normalizedListing.bathroomCount,
+        sourceDescription: normalizedListing.sourceDescription,
         notes: normalizedListing.notes,
         imageUrl: normalizedListing.imageUrl,
         photoUrls: normalizedListing.photoUrls,
