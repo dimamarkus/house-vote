@@ -810,7 +810,7 @@ export function extractListingCaptureFromHtml(
     getMetaContent($, 'meta[name="description"]') ??
     getMetaContent($, 'meta[property="og:description"]');
   const sourceDescription =
-    normalizeText(sourceHints.sourceDescription ?? undefined) ??
+    sourceHints.sourceDescription ??
     normalizeText(metaDescriptionFallback ?? undefined);
 
   const selectorSignals = {
