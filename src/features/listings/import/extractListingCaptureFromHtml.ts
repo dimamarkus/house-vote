@@ -806,6 +806,13 @@ export function extractListingCaptureFromHtml(
     amenitySummary.length > 0 ? `Amenities: ${amenitySummary.join(', ')}` : null,
   ].filter((value): value is string => Boolean(value));
 
+  const metaDescriptionFallback =
+    getMetaContent($, 'meta[name="description"]') ??
+    getMetaContent($, 'meta[property="og:description"]');
+  const sourceDescription =
+    normalizeText(sourceHints.sourceDescription ?? undefined) ??
+    normalizeText(metaDescriptionFallback ?? undefined);
+
   const selectorSignals = {
     title: getAllTextFromSelectors($, selectors.title).slice(0, 3),
     address: getAllTextFromSelectors($, selectors.address).slice(0, 3),
@@ -851,7 +858,7 @@ export function extractListingCaptureFromHtml(
       bedroomCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+bedrooms?\b/i]),
       bedCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+beds?\b/i]),
       bathroomCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+(?:bathrooms?|baths?)\b/i]),
-      sourceDescription: sourceHints.sourceDescription,
+      sourceDescription,
       notes: notesParts.join(' | ') || null,
       imageUrl: photoUrls[0] ?? null,
       photoUrls,
