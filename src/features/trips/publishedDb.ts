@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { db, ListingStatus, Prisma, TripGuestSource } from 'db';
+import { db, ListingCommentKind, ListingStatus, Prisma, TripGuestSource } from 'db';
 import { scrapeListingMetadataFromUrl } from '@/features/listings/import/scrapeListingMetadataFromUrl';
 import { upsertImportedListing } from '@/features/listings/import/upsertImportedListing';
 
@@ -82,6 +82,7 @@ const ownerShareListingSelect = Prisma.validator<Prisma.ListingSelect>()({
 
 const ownerCommentSelect = Prisma.validator<Prisma.ListingCommentSelect>()({
   id: true,
+  kind: true,
   body: true,
   createdAt: true,
   hiddenAt: true,
@@ -496,7 +497,13 @@ export const publishedTrips = {
     });
   },
 
-  addComment: async (token: string, guestId: string, listingId: string, body: string) => {
+  addFeedback: async (
+    token: string,
+    guestId: string,
+    listingId: string,
+    kind: ListingCommentKind,
+    body: string,
+  ) => {
     const share = await assertPublishedShare(token);
 
     if (!share.commentsOpen) {
@@ -517,6 +524,7 @@ export const publishedTrips = {
         tripId: share.tripId,
         guestId,
         listingId,
+        kind,
         body: normalizedBody,
       },
       include: publishedCommentInclude,

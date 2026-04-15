@@ -227,6 +227,7 @@ model ListingComment {
   tripId    String
   guestId   String
   listingId String
+  kind      ListingCommentKind @default(COMMENT)
   body      String
   hiddenAt  DateTime?
   createdAt DateTime  @default(now())
@@ -238,6 +239,12 @@ model ListingComment {
   @@index([tripId])
   @@index([guestId])
   @@index([listingId])
+}
+
+enum ListingCommentKind {
+  COMMENT
+  PRO
+  CON
 }
 
 enum TripGuestSource {

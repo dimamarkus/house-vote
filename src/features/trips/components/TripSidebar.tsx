@@ -1,7 +1,7 @@
 import type { Trip, User } from 'db';
-import { CollaboratorsList } from './CollaboratorsList';
-import { PublishedCommentsModerationCard } from './PublishedCommentsModerationCard';
-import { VotingAccessCard } from './VotingAccessCard';
+import { CollaboratorsList } from '@/features/trips/components/CollaboratorsList';
+import { PublishedCommentsModerationCard } from '@/features/trips/components/PublishedCommentsModerationCard';
+import { VotingAccessCard } from '@/features/trips/components/VotingAccessCard';
 
 interface TripSidebarProps {
   trip: Pick<Trip, 'id' | 'userId' | 'location' | 'startDate' | 'endDate' | 'numberOfPeople' | 'name' | 'description'> & {
@@ -25,6 +25,7 @@ interface TripSidebarProps {
     }>;
     comments: Array<{
       id: string;
+      kind: 'COMMENT' | 'PRO' | 'CON';
       body: string;
       createdAt: Date;
       hiddenAt: Date | null;

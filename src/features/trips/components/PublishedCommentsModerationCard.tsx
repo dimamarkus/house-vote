@@ -5,6 +5,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { Eye, EyeOff, MessageSquare } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { setPublishedTripCommentHidden } from '@/features/trips/actions/publishedTripActions';
+import { getListingFeedbackBadgeLabel } from '@/features/trips/constants/listing-feedback';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
@@ -14,6 +15,7 @@ interface PublishedCommentsModerationCardProps {
   tripId: string;
   comments: Array<{
     id: string;
+    kind: 'COMMENT' | 'PRO' | 'CON';
     body: string;
     createdAt: Date;
     hiddenAt: Date | null;
@@ -93,6 +95,9 @@ export function PublishedCommentsModerationCard({
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-sm font-medium">{comment.guest.guestDisplayName}</p>
+                        <Badge weight="hollow" variant="secondary">
+                          {getListingFeedbackBadgeLabel(comment.kind)}
+                        </Badge>
                         <Badge weight={isHidden ? 'hollow' : 'solid'} variant="secondary">
                           {isHidden ? 'Hidden' : 'Visible'}
                         </Badge>

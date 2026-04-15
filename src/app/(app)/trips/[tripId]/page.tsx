@@ -91,6 +91,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
         }>;
         comments: Array<{
           id: string;
+          kind: 'COMMENT' | 'PRO' | 'CON';
           body: string;
           createdAt: Date;
           hiddenAt: Date | null;
@@ -148,6 +149,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
           })),
           comments: shareSummary.comments.map((comment) => ({
             id: comment.id,
+            kind: comment.kind,
             body: comment.body,
             createdAt: comment.createdAt,
             hiddenAt: comment.hiddenAt,

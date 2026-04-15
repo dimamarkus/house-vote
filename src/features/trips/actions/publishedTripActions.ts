@@ -1,6 +1,7 @@
 'use server';
 
 import { auth } from '@clerk/nextjs/server';
+import { ListingCommentKind } from 'db';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { ErrorCode } from '@/core/errors';
@@ -57,6 +58,7 @@ const addCommentSchema = z.object({
   token: z.string().uuid('A valid published trip link is required.'),
   guestId: z.string().cuid('A valid guest id is required.'),
   listingId: z.string().cuid('A valid listing id is required.'),
+  kind: z.enum(ListingCommentKind),
   body: z.string().trim().min(1, 'Comment is required.').max(1000, 'Comment is too long.'),
 });
 
@@ -500,11 +502,23 @@ export async function submitPublishedTripListing(
   }
 }
 
-export async function addPublishedTripComment(
+function getFeedbackLabel(kind: ListingCommentKind) {
+  switch (kind) {
+    case ListingCommentKind.PRO:
+      return 'pro';
+    case ListingCommentKind.CON:
+      return 'con';
+    case ListingCommentKind.COMMENT:
+      return 'comment';
+  }
+}
+
+export async function addPublishedTripListingFeedback(
   input: {
     token: string;
     guestId: string;
     listingId: string;
+    kind: ListingCommentKind;
     body: string;
   },
 ): Promise<BasicApiResponse<PublishedCommentResult>> {
@@ -518,10 +532,11 @@ export async function addPublishedTripComment(
   }
 
   try {
-    const comment = await publishedTrips.addComment(
+    const comment = await publishedTrips.addFeedback(
       validation.data.token,
       validation.data.guestId,
       validation.data.listingId,
+      validation.data.kind,
       validation.data.body,
     );
 
@@ -539,7 +554,7 @@ export async function addPublishedTripComment(
     return createErrorResponse({
       error,
       code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to add comment:',
+      prefix: `Failed to add ${getFeedbackLabel(validation.data.kind)}:`,
     });
   }
 }

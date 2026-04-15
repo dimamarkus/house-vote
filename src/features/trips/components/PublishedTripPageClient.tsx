@@ -8,16 +8,14 @@ import {
   formatListingStatusLabel,
   isVoteEligibleListingStatus,
 } from '@/features/listings/constants/listing-status';
-import { PublishedListingCommentsSheet } from '@/features/trips/components/PublishedListingCommentsSheet';
+import { PublishedListingCardFooter } from '@/features/trips/components/PublishedListingCardFooter';
 import { usePublishedGuestSession } from '@/features/trips/hooks/usePublishedGuestSession';
 import type { PublishedTripListingRecord, PublishedTripShareRecord } from '@/features/trips/publishedDb';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
 import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
 import { cn } from '@/ui/utils/cn';
 import { toast } from 'sonner';
-import { Heart, RefreshCcw } from 'lucide-react';
 
 interface PublishedTripPageClientProps {
   token: string;
@@ -130,7 +128,6 @@ export function PublishedTripPageClient({
       {sortedListings.length > 0 ? (
         <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sortedListings.map((listing) => {
-            const voterNames = listing.votes.map((vote) => vote.guest.guestDisplayName);
             const isVoteEligible = isVoteEligibleListingStatus(listing.status);
             const isCurrentVote = currentVoteListingId === listing.id;
             const isCurrentWinner = currentWinnerListingId === listing.id;
@@ -159,55 +156,18 @@ export function PublishedTripPageClient({
                   ) : undefined
                 }
                 footerContent={
-                  <div className="flex w-full flex-col gap-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">Votes</span>
-                        <div className="inline-flex items-center rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                          <span>{listing.votes.length}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <PublishedListingCommentsSheet
-                          token={token}
-                          listing={listing}
-                          activeGuest={activeGuest}
-                          commentsOpen={share.commentsOpen}
-                        />
-                        <Button
-                          onClick={() => handleVote(listing.id)}
-                          disabled={!share.votingOpen || !isVoteEligible || pendingAction === `vote-${listing.id}`}
-                          weight="ghost"
-                          size="icon"
-                          aria-label={voteButtonLabel}
-                          aria-pressed={isCurrentVote}
-                          title={voteButtonLabel}
-                          className={cn(
-                            'rounded-full border',
-                            isCurrentVote
-                              ? 'border-rose-200 bg-rose-50 text-rose-500 hover:bg-rose-100'
-                              : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground'
-                          )}
-                        >
-                          {pendingAction === `vote-${listing.id}` ? (
-                            <RefreshCcw className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
-                          )}
-                          <span className="sr-only">{voteButtonLabel}</span>
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex min-h-9 flex-wrap gap-2">
-                      {voterNames.length > 0 ? (
-                        voterNames.map((voterName) => (
-                          <Badge key={`${listing.id}-${voterName}`} variant="secondary">
-                            {voterName}
-                          </Badge>
-                        ))
-                      ) : null}
-                    </div>
-                  </div>
+                  <PublishedListingCardFooter
+                    token={token}
+                    listing={listing}
+                    activeGuest={activeGuest}
+                    commentsOpen={share.commentsOpen}
+                    votingOpen={share.votingOpen}
+                    isVoteEligible={isVoteEligible}
+                    isCurrentVote={isCurrentVote}
+                    pendingVote={pendingAction === `vote-${listing.id}`}
+                    voteButtonLabel={voteButtonLabel}
+                    onVote={() => handleVote(listing.id)}
+                  />
                 }
               />
             );
