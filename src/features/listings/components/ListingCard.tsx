@@ -122,8 +122,10 @@ export function ListingCard({
   );
   const imageSourceBadge = hasPhotos ? sourceBadge : null;
   const inlineSourceBadge = hasPhotos ? null : sourceBadge;
-  const detailText = listing.sourceDescription ?? listing.notes;
-  const detailLabel = listing.sourceDescription ? 'Description' : 'Notes';
+  const trimmedSourceDescription = listing.sourceDescription?.trim() ?? '';
+  const trimmedNotes = listing.notes?.trim() ?? '';
+  const detailText = trimmedSourceDescription || trimmedNotes || null;
+  const detailLabel = trimmedSourceDescription ? 'Description' : 'Notes';
   const detailPreview =
     detailText && detailText.length > 160
       ? `${detailText.slice(0, 160).trimEnd()}...`
