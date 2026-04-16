@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { RefreshCcw } from 'lucide-react';
 import { setPublishedTripListingTotalPrice } from '@/features/trips/actions/publishedTripActions';
@@ -26,12 +26,7 @@ export function PublishedListingTotalStayPriceEditor({
   className,
 }: PublishedListingTotalStayPriceEditorProps) {
   const router = useRouter();
-  const [priceInput, setPriceInput] = useState(currentPrice !== null ? String(currentPrice) : '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    setPriceInput(currentPrice !== null ? String(currentPrice) : '');
-  }, [currentPrice]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,7 +35,8 @@ export function PublishedListingTotalStayPriceEditor({
       return;
     }
 
-    const normalizedInput = priceInput.trim();
+    const formData = new FormData(event.currentTarget);
+    const normalizedInput = String(formData.get('totalStayPrice') ?? '').trim();
 
     if (!normalizedInput) {
       toast.error('Enter a total-stay price before saving.');
@@ -81,11 +77,11 @@ export function PublishedListingTotalStayPriceEditor({
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
         <Input
           type="number"
+          name="totalStayPrice"
           min="0"
           step="1"
           inputMode="numeric"
-          value={priceInput}
-          onChange={(event) => setPriceInput(event.target.value)}
+          defaultValue={currentPrice !== null ? String(currentPrice) : ''}
           placeholder="Total stay price"
           disabled={!activeGuest || isSubmitting}
           className="min-w-0 flex-1"
