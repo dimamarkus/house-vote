@@ -235,16 +235,25 @@ export async function refreshListingFromSourceUrl(input: unknown) {
     normalizedListing.bathroomCount = keepExisting(normalizedListing.bathroomCount, listing.bathroomCount);
     normalizedListing.address = keepExisting(normalizedListing.address, listing.address);
     normalizedListing.imageUrl = keepExisting(normalizedListing.imageUrl, listing.imageUrl);
+
+    const effectivePhotoUrls = photoUrlsForImportStatus(
+      normalizedListing,
+      listing.imageUrl,
+      listing.photos.map((p) => p.url),
+    );
     normalizedListing.importStatus = recalculateImportStatus({
       title: normalizedListing.title,
       address: normalizedListing.address,
       price: normalizedListing.price,
-      photoUrls: photoUrlsForImportStatus(normalizedListing, listing.imageUrl, listing.photos.map((p) => p.url)),
+      photoUrls: effectivePhotoUrls,
     });
 
     await applyNormalizedImportToListingId(listingId, normalizedListing);
 
-    const missingFields = getMissingImportedListingFields(normalizedListing);
+    const missingFields = getMissingImportedListingFields({
+      ...normalizedListing,
+      photoUrls: effectivePhotoUrls,
+    });
 
     revalidatePath(`/trips/${listing.tripId}`);
 
