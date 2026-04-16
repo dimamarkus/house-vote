@@ -7,6 +7,7 @@ import {
 } from '@/features/trips/constants/listing-feedback';
 import { PublishedListingCommentsSheet } from '@/features/trips/components/PublishedListingCommentsSheet';
 import { PublishedListingFeedbackSection } from '@/features/trips/components/PublishedListingFeedbackSection';
+import { PublishedListingTotalStayPriceEditor } from '@/features/trips/components/PublishedListingTotalStayPriceEditor';
 import type { PublishedTripCommentRecord, PublishedTripGuestRecord, PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
@@ -58,6 +59,18 @@ export function PublishedListingCardFooter({
 
   return (
     <div className="flex w-full flex-col gap-3">
+      <div className="rounded-xl border bg-muted/20 p-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Total stay price
+        </p>
+        <PublishedListingTotalStayPriceEditor
+          token={token}
+          listingId={listing.id}
+          currentPrice={listing.price}
+          activeGuest={activeGuest}
+          className="mt-2"
+        />
+      </div>
       <Tabs defaultValue={TAB_VALUE.votes} className="w-full">
         <TabsList className="grid h-auto w-full grid-cols-3">
           <TabsTrigger value={TAB_VALUE.votes} className="gap-2 py-2">

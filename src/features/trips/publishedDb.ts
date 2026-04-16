@@ -562,6 +562,32 @@ export const publishedTrips = {
     });
   },
 
+  setListingTotalPrice: async (
+    token: string,
+    guestId: string,
+    listingId: string,
+    totalStayPrice: number,
+  ) => {
+    const share = await assertPublishedShare(token);
+
+    await assertGuestInTrip(share.tripId, guestId, db);
+    await assertListingInTrip(share.tripId, listingId, db);
+
+    return db.listing.update({
+      where: {
+        id: listingId,
+      },
+      data: {
+        price: totalStayPrice,
+      },
+      select: {
+        id: true,
+        tripId: true,
+        price: true,
+      },
+    });
+  },
+
   setCommentHidden: async (tripId: string, ownerId: string, commentId: string, hidden: boolean) => {
     await assertTripOwner(tripId, ownerId, db);
 

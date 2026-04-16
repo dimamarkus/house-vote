@@ -54,6 +54,13 @@ const submitListingSchema = z.object({
   url: z.string().url('A valid listing URL is required.'),
 });
 
+const updateListingTotalPriceSchema = z.object({
+  token: z.string().uuid('A valid published trip link is required.'),
+  guestId: z.string().cuid('A valid guest id is required.'),
+  listingId: z.string().cuid('A valid listing id is required.'),
+  totalStayPrice: z.coerce.number().int().min(0, 'Price must be zero or greater.'),
+});
+
 const addCommentSchema = z.object({
   token: z.string().uuid('A valid published trip link is required.'),
   guestId: z.string().cuid('A valid guest id is required.'),
@@ -86,6 +93,12 @@ type PublishedVoteResult = {
 type PublishedListingResult = {
   tripId: string;
   listingId: string;
+};
+
+type PublishedListingPriceResult = {
+  tripId: string;
+  listingId: string;
+  totalStayPrice: number;
 };
 
 type PublishedCommentResult = {
@@ -498,6 +511,49 @@ export async function submitPublishedTripListing(
       error,
       code: ErrorCode.PROCESSING_ERROR,
       prefix: 'Failed to submit guest listing:',
+    });
+  }
+}
+
+export async function setPublishedTripListingTotalPrice(
+  input: {
+    token: string;
+    guestId: string;
+    listingId: string;
+    totalStayPrice: number;
+  },
+): Promise<BasicApiResponse<PublishedListingPriceResult>> {
+  const validation = updateListingTotalPriceSchema.safeParse(input);
+
+  if (!validation.success) {
+    return createErrorResponse({
+      error: validation.error.issues[0]?.message ?? 'Invalid listing price update request.',
+      code: ErrorCode.VALIDATION_ERROR,
+    });
+  }
+
+  try {
+    const listing = await publishedTrips.setListingTotalPrice(
+      validation.data.token,
+      validation.data.guestId,
+      validation.data.listingId,
+      validation.data.totalStayPrice,
+    );
+
+    revalidatePublishedTripPaths(listing.tripId, validation.data.token);
+
+    return createSuccessResponse({
+      data: {
+        tripId: listing.tripId,
+        listingId: listing.id,
+        totalStayPrice: listing.price ?? validation.data.totalStayPrice,
+      },
+    });
+  } catch (error) {
+    return createErrorResponse({
+      error,
+      code: ErrorCode.PROCESSING_ERROR,
+      prefix: 'Failed to update listing price:',
     });
   }
 }
