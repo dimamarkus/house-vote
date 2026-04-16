@@ -416,6 +416,61 @@ function extractRoomBreakdownFromVrbo($: cheerio.CheerioAPI): RoomBreakdownResul
   return { summary, rooms };
 }
 
+function extractRoomBreakdownFromAirbnbJson($: cheerio.CheerioAPI): RoomBreakdownResult | null {
+  const seenKeys = new Set<string>();
+  const arrangementItems: Array<{ title: string; subtitle: string; baseUrl?: string }> = [];
+
+  $('script[type="application/json"]').each((_, el) => {
+    if (arrangementItems.length > 0) return;
+    const text = $(el).text();
+    if (!text.includes('arrangementDetails')) return;
+
+    try {
+      const data = JSON.parse(text);
+      const collected = deepCollectByKey(data, ['arrangementDetails']);
+      for (const details of collected) {
+        if (!Array.isArray(details)) continue;
+        for (const item of details) {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+          const record = item as JsonRecord;
+          const title = typeof record.title === 'string' ? record.title.trim() : '';
+          const subtitle = typeof record.subtitle === 'string' ? record.subtitle.trim() : '';
+          if (!title || !subtitle) continue;
+
+          const dedupeKey = `${title}\0${subtitle}`;
+          if (seenKeys.has(dedupeKey)) {
+            continue;
+          }
+          seenKeys.add(dedupeKey);
+
+          let baseUrl: string | undefined;
+          const images = record.images;
+          if (Array.isArray(images) && images.length > 0) {
+            const first = images[0] as JsonRecord | undefined;
+            if (first && typeof first.baseUrl === 'string') {
+              baseUrl = first.baseUrl;
+            }
+          }
+
+          arrangementItems.push({ title, subtitle, baseUrl });
+        }
+      }
+    } catch {
+      // malformed JSON
+    }
+  });
+
+  if (arrangementItems.length === 0) return null;
+
+  const rooms: RoomEntry[] = arrangementItems.map(({ title, subtitle, baseUrl }) => ({
+    name: title,
+    beds: subtitle,
+    imageUrl: baseUrl ?? null,
+  }));
+
+  return { summary: null, rooms };
+}
+
 function extractRoomBreakdownFromAirbnb(
   $: cheerio.CheerioAPI,
   baseUrl: string,
@@ -470,6 +525,10 @@ function extractRoomBreakdownFromAirbnb(
   if (carouselRooms.length > 0) {
     return { summary: null, rooms: carouselRooms };
   }
+
+  // Airbnb increasingly renders via client-side hydration; fall back to embedded JSON data.
+  const jsonResult = extractRoomBreakdownFromAirbnbJson($);
+  if (jsonResult) return jsonResult;
 
   const text = normalizeText($('[data-section-id="SLEEPING_ARRANGEMENT_WITH_IMAGES"]').text()) ?? $('body').text();
   const rooms: RoomEntry[] = [];

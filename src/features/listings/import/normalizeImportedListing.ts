@@ -192,6 +192,18 @@ function determineImportStatus(input: {
   return 'FAILED';
 }
 
+/** Re-run after merging refreshed scrape data with existing DB values (e.g. `keepExisting`). */
+export function recalculateImportStatus(
+  listing: Pick<NormalizedImportedListing, 'title' | 'address' | 'price' | 'photoUrls'>,
+): ListingImportStatusValue {
+  return determineImportStatus({
+    title: listing.title,
+    address: listing.address,
+    price: listing.price,
+    photoUrls: listing.photoUrls,
+  });
+}
+
 function buildFallbackTitle(source: ListingImportSourceValue, sourceExternalId: string | null): string {
   const label =
     source === 'AIRBNB'
