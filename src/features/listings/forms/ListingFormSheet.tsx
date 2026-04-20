@@ -28,6 +28,10 @@ interface ListingFormSheetProps {
   children?: React.ReactNode;
   /** Side from which the sheet appears */
   side?: "top" | "right" | "bottom" | "left";
+  /** Controlled open state. When provided, children/trigger are optional. */
+  open?: boolean;
+  /** Controlled open-state change handler. */
+  onOpenChange?: (open: boolean) => void;
 }
 
 /**
@@ -41,30 +45,42 @@ export function ListingFormSheet({
   initialState,
   children,
   side = "right",
-  tripId
+  tripId,
+  open: controlledOpen,
+  onOpenChange,
 }: ListingFormSheetProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = typeof controlledOpen === 'boolean';
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+
+  const setOpen = (next: boolean) => {
+    if (!isControlled) {
+      setUncontrolledOpen(next);
+    }
+    onOpenChange?.(next);
+  };
+
   const isEditing = !!listingId;
 
   const handleSuccess = () => {
     setOpen(false);
-    // Optional: Add revalidation logic if needed
-    // router.refresh();
   };
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        {/* Render children if provided, otherwise default button */}
-        {children ? children : (
-          <Button
-            variant="primary"
-            weight={isEditing ? "ghost" : "solid"}
-            size={isEditing ? "icon" : "default"}>
-            {isEditing ? <Edit className="h-4 w-4" /> : 'Add Listing'}
-          </Button>
-        )}
-      </SheetTrigger>
+      {isControlled && !children ? null : (
+        <SheetTrigger asChild>
+          {/* Render children if provided, otherwise default button */}
+          {children ? children : (
+            <Button
+              variant="primary"
+              weight={isEditing ? "ghost" : "solid"}
+              size={isEditing ? "icon" : "default"}>
+              {isEditing ? <Edit className="h-4 w-4" /> : 'Add Listing'}
+            </Button>
+          )}
+        </SheetTrigger>
+      )}
       <SheetContent side={side} className="overflow-y-auto sm:max-w-md">
         <SheetHeader>
           <SheetTitle>{isEditing ? 'Edit Listing' : 'Create Listing'}</SheetTitle>

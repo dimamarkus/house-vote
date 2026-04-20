@@ -232,7 +232,7 @@ export function ListingsTable({
     {
       header: "Actions",
       cell: (listing) => {
-        const canEdit = !!currentUserId && currentUserId === listing.addedById;
+        const canEdit = !!currentUserId;
         const canDelete = !!currentUserId && (currentUserIsOwner || currentUserId === listing.addedById);
         const canRefreshFromSource = canDelete && Boolean(listing.url?.trim());
 

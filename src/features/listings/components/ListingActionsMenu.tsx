@@ -1,14 +1,27 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { Edit, EllipsisVertical, Eye } from 'lucide-react';
+import { useState } from 'react';
+import Link from 'next/link';
+import { Edit, EllipsisVertical, Eye, RefreshCw, Trash2, Ban, Check } from 'lucide-react';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/ui/shadcn/button';
-import { LinkButton } from '@/ui/core/LinkButton';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/ui/shadcn/dropdown-menu';
 import { ListingFormSheet } from '@/features/listings/forms/ListingFormSheet';
-import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
-import { ListingStatusAction } from '@/features/listings/components/ListingStatusAction';
-import { RefreshListingFromSourceButton } from '@/features/listings/components/RefreshListingFromSourceButton';
-import { LISTING_STATUS, type ListingStatusValue } from '@/features/listings/constants/listing-status';
+import { deleteListing } from '@/features/listings/actions/deleteListing';
+import { updateListingStatus } from '@/features/listings/actions/updateListingStatus';
+import { refreshListingFromSourceUrl } from '@/features/listings/actions/refreshListingFromSourceUrl';
+import { errorToString } from '@/core/errors';
+import {
+  LISTING_STATUS,
+  type ListingStatusValue,
+} from '@/features/listings/constants/listing-status';
 import type { ListingFormValues } from '@/features/listings/schemas';
 
 interface ListingActionsMenuProps {
@@ -36,144 +49,214 @@ export function ListingActionsMenu({
   canToggleStatus,
   initialStateForEdit,
 }: ListingActionsMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const handleOutsidePointerDown = (event: MouseEvent) => {
-      if (!menuRef.current?.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleOutsidePointerDown);
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('mousedown', handleOutsidePointerDown);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen]);
+  const router = useRouter();
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const canViewSource = typeof listingUrl === 'string' && listingUrl.length > 0;
   const isRejected = listingStatus === LISTING_STATUS.REJECTED;
+  const nextStatus: ListingStatusValue = isRejected
+    ? LISTING_STATUS.POTENTIAL
+    : LISTING_STATUS.REJECTED;
+  const toggleStatusLabel = isRejected ? 'Unreject listing' : 'Reject listing';
+  const ToggleStatusIcon = isRejected ? Check : Ban;
+
+  const noActions =
+    !canEdit && !canDelete && !canRefreshFromSource && !canToggleStatus && !canViewSource;
+
+  async function handleRefresh() {
+    setIsRefreshing(true);
+    toast.loading('Refreshing from source…');
+
+    try {
+      const result = await refreshListingFromSourceUrl({ listingId });
+      toast.dismiss();
+
+      if (!result.success) {
+        toast.error(errorToString(result.error || 'Refresh failed'));
+        return;
+      }
+
+      if (!result.data) {
+        toast.error('Refresh finished without listing data.');
+        return;
+      }
+
+      const missingFields = result.data.missingFields ?? [];
+      const successMessage =
+        missingFields.length > 0
+          ? `Updated "${result.data.listingTitle}". Still missing: ${missingFields.join(', ')}.`
+          : `Updated "${result.data.listingTitle}".`;
+
+      toast.success(successMessage);
+      router.refresh();
+    } catch (error) {
+      toast.dismiss();
+      toast.error(errorToString(error));
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
+
+  async function handleToggleStatus() {
+    setIsTogglingStatus(true);
+    const formData = new FormData();
+    formData.append('listingId', listingId);
+    formData.append('status', nextStatus);
+
+    try {
+      const result = await updateListingStatus(formData);
+      if (!result.success) {
+        toast.error('Failed to update listing status');
+        return;
+      }
+      toast.success(
+        isRejected ? 'Listing has been unrejected' : 'Listing has been rejected',
+      );
+      router.refresh();
+    } catch {
+      toast.error('An error occurred while updating status');
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  }
+
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      listingTitle
+        ? `Delete "${listingTitle}"? This cannot be undone.`
+        : 'This will permanently delete the listing. Continue?',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const result = await deleteListing(listingId);
+      if (!result.success) {
+        toast.error(
+          typeof result.error === 'string'
+            ? result.error
+            : listingTitle
+              ? `Failed to delete ${listingTitle}.`
+              : 'Failed to delete listing',
+        );
+        return;
+      }
+      toast.success(
+        listingTitle ? `${listingTitle} deleted successfully.` : 'Listing deleted successfully',
+      );
+      router.refresh();
+    } catch {
+      toast.error('An error occurred while deleting the listing');
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   return (
-    <div className="relative flex justify-end" ref={menuRef}>
-      <Button
-        aria-expanded={isOpen}
-        aria-haspopup="menu"
-        className="size-8 p-0"
-        onClick={() => setIsOpen((current) => !current)}
-        size="icon"
-        title="Open listing actions"
-        variant="neutral"
-        weight="ghost"
-      >
-        <span className="sr-only">Open listing actions</span>
-        <EllipsisVertical className="h-4 w-4" />
-      </Button>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            className="size-8 p-0"
+            size="icon"
+            title="Open listing actions"
+            variant="neutral"
+            weight="ghost"
+          >
+            <span className="sr-only">Open listing actions</span>
+            <EllipsisVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
 
-      {isOpen ? (
-        <div
-          className="absolute right-0 top-9 z-50 w-52 rounded-md border bg-background p-1 shadow-md"
-          role="menu"
-        >
+        <DropdownMenuContent align="end" className="w-52">
           {canViewSource ? (
-            <LinkButton
-              className="h-8 w-full justify-start gap-2 px-2 text-left"
-              href={listingUrl}
-              onClick={() => setIsOpen(false)}
-              role="menuitem"
-              target="_blank"
-              variant="neutral"
-              weight="ghost"
-            >
-              <Eye className="h-4 w-4" />
-              View listing
-            </LinkButton>
+            <DropdownMenuItem asChild>
+              <Link href={listingUrl as string} target="_blank" rel="noopener noreferrer">
+                <Eye className="h-4 w-4" />
+                View listing
+              </Link>
+            </DropdownMenuItem>
           ) : (
-            <Button
-              className="h-8 w-full justify-start gap-2 px-2 text-left"
-              disabled
-              role="menuitem"
-              variant="neutral"
-              weight="ghost"
-            >
+            <DropdownMenuItem disabled>
               <Eye className="h-4 w-4" />
               View listing
-            </Button>
+            </DropdownMenuItem>
           )}
 
           {canEdit ? (
-            <ListingFormSheet listingId={listingId} tripId={tripId} initialState={initialStateForEdit}>
-              <Button
-                className="h-8 w-full justify-start gap-2 px-2 text-left"
-                onClick={() => setIsOpen(false)}
-                role="menuitem"
-                variant="neutral"
-                weight="ghost"
-              >
-                <Edit className="h-4 w-4" />
-                Edit listing
-              </Button>
-            </ListingFormSheet>
+            <DropdownMenuItem onSelect={() => setEditSheetOpen(true)}>
+              <Edit className="h-4 w-4" />
+              Edit listing
+            </DropdownMenuItem>
           ) : null}
 
           {canRefreshFromSource ? (
-            <div className="px-1 py-0.5" role="menuitem">
-              <RefreshListingFromSourceButton
-                listingId={listingId}
-                className="h-auto min-h-8 w-full justify-start px-1 py-1.5 text-left font-normal"
-                size="sm"
-                variant="neutral"
-                weight="ghost"
-                onRefreshStart={() => setIsOpen(false)}
-              />
-            </div>
-          ) : null}
-
-          {canDelete ? (
-            <DeleteListingActionButton
-              buttonClassName="h-8 w-full justify-start gap-2 px-2 text-left"
-              buttonSize="sm"
-              buttonText="Delete listing"
-              buttonVariant="destructive"
-              buttonWeight="ghost"
-              listingId={listingId}
-              listingTitle={listingTitle}
-            />
+            <DropdownMenuItem
+              disabled={isRefreshing}
+              onSelect={(event) => {
+                event.preventDefault();
+                void handleRefresh();
+              }}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              {isRefreshing ? 'Refreshing…' : 'Refresh from source'}
+            </DropdownMenuItem>
           ) : null}
 
           {canToggleStatus ? (
-            <ListingStatusAction
-              buttonClassName="h-8 w-full justify-start gap-2 px-2 text-left"
-              listingId={listingId}
-              currentStatus={listingStatus}
-              onStatusUpdate={() => setIsOpen(false)}
-              size="md"
-              variant={isRejected ? 'neutral' : 'destructive'}
-              weight="ghost"
-            />
+            <DropdownMenuItem
+              disabled={isTogglingStatus}
+              destructive={!isRejected}
+              onSelect={(event) => {
+                event.preventDefault();
+                void handleToggleStatus();
+              }}
+            >
+              <ToggleStatusIcon className="h-4 w-4" />
+              {isTogglingStatus ? 'Updating…' : toggleStatusLabel}
+            </DropdownMenuItem>
           ) : null}
 
-          {!canEdit && !canDelete && !canRefreshFromSource && !canToggleStatus && !canViewSource ? (
-            <div className="flex h-8 items-center px-2 text-xs text-muted-foreground">
-              No actions available
-            </div>
+          {canDelete ? (
+            <>
+              {(canEdit || canRefreshFromSource || canToggleStatus || canViewSource) ? (
+                <DropdownMenuSeparator />
+              ) : null}
+              <DropdownMenuItem
+                disabled={isDeleting}
+                destructive
+                onSelect={(event) => {
+                  event.preventDefault();
+                  void handleDelete();
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                {isDeleting ? 'Deleting…' : 'Delete listing'}
+              </DropdownMenuItem>
+            </>
           ) : null}
-        </div>
+
+          {noActions ? (
+            <div className="px-2 py-1.5 text-xs text-muted-foreground">No actions available</div>
+          ) : null}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {canEdit ? (
+        <ListingFormSheet
+          listingId={listingId}
+          tripId={tripId}
+          initialState={initialStateForEdit}
+          open={editSheetOpen}
+          onOpenChange={setEditSheetOpen}
+        />
       ) : null}
-    </div>
+    </>
   );
 }

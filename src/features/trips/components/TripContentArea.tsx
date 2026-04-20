@@ -7,11 +7,8 @@ import type { ListingWithMedia } from '@/features/listings/types';
 import { ListingsTable } from '@/features/listings/tables/ListingsTable';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
 import { ListingCreateActions } from '@/features/listings/components/ListingCreateActions';
-import { RefreshListingFromSourceButton } from '@/features/listings/components/RefreshListingFromSourceButton';
-import { DeleteListingActionButton } from '@/features/listings/components/DeleteListingActionButton';
-import { ListingFormSheet } from '@/features/listings/forms/ListingFormSheet';
+import { ListingActionsMenu } from '@/features/listings/components/ListingActionsMenu';
 import { LikeButton } from '@/features/likes/components/LikeButton';
-import { Button } from '@/ui/shadcn/button';
 import { TripViewToggle } from './TripViewToggle';
 import { cn } from '@/ui/utils/cn';
 import { LISTING_STATUS, type ListingStatusValue } from '@/features/listings/constants/listing-status';
@@ -124,44 +121,39 @@ export function TripContentArea({
           )}
           {viewMode === 'card' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-              {potentialListings.map((listing) => (
-                <ListingCard
-                  key={listing.id}
-                  listing={listing}
-                  roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
-                  footerContent={
-                    <div className="flex w-full items-center justify-between gap-3">
-                      {userId && (
-                        <LikeButton
-                          listingId={listing.id}
-                          initialLiked={userLikes[listing.id] || false}
-                        />
-                      )}
-                      <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
-                        {userId && (isOwner || userId === listing.addedById) && listing.url?.trim() ? (
-                          <RefreshListingFromSourceButton listingId={listing.id} />
-                        ) : null}
-                        {userId && userId === listing.addedById ? (
-                          <ListingFormSheet listingId={listing.id} tripId={listing.tripId} initialState={listing}>
-                            <Button size="sm" weight="hollow">
-                              Edit
-                            </Button>
-                          </ListingFormSheet>
-                        ) : null}
-                        {userId && (isOwner || userId === listing.addedById) && (
-                          <DeleteListingActionButton
-                            listingId={listing.id}
-                            listingTitle={listing.title}
-                            buttonText="Delete"
-                            buttonVariant="destructive"
-                            buttonWeight="hollow"
-                          />
-                        )}
-                      </div>
-                    </div>
-                  }
-                />
-              ))}
+              {potentialListings.map((listing) => {
+                const canEdit = !!userId;
+                const canDelete = !!userId && (isOwner || userId === listing.addedById);
+                const canRefreshFromSource = canDelete && Boolean(listing.url?.trim());
+
+                return (
+                  <ListingCard
+                    key={listing.id}
+                    listing={listing}
+                    roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
+                    actionsMenu={
+                      <ListingActionsMenu
+                        canDelete={canDelete}
+                        canEdit={canEdit}
+                        canRefreshFromSource={canRefreshFromSource}
+                        canToggleStatus={Boolean(userId)}
+                        initialStateForEdit={listing}
+                        listingId={listing.id}
+                        listingStatus={listing.status}
+                        listingTitle={listing.title}
+                        listingUrl={listing.url}
+                        tripId={listing.tripId}
+                      />
+                    }
+                    footerContent={userId ? (
+                      <LikeButton
+                        listingId={listing.id}
+                        initialLiked={userLikes[listing.id] || false}
+                      />
+                    ) : null}
+                  />
+                );
+              })}
               {potentialListings.length === 0 && (
                   <p className="col-span-full text-center text-muted-foreground">No potential listings found.</p>
               )}
