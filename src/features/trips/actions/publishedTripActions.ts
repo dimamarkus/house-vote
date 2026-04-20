@@ -54,6 +54,31 @@ const submitListingSchema = z.object({
   url: z.string().url('A valid listing URL is required.'),
 });
 
+const optionalNullableInt = z
+  .union([z.number().int(), z.null()])
+  .optional();
+
+const updateListingDetailsSchema = z
+  .object({
+    token: z.string().uuid('A valid published trip link is required.'),
+    guestId: z.string().cuid('A valid guest id is required.'),
+    listingId: z.string().cuid('A valid listing id is required.'),
+    price: optionalNullableInt,
+    bedroomCount: optionalNullableInt,
+    bedCount: optionalNullableInt,
+    bathroomCount: optionalNullableInt,
+    notes: z.string().trim().max(5000, 'Notes are too long.').nullable().optional(),
+  })
+  .refine(
+    (value) =>
+      typeof value.price !== 'undefined' ||
+      typeof value.bedroomCount !== 'undefined' ||
+      typeof value.bedCount !== 'undefined' ||
+      typeof value.bathroomCount !== 'undefined' ||
+      typeof value.notes !== 'undefined',
+    { message: 'At least one field must be provided.' },
+  );
+
 const addCommentSchema = z.object({
   token: z.string().uuid('A valid published trip link is required.'),
   guestId: z.string().cuid('A valid guest id is required.'),
@@ -458,6 +483,58 @@ export async function castPublishedTripVote(
       error,
       code: ErrorCode.PROCESSING_ERROR,
       prefix: 'Failed to cast vote:',
+    });
+  }
+}
+
+export async function updatePublishedTripListingDetails(
+  input: {
+    token: string;
+    guestId: string;
+    listingId: string;
+    price?: number | null;
+    bedroomCount?: number | null;
+    bedCount?: number | null;
+    bathroomCount?: number | null;
+    notes?: string | null;
+  },
+): Promise<BasicApiResponse<PublishedListingResult>> {
+  const validation = updateListingDetailsSchema.safeParse(input);
+
+  if (!validation.success) {
+    return createErrorResponse({
+      error: validation.error.issues[0]?.message ?? 'Invalid listing update request.',
+      code: ErrorCode.VALIDATION_ERROR,
+    });
+  }
+
+  try {
+    const listing = await publishedTrips.updateGuestListingDetails(
+      validation.data.token,
+      validation.data.guestId,
+      validation.data.listingId,
+      {
+        price: validation.data.price,
+        bedroomCount: validation.data.bedroomCount,
+        bedCount: validation.data.bedCount,
+        bathroomCount: validation.data.bathroomCount,
+        notes: validation.data.notes,
+      },
+    );
+
+    revalidatePublishedTripPaths(listing.tripId, validation.data.token);
+
+    return createSuccessResponse({
+      data: {
+        tripId: listing.tripId,
+        listingId: listing.id,
+      },
+    });
+  } catch (error) {
+    return createErrorResponse({
+      error,
+      code: ErrorCode.PROCESSING_ERROR,
+      prefix: 'Failed to update listing:',
     });
   }
 }

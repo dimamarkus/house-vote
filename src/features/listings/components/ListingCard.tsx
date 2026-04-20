@@ -58,6 +58,12 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
   footerContent?: React.ReactNode;
   imageOverlayContent?: React.ReactNode;
+  /**
+   * Slot for an overflow / actions menu (e.g. a kebab dropdown).
+   * Renders in the card's top-right corner. Stacks below the source badge
+   * when the card has photos; otherwise sits inline with the header badges.
+   */
+  actionsMenu?: React.ReactNode;
   showLink?: boolean;
   baseUrl?: string;
   roomBreakdown?: RoomBreakdown | null;
@@ -69,6 +75,7 @@ export function ListingCard({
   className,
   footerContent,
   imageOverlayContent,
+  actionsMenu,
   showLink = false,
   baseUrl = '/listings',
   roomBreakdown,
@@ -122,6 +129,12 @@ export function ListingCard({
   );
   const imageSourceBadge = hasPhotos ? sourceBadge : null;
   const inlineSourceBadge = hasPhotos ? null : sourceBadge;
+  const overlayTopRight = hasPhotos && (imageSourceBadge || actionsMenu) ? (
+    <div className="flex flex-col items-end gap-2">
+      {imageSourceBadge}
+      {actionsMenu}
+    </div>
+  ) : undefined;
   const trimmedSourceDescription = listing.sourceDescription?.trim() ?? '';
   const trimmedNotes = listing.notes?.trim() ?? '';
   const detailText = trimmedSourceDescription || trimmedNotes || null;
@@ -206,15 +219,18 @@ export function ListingCard({
               </div>
             ) : undefined
           }
-          overlayTopRight={imageSourceBadge || undefined}
+          overlayTopRight={overlayTopRight}
         />
       ) : null}
 
       <CardHeader className={cn(hasPhotos ? 'gap-4 pt-4' : 'gap-4 pt-6', 'pb-4')}>
-        {(inlineStatusBadge || inlineSourceBadge) ? (
+        {(inlineStatusBadge || inlineSourceBadge || (!hasPhotos && actionsMenu)) ? (
           <div className="flex flex-wrap items-center gap-2">
             {inlineStatusBadge}
             {inlineSourceBadge}
+            {!hasPhotos && actionsMenu ? (
+              <div className="ml-auto">{actionsMenu}</div>
+            ) : null}
           </div>
         ) : null}
 

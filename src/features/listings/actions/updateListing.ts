@@ -7,6 +7,7 @@ import { validateActionInput } from '@/core/form-data';
 import { createErrorResponse } from '@/core/responses';
 
 import { listings } from '../db';
+import { trips } from '../../trips/db';
 import { ListingFormDataSchema } from '../schemas';
 import { ListingActionOptions, ListingResponse, ListingGetOptions } from '../types';
 
@@ -39,10 +40,9 @@ export async function updateListing(
     return validationResult;
   }
 
-  // 3. Authorization Check: Fetch listing and verify ownership
+  // 3. Authorization Check: verify user is a member (owner or collaborator) of the trip
   try {
-    // Use ListingGetOptions for the fetch, specifically requesting only needed fields
-    const getOptions: ListingGetOptions = { select: { addedById: true, tripId: true } };
+    const getOptions: ListingGetOptions = { select: { tripId: true } };
     const existingListingResponse = await listings.get(listingId, getOptions);
 
     if (!existingListingResponse.success || !existingListingResponse.data) {
@@ -52,12 +52,11 @@ export async function updateListing(
       });
     }
 
-    if (existingListingResponse.data.addedById !== userId) {
-      // TODO: Add more sophisticated auth check? (e.g., allow trip owner/collaborators?)
-      // For now, only the user who added it can update.
+    const tripResult = await trips.get(existingListingResponse.data.tripId, { userId });
+    if (!tripResult.success) {
       return createErrorResponse({
-        error: 'You are not authorized to update this listing.',
-        code: ErrorCode.FORBIDDEN,
+        error: tripResult.error || 'You are not authorized to update this listing.',
+        code: tripResult.code || ErrorCode.FORBIDDEN,
       });
     }
 

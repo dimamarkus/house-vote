@@ -596,6 +596,54 @@ export const publishedTrips = {
     };
   },
 
+  updateGuestListingDetails: async (
+    token: string,
+    guestId: string,
+    listingId: string,
+    data: {
+      price?: number | null;
+      bedroomCount?: number | null;
+      bedCount?: number | null;
+      bathroomCount?: number | null;
+      notes?: string | null;
+    },
+  ) => {
+    const share = await assertPublishedShare(token);
+
+    if (!share.allowGuestSuggestions) {
+      throw new Error('Guest edits are disabled for this trip right now.');
+    }
+
+    await assertGuestInTrip(share.tripId, guestId, db);
+    await assertListingInTrip(share.tripId, listingId, db);
+
+    const updateData: Prisma.ListingUpdateInput = {};
+
+    if (typeof data.price !== 'undefined') {
+      updateData.price = data.price;
+    }
+    if (typeof data.bedroomCount !== 'undefined') {
+      updateData.bedroomCount = data.bedroomCount;
+    }
+    if (typeof data.bedCount !== 'undefined') {
+      updateData.bedCount = data.bedCount;
+    }
+    if (typeof data.bathroomCount !== 'undefined') {
+      updateData.bathroomCount = data.bathroomCount;
+    }
+    if (typeof data.notes !== 'undefined') {
+      updateData.notes = data.notes;
+    }
+
+    const listing = await db.listing.update({
+      where: { id: listingId },
+      data: updateData,
+      select: { id: true, tripId: true },
+    });
+
+    return listing;
+  },
+
   submitGuestListingUrl: async (token: string, guestId: string, url: string) => {
     const share = await assertPublishedShare(token);
 

@@ -8,6 +8,7 @@ import {
   formatListingStatusLabel,
   isVoteEligibleListingStatus,
 } from '@/features/listings/constants/listing-status';
+import { PublishedListingActionsMenu } from '@/features/trips/components/PublishedListingActionsMenu';
 import { PublishedListingCardFooter } from '@/features/trips/components/PublishedListingCardFooter';
 import { usePublishedGuestSession } from '@/features/trips/hooks/usePublishedGuestSession';
 import type { PublishedTripListingRecord, PublishedTripShareRecord } from '@/features/trips/publishedDb';
@@ -154,6 +155,14 @@ export function PublishedTripPageClient({
                       Current winner
                     </Badge>
                   ) : undefined
+                }
+                actionsMenu={
+                  <PublishedListingActionsMenu
+                    token={token}
+                    listing={listing}
+                    activeGuest={activeGuest}
+                    guestEditsAllowed={share.allowGuestSuggestions}
+                  />
                 }
                 footerContent={
                   <PublishedListingCardFooter
