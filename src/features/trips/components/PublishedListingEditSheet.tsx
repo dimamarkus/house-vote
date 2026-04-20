@@ -124,26 +124,32 @@ export function PublishedListingEditSheet({
     }
 
     setIsSubmitting(true);
-    const result = await updatePublishedTripListingDetails({
-      token,
-      guestId: activeGuest.id,
-      listingId: listing.id,
-      price,
-      bedroomCount,
-      bedCount,
-      bathroomCount,
-      notes: values.notes.trim() === '' ? null : values.notes.trim(),
-    });
-    setIsSubmitting(false);
 
-    if (!result.success) {
-      toast.error(typeof result.error === 'string' ? result.error : 'Unable to update listing.');
-      return;
+    try {
+      const result = await updatePublishedTripListingDetails({
+        token,
+        guestId: activeGuest.id,
+        listingId: listing.id,
+        price,
+        bedroomCount,
+        bedCount,
+        bathroomCount,
+        notes: values.notes.trim() === '' ? null : values.notes.trim(),
+      });
+
+      if (!result.success) {
+        toast.error(typeof result.error === 'string' ? result.error : 'Unable to update listing.');
+        return;
+      }
+
+      toast.success('Listing updated.');
+      setOpen(false);
+      router.refresh();
+    } catch {
+      toast.error('Unable to update listing.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success('Listing updated.');
-    setOpen(false);
-    router.refresh();
   }
 
   return (
