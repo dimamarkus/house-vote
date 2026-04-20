@@ -161,6 +161,7 @@ export function PublishedTripPageClient({
                     token={token}
                     listing={listing}
                     activeGuest={activeGuest}
+                    guestEditsAllowed={share.allowGuestSuggestions}
                   />
                 }
                 footerContent={

@@ -17,17 +17,29 @@ interface PublishedListingActionsMenuProps {
   token: string;
   listing: PublishedTripListingRecord;
   activeGuest: PublishedTripGuestRecord | null;
+  /**
+   * Whether the trip owner currently allows guests to contribute listing data.
+   * Mirrors the gate used for `submitGuestListingUrl` so disabling guest
+   * suggestions also blocks guest edits.
+   */
+  guestEditsAllowed: boolean;
 }
 
 export function PublishedListingActionsMenu({
   token,
   listing,
   activeGuest,
+  guestEditsAllowed,
 }: PublishedListingActionsMenuProps) {
   const [editOpen, setEditOpen] = useState(false);
 
   const canViewSource = typeof listing.url === 'string' && listing.url.length > 0;
-  const canEdit = Boolean(activeGuest);
+  const canEdit = Boolean(activeGuest) && guestEditsAllowed;
+  const editDisabledReason = !guestEditsAllowed
+    ? 'The trip owner has disabled guest edits'
+    : !activeGuest
+      ? 'Pick your guest name first'
+      : undefined;
 
   return (
     <>
@@ -66,7 +78,7 @@ export function PublishedListingActionsMenu({
               Edit details
             </DropdownMenuItem>
           ) : (
-            <DropdownMenuItem disabled title="Pick your guest name first">
+            <DropdownMenuItem disabled title={editDisabledReason}>
               <Edit className="h-4 w-4" />
               Edit details
             </DropdownMenuItem>

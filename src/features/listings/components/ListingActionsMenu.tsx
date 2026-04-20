@@ -68,19 +68,18 @@ export function ListingActionsMenu({
 
   async function handleRefresh() {
     setIsRefreshing(true);
-    toast.loading('Refreshing from source…');
+    const loadingToastId = toast.loading('Refreshing from source…');
 
     try {
       const result = await refreshListingFromSourceUrl({ listingId });
-      toast.dismiss();
 
       if (!result.success) {
-        toast.error(errorToString(result.error || 'Refresh failed'));
+        toast.error(errorToString(result.error || 'Refresh failed'), { id: loadingToastId });
         return;
       }
 
       if (!result.data) {
-        toast.error('Refresh finished without listing data.');
+        toast.error('Refresh finished without listing data.', { id: loadingToastId });
         return;
       }
 
@@ -90,11 +89,10 @@ export function ListingActionsMenu({
           ? `Updated "${result.data.listingTitle}". Still missing: ${missingFields.join(', ')}.`
           : `Updated "${result.data.listingTitle}".`;
 
-      toast.success(successMessage);
+      toast.success(successMessage, { id: loadingToastId });
       router.refresh();
     } catch (error) {
-      toast.dismiss();
-      toast.error(errorToString(error));
+      toast.error(errorToString(error), { id: loadingToastId });
     } finally {
       setIsRefreshing(false);
     }

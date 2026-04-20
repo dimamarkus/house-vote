@@ -609,6 +609,11 @@ export const publishedTrips = {
     },
   ) => {
     const share = await assertPublishedShare(token);
+
+    if (!share.allowGuestSuggestions) {
+      throw new Error('Guest edits are disabled for this trip right now.');
+    }
+
     await assertGuestInTrip(share.tripId, guestId, db);
     await assertListingInTrip(share.tripId, listingId, db);
 
