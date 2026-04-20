@@ -41,7 +41,7 @@ interface TripSidebarProps {
     guests: Array<{
       id: string;
       guestDisplayName: string;
-      source: 'OWNER_ADDED' | 'SELF_ADDED';
+      source: 'OWNER_ADDED';
       votes: Array<{
         listingId: string;
       }>;

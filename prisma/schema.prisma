@@ -178,7 +178,7 @@ model TripGuest {
   id               String           @id @default(cuid())
   tripId           String
   guestDisplayName String // Name the guest provided
-  source           TripGuestSource  @default(SELF_ADDED)
+  source           TripGuestSource  @default(OWNER_ADDED)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   trip             Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
@@ -250,7 +250,6 @@ enum ListingCommentKind {
 
 enum TripGuestSource {
   OWNER_ADDED
-  SELF_ADDED
 }
 
 model TripImportToken {
