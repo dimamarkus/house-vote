@@ -50,6 +50,7 @@ export function ListingActionsMenu({
   initialStateForEdit,
 }: ListingActionsMenuProps) {
   const router = useRouter();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
@@ -90,6 +91,7 @@ export function ListingActionsMenu({
           : `Updated "${result.data.listingTitle}".`;
 
       toast.success(successMessage, { id: loadingToastId });
+      setIsMenuOpen(false);
       router.refresh();
     } catch (error) {
       toast.error(errorToString(error), { id: loadingToastId });
@@ -113,6 +115,7 @@ export function ListingActionsMenu({
       toast.success(
         isRejected ? 'Listing has been unrejected' : 'Listing has been rejected',
       );
+      setIsMenuOpen(false);
       router.refresh();
     } catch {
       toast.error('An error occurred while updating status');
@@ -148,6 +151,7 @@ export function ListingActionsMenu({
       toast.success(
         listingTitle ? `${listingTitle} deleted successfully.` : 'Listing deleted successfully',
       );
+      setIsMenuOpen(false);
       router.refresh();
     } catch {
       toast.error('An error occurred while deleting the listing');
@@ -158,7 +162,7 @@ export function ListingActionsMenu({
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
         <DropdownMenuTrigger asChild>
           <Button
             className="size-8 p-0"
@@ -188,7 +192,12 @@ export function ListingActionsMenu({
           )}
 
           {canEdit ? (
-            <DropdownMenuItem onSelect={() => setEditSheetOpen(true)}>
+            <DropdownMenuItem
+              onSelect={() => {
+                setEditSheetOpen(true);
+                setIsMenuOpen(false);
+              }}
+            >
               <Edit className="h-4 w-4" />
               Edit listing
             </DropdownMenuItem>
