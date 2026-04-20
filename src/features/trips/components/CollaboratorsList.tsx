@@ -55,7 +55,7 @@ interface CollaboratorsListProps {
     guests: Array<{
       id: string;
       guestDisplayName: string;
-      source: 'OWNER_ADDED' | 'SELF_ADDED';
+      source: 'OWNER_ADDED';
       votes: Array<{
         listingId: string;
       }>;
@@ -219,7 +219,7 @@ export function CollaboratorsList({
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Guests can also add themselves from the public page if their name is missing.
+                  Guests cannot add themselves. If someone is missing, add their name here before sharing the link.
                 </p>
               </form>
             </>
@@ -244,7 +244,6 @@ export function CollaboratorsList({
                       >
                         {hasVoted ? 'Voted' : 'Waiting'}
                       </Badge>
-                      {guest.source === 'SELF_ADDED' ? <Badge weight="hollow">Self added</Badge> : null}
                     </div>
                     <p className="text-sm text-muted-foreground">
                       Guest

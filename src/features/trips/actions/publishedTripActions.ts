@@ -37,11 +37,6 @@ const publishedGuestSessionSchema = z.object({
   guestId: z.string().cuid('A valid guest id is required.'),
 });
 
-const createPublishedGuestSchema = z.object({
-  token: z.string().uuid('A valid published trip link is required.'),
-  displayName: z.string().trim().min(1, 'Guest name is required.').max(50, 'Guest name is too long.'),
-});
-
 const castVoteSchema = z.object({
   token: z.string().uuid('A valid published trip link is required.'),
   guestId: z.string().cuid('A valid guest id is required.'),
@@ -381,42 +376,6 @@ export async function claimPublishedTripGuest(
       error,
       code: ErrorCode.PROCESSING_ERROR,
       prefix: 'Failed to claim guest session:',
-    });
-  }
-}
-
-export async function createPublishedTripGuest(
-  input: {
-    token: string;
-    displayName: string;
-  },
-): Promise<BasicApiResponse<PublishedGuestSession>> {
-  const validation = createPublishedGuestSchema.safeParse(input);
-
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid guest creation request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const result = await publishedTrips.createGuestSession(validation.data.token, validation.data.displayName);
-
-    revalidatePublishedTripPaths(result.share.tripId, result.share.token);
-
-    return createSuccessResponse({
-      data: {
-        tripId: result.share.tripId,
-        guestId: result.guest.id,
-        guestDisplayName: result.guest.guestDisplayName,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to create guest session:',
     });
   }
 }

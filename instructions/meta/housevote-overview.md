@@ -61,17 +61,17 @@ A collaborative web/mobile application designed to help groups of friends easily
 
 **7. Published trip voting (public share link)**
 
-*Simple version:* The owner turns on a public link. Guests open it without logging in, choose who they are on the list (or add their name), click one house as their vote, and can change their mind later. The owner can close voting, pull the page down, or rotate the link if the old one leaked.
+*Simple version:* The owner turns on a public link. Guests open it without logging in, choose who they are on the pre-defined list, click one house as their vote, and can change their mind later. Guests cannot add themselves — only the owner or collaborators can add names to the list. The owner can close voting, pull the page down, or rotate the link if the old one leaked.
 
 * **Route and access:** `GET /share/<token>` (`<token>` is a UUID on `TripShare`). Middleware marks `/share/*` as public so Clerk does not block the page. If the trip is unpublished or the token was rotated, the old URL shows a clear “not live” state instead of trip data.
 
 * **Owner UI (trip sidebar):** Two cards:
   * **Voting** — Publish/unpublish the page, open/close voting, allow or disallow guest-submitted listing URLs (`allowGuestSuggestions`), copy the link, open the public page in a new tab, and rotate the token (previous links stop working).
-  * **Guests** — Manage the **trip team** (owner, collaborators) and the **guest list** used on the public page: add names, remove guests, invite collaborators by email, and see who has voted when that data is loaded. Helper copy explains that guests may add themselves on the public page if their name is missing.
+  * **Guests** — Manage the **trip team** (owner, collaborators) and the **guest list** used on the public page: add names, remove guests, invite collaborators by email, and see who has voted when that data is loaded. Guests cannot add themselves on the public page; the owner/collaborators are the only ones who can add names.
 
 * **Guest flow on the public page:**
-  1. **Choose your name** — Pick an existing guest row the owner added, or add a new name. Display names are **unique per trip** (enforced in the database).
-  2. **Session on device** — After a name is chosen, the app stores `guestId` and display name in `localStorage` under `housevote_published_guest_<tripId>` so returning to the same link remembers the voter. Another device or cleared storage = treat as a new person (new `TripGuest` row when they submit a name again).
+  1. **Choose your name** — Pick an existing guest row the owner added. If the guest's name is not on the list they must contact the trip owner and ask to be added; self-add is not supported. Display names are **unique per trip** (enforced in the database).
+  2. **Session on device** — After a name is chosen, the app stores `guestId` and display name in `localStorage` under `housevote_published_guest_<tripId>` so returning to the same link remembers the voter. Another device or cleared storage = the guest must re-pick their name from the list.
   3. **Voting rules** — At most **one active vote per guest** (`TripVote` is unique on `[tripId, guestId]`). Choosing a different listing **moves** the vote; many guests may vote for the **same** listing. If voting is **closed**, the UI should not allow new vote changes (server actions enforce this).
   4. **Optional listing URL** — If the owner enabled guest suggestions, the guest can paste a rental URL; import runs like other listing imports and ties the listing to the guest where applicable (`Listing.addedByGuestId`).
 
@@ -79,7 +79,7 @@ A collaborative web/mobile application designed to help groups of friends easily
 
 * **Listings and votes:** Rejecting a listing (owner) removes it from contention; vote rows for that listing are cleared so tallies stay consistent.
 
-* **Trust model:** The share URL is an **unauthenticated capability URL**. Anyone with it can vote as any **name** on the list or add a new name until duplicates collide. Rotating the link is the primary mitigation if a link is overshared.
+* **Trust model:** The share URL is an **unauthenticated capability URL**. Anyone with it can vote as any **name** on the list. New names cannot be created from the public page — only the owner/collaborators can add guests — so the attack surface is bounded by the owner-defined guest list. Rotating the link is the primary mitigation if a link is overshared.
 
 * **Implementation pointers:** Server mutations live in `src/features/trips/actions/publishedTripActions.ts`; reads and share helpers in `src/features/trips/publishedDb.ts`; public UI in `src/features/trips/components/PublishedTripPageClient.tsx`. The guest session hook must use a **stable** `useSyncExternalStore` snapshot (e.g. raw `localStorage` string, parse in `useMemo`) so Next.js does not hit hydration mismatches or update loops.
 

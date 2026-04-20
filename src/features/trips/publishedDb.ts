@@ -458,16 +458,6 @@ export const publishedTrips = {
     };
   },
 
-  createGuestSession: async (token: string, displayName: string) => {
-    const share = await assertPublishedShare(token);
-    const guest = await createGuest(share.tripId, displayName, TripGuestSource.SELF_ADDED, db);
-
-    return {
-      share,
-      guest,
-    };
-  },
-
   castVote: async (token: string, guestId: string, listingId: string) => {
     const share = await assertPublishedShare(token);
 
