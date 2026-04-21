@@ -42,6 +42,7 @@ interface MapListing {
   tripId: string;
   status: ListingStatusValue;
   source: Listing['source'];
+  listingType: Listing['listingType'];
   importMethod: Listing['importMethod'];
   importStatus: Listing['importStatus'];
   sourceExternalId: Listing['sourceExternalId'];
@@ -49,6 +50,9 @@ interface MapListing {
   importError: Listing['importError'];
   rawImportPayload: Listing['rawImportPayload'];
   roomBreakdown: Listing['roomBreakdown'];
+  nightlyPriceSource: Listing['nightlyPriceSource'];
+  priceQuotedStartDate: Listing['priceQuotedStartDate'];
+  priceQuotedEndDate: Listing['priceQuotedEndDate'];
   photos?: ListingPhoto[];
 }
 

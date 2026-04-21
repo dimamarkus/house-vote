@@ -68,6 +68,7 @@ model Listing {
   latitude         Float?
   longitude        Float?
   source           ListingSource       @default(MANUAL)
+  listingType      ListingType         @default(HOUSE)
   importMethod     ListingImportMethod @default(MANUAL)
   importStatus     ListingImportStatus @default(NOT_IMPORTED)
   sourceExternalId String?
@@ -75,6 +76,11 @@ model Listing {
   importError      String?
   rawImportPayload Json?
   roomBreakdown    Json?
+  /// Where the stored `price` (nightly) came from. Null on legacy rows that predate this field.
+  nightlyPriceSource   NightlyPriceSource?
+  /// When scraping a hotel/OTA page the price is for a specific stay. These record that stay window so we can show "quoted for Mar 3-7" on cards.
+  priceQuotedStartDate DateTime?
+  priceQuotedEndDate   DateTime?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   addedById        String? // Optional
@@ -95,6 +101,7 @@ model Listing {
   @@index([source, importStatus])
   @@index([sourceExternalId])
   @@index([tripId])
+  @@index([listingType])
 }
 
 model ListingPhoto {
@@ -134,6 +141,29 @@ enum ListingSource {
   AIRBNB
   VRBO
   UNKNOWN
+  OTHER
+}
+
+/// Orthogonal to ListingSource. `source` says where the data came from;
+/// `listingType` says what kind of lodging it is. A Marriott scrape is
+/// `source=OTHER, listingType=HOTEL`; a manual Airbnb is `source=MANUAL, listingType=HOUSE`.
+enum ListingType {
+  HOUSE
+  HOTEL
+  APARTMENT
+  CABIN
+  RESORT
+  OTHER
+}
+
+/// Describes how the `price` field (always stored as nightly) was derived.
+/// SCRAPED_NIGHTLY: parsed directly as a per-night price.
+/// DERIVED_FROM_TOTAL: OTA showed a total-for-stay; we divided by nights.
+/// MANUAL: user typed it.
+enum NightlyPriceSource {
+  SCRAPED_NIGHTLY
+  DERIVED_FROM_TOTAL
+  MANUAL
 }
 
 enum ListingImportMethod {

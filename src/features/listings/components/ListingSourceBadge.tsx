@@ -1,11 +1,12 @@
 'use client';
 
+import type { ListingSource } from 'db';
 import { Badge } from '@/ui/shadcn/badge';
 import { cn } from '@/ui/utils/cn';
 import { AirbnbLogotype, GlobeIcon, VrboLogotype } from '@/components/TravelSourceIcons';
 
 interface ListingSourceBadgeProps {
-  source?: 'MANUAL' | 'AIRBNB' | 'VRBO' | 'UNKNOWN' | null;
+  source?: ListingSource | null;
   href?: string | null;
   showManual?: boolean;
   badgeClassName?: string;
@@ -46,7 +47,7 @@ export function ListingSourceBadge({
       );
     }
 
-    if (source === 'UNKNOWN' || normalizedHref) {
+    if (source === 'UNKNOWN' || source === 'OTHER' || normalizedHref) {
       return (
         <Badge
           weight="hollow"

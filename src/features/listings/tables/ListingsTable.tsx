@@ -2,7 +2,7 @@
 
 import { format } from 'date-fns';
 import { DollarSign, Bed, BedDouble, Bath, Image as ImageIcon } from 'lucide-react';
-import type { Listing, User as PrismaUser, Trip, Like, ListingPhoto } from 'db';
+import type { Listing, ListingSource, User as PrismaUser, Trip, Like, ListingPhoto } from 'db';
 import { GenericTable, ColumnDef } from '@/ui/core/GenericTable';
 import { LikeButton } from '../../likes/components/LikeButton';
 import { ImageWithFallback } from '@/ui/core/ImageWithFallback';
@@ -24,7 +24,7 @@ type ListingWithRelations = Listing & {
   bathroomCount?: number | null;
   imageUrl?: string | null;
   photos?: ListingPhoto[];
-  source?: 'MANUAL' | 'AIRBNB' | 'VRBO' | 'UNKNOWN';
+  source?: ListingSource;
   importStatus?: 'NOT_IMPORTED' | 'PARTIAL' | 'COMPLETE' | 'FAILED';
 };
 
