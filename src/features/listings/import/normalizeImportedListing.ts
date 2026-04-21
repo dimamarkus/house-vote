@@ -1,3 +1,5 @@
+import { pickListingImportAdapter } from './adapters/registry';
+import type { ListingImportAdapter } from './adapters/types';
 import type {
   ListingImportCapture,
   ListingImportDebugInfo,
@@ -102,44 +104,40 @@ function deriveBedCountFromRoomBreakdown(
   return totalBeds > 0 ? totalBeds : null;
 }
 
-function canonicalizeListingUrl(inputUrl: string, source: ListingImportSourceValue): string {
+const TRACKING_QUERY_PARAMS = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+];
+
+function canonicalizeListingUrl(inputUrl: string, adapter: ListingImportAdapter | null): string {
   const url = new URL(inputUrl);
   url.hash = '';
 
-  if (source === 'AIRBNB' || source === 'VRBO') {
-    url.search = '';
-  } else {
-    const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
-    for (const param of trackingParams) {
-      url.searchParams.delete(param);
-    }
+  if (adapter?.canonicalizeUrl) {
+    return adapter.canonicalizeUrl(url).toString();
   }
 
+  for (const param of TRACKING_QUERY_PARAMS) {
+    url.searchParams.delete(param);
+  }
   url.pathname = url.pathname.replace(/\/+$/, '') || '/';
 
   return url.toString();
 }
 
-function extractSourceExternalId(canonicalUrl: string, source: ListingImportSourceValue): string | null {
-  try {
-    const url = new URL(canonicalUrl);
-
-    if (source === 'AIRBNB') {
-      const roomMatch = url.pathname.match(/\/rooms\/([^/]+)/i);
-      return roomMatch?.[1] ?? null;
-    }
-
-    if (source === 'VRBO') {
-      const pathSegment = url.pathname.split('/').filter(Boolean).at(-1) ?? null;
-      if (!pathSegment) {
-        return null;
-      }
-
-      const vrboMatch = pathSegment.match(/([0-9]+(?:ha)?)/i);
-      return vrboMatch?.[1] ?? pathSegment;
-    }
-
+function extractSourceExternalId(
+  canonicalUrl: string,
+  adapter: ListingImportAdapter | null,
+): string | null {
+  if (!adapter?.extractExternalId) {
     return null;
+  }
+
+  try {
+    return adapter.extractExternalId(new URL(canonicalUrl));
   } catch {
     return null;
   }
@@ -147,24 +145,13 @@ function extractSourceExternalId(canonicalUrl: string, source: ListingImportSour
 
 function cleanupImportedTitle(
   value: string | null,
-  source: ListingImportSourceValue,
+  adapter: ListingImportAdapter | null,
 ): string | null {
   if (!value) {
     return null;
   }
 
-  let normalizedValue = value;
-
-  if (source === 'AIRBNB') {
-    normalizedValue = normalizedValue.replace(/\s+-\s+Airbnb\s*$/i, '');
-  }
-
-  if (source === 'VRBO') {
-    normalizedValue = normalizedValue.replace(/\s+\|\s+Vrbo\s*$/i, '');
-  }
-
-  normalizedValue = normalizedValue.trim();
-
+  const normalizedValue = adapter?.cleanupTitle ? adapter.cleanupTitle(value) : value.trim();
   return normalizedValue || null;
 }
 
@@ -219,16 +206,17 @@ export function normalizeImportedListing(
   capture: ListingImportCapture,
   importMethod: ListingImportMethodValue,
 ): NormalizedImportedListing {
-  const source = capture.source ?? detectListingSource(capture.url);
-  const canonicalUrl = canonicalizeListingUrl(capture.url, source);
-  const sourceExternalId = extractSourceExternalId(canonicalUrl, source);
+  const adapter = pickListingImportAdapter(capture.url);
+  const source = capture.source ?? adapter?.id ?? detectListingSource(capture.url);
+  const canonicalUrl = canonicalizeListingUrl(capture.url, adapter);
+  const sourceExternalId = extractSourceExternalId(canonicalUrl, adapter);
   const address = normalizeText(capture.address);
   const sourceDescription = normalizeText(capture.sourceDescription);
   const notes = normalizeText(capture.notes);
   const normalizedPhotoUrls = normalizePhotoUrls(capture.imageUrl, capture.photoUrls);
   const imageUrl = normalizedPhotoUrls[0] ?? null;
   const title =
-    cleanupImportedTitle(normalizeText(capture.title) ?? address, source) ??
+    cleanupImportedTitle(normalizeText(capture.title) ?? address, adapter) ??
     buildFallbackTitle(source, sourceExternalId);
   const price = parseImportedPrice(capture.price);
   const bedroomCount = parseNumberish(capture.bedroomCount);

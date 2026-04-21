@@ -1,22 +1,12 @@
+import { pickListingImportAdapter } from './adapters/registry';
 import type { ListingImportSourceValue } from './types';
 
-const AIRBNB_HOSTS = ['airbnb.com', 'www.airbnb.com'];
-const VRBO_HOSTS = ['vrbo.com', 'www.vrbo.com'];
-
+/**
+ * Detects which `ListingSource` a URL belongs to by asking the adapter registry.
+ * Returns `'UNKNOWN'` when no adapter matches; a follow-up PR will swap that
+ * to `'OTHER'` once the generic adapter is wired in.
+ */
 export function detectListingSource(inputUrl: string): ListingImportSourceValue {
-  try {
-    const hostname = new URL(inputUrl).hostname.toLowerCase();
-
-    if (AIRBNB_HOSTS.includes(hostname) || hostname.endsWith('.airbnb.com')) {
-      return 'AIRBNB';
-    }
-
-    if (VRBO_HOSTS.includes(hostname) || hostname.endsWith('.vrbo.com')) {
-      return 'VRBO';
-    }
-
-    return 'UNKNOWN';
-  } catch {
-    return 'UNKNOWN';
-  }
+  const adapter = pickListingImportAdapter(inputUrl);
+  return adapter?.id ?? 'UNKNOWN';
 }
