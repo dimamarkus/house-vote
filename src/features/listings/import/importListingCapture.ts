@@ -1,7 +1,4 @@
 import {
-  LISTING_IMPORT_UNSUPPORTED_SOURCE_MESSAGE,
-} from './constants';
-import {
   extractImportDebugData,
   getMissingImportedListingFields,
   normalizeImportedListing,
@@ -27,10 +24,6 @@ export async function importListingCapture({
   addedById,
 }: ImportListingCaptureOptions): Promise<ListingImportResult> {
   const normalizedListing = normalizeImportedListing(capture, importMethod);
-
-  if (normalizedListing.source === 'UNKNOWN') {
-    throw new Error(LISTING_IMPORT_UNSUPPORTED_SOURCE_MESSAGE);
-  }
 
   const savedListing = await upsertImportedListing(tripId, normalizedListing, {
     addedById,

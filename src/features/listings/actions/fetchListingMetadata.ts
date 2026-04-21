@@ -2,6 +2,7 @@
 
 import { z } from 'zod';
 import { auth } from '@clerk/nextjs/server';
+import type { ListingImportSourceValue } from '../import/types';
 import { scrapeListingMetadataFromUrl } from '../import/scrapeListingMetadataFromUrl';
 
 // Define the input schema for the action
@@ -22,7 +23,7 @@ interface ListingMetadata {
   notes?: string | null;
   imageUrl?: string | null;
   photoUrls?: string[];
-  source?: 'AIRBNB' | 'VRBO' | 'UNKNOWN' | 'MANUAL';
+  source?: ListingImportSourceValue;
   sourceExternalId?: string | null;
 }
 

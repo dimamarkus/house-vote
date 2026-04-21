@@ -8,7 +8,6 @@ import { ErrorCode } from '@/core/errors';
 import { validateActionInput } from '@/core/form-data';
 import { createErrorResponse, createSuccessResponse } from '@/core/responses';
 import { trips } from '@/features/trips/db';
-import { LISTING_IMPORT_UNSUPPORTED_SOURCE_MESSAGE } from '../import/constants';
 import type { RoomBreakdown } from '../import/types';
 import {
   getMissingImportedListingFields,
@@ -213,13 +212,6 @@ export async function refreshListingFromSourceUrl(input: unknown) {
     }
 
     const normalizedListing = await scrapeListingMetadataFromUrl(trimmedUrl);
-
-    if (normalizedListing.source === 'UNKNOWN') {
-      return createErrorResponse({
-        error: LISTING_IMPORT_UNSUPPORTED_SOURCE_MESSAGE,
-        code: ErrorCode.VALIDATION_ERROR,
-      });
-    }
 
     normalizedListing.sourceDescription = resolveRefreshedSourceDescription(
       listing.sourceDescription,

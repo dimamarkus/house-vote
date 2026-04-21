@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-export const ListingImportSourceSchema = z.enum(['MANUAL', 'AIRBNB', 'VRBO', 'UNKNOWN']);
+export const ListingImportSourceSchema = z.enum([
+  'MANUAL',
+  'AIRBNB',
+  'VRBO',
+  'UNKNOWN',
+  'OTHER',
+]);
 
 export const ListingImportMethodSchema = z.enum(['MANUAL', 'URL_FETCH', 'EXTENSION']);
 

@@ -1,13 +1,19 @@
 import { airbnbAdapter } from './airbnbAdapter';
+import { genericAdapter } from './genericAdapter';
 import { vrboAdapter } from './vrboAdapter';
 import type { ListingImportAdapter } from './types';
 
 /**
  * Ordered list of listing-import adapters. `pickListingImportAdapter` walks
  * this list in order, so put more-specific matchers before generic ones.
- * A follow-up PR will append a `genericAdapter` that matches any URL as a fallback.
+ * `genericAdapter` MUST stay last because its `matches()` returns true for
+ * any parseable URL.
  */
-export const listingImportAdapters: ListingImportAdapter[] = [airbnbAdapter, vrboAdapter];
+export const listingImportAdapters: ListingImportAdapter[] = [
+  airbnbAdapter,
+  vrboAdapter,
+  genericAdapter,
+];
 
 export function pickListingImportAdapter(inputUrl: string): ListingImportAdapter | null {
   let parsed: URL;
