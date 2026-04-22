@@ -1,14 +1,16 @@
 'use client';
 
 import { format } from 'date-fns';
-import { DollarSign, Bed, BedDouble, Bath, Image as ImageIcon } from 'lucide-react';
+import { DollarSign, BedDouble, Bath, DoorOpen, Image as ImageIcon } from 'lucide-react';
 import type { Listing, ListingSource, User as PrismaUser, Trip, Like, ListingPhoto } from 'db';
 import { GenericTable, ColumnDef } from '@/ui/core/GenericTable';
 import { LikeButton } from '../../likes/components/LikeButton';
 import { ImageWithFallback } from '@/ui/core/ImageWithFallback';
 import { PhotoLightbox } from '@/ui/core/PhotoLightbox';
 import { ListingSourceBadge } from '../components/ListingSourceBadge';
+import { ListingTypeBadge } from '../components/ListingTypeBadge';
 import { ListingActionsMenu } from '../components/ListingActionsMenu';
+import { isHotelLikeListingType } from '../listingTypeOptions';
 
 // Requires getListings action to include: addedBy, likes: { select: { id: true }}
 // to satisfy these types fully.
@@ -106,10 +108,13 @@ export function ListingsTable({
       accessorKey: "source",
       cell: (listing) => {
         return (
-          <ListingSourceBadge
-            source={listing.source}
-            href={listing.url}
-          />
+          <div className="flex items-center gap-1.5">
+            <ListingSourceBadge
+              source={listing.source}
+              href={listing.url}
+            />
+            <ListingTypeBadge type={listing.listingType} />
+          </div>
         );
       }
     },
@@ -133,15 +138,20 @@ export function ListingsTable({
       }
     },
     {
-      header: "Beds",
-      accessorKey: "bedroomCount",
+      // Label reads "Rooms" when every row in view is hotel-like, otherwise
+      // "Bedrooms". This keeps the column header honest for the common case
+      // without forcing hotels to say "Bedrooms".
+      header: listings.length > 0 && listings.every((l) => isHotelLikeListingType(l.listingType))
+        ? 'Rooms'
+        : 'Bedrooms',
+      accessorKey: 'bedroomCount',
       sortable: true,
       cell: (listing) => {
         return (
           <div className="flex items-center justify-center gap-1">
             {listing.bedroomCount !== null && listing.bedroomCount !== undefined ? (
               <>
-                <BedDouble className="h-4 w-4 text-muted-foreground" />
+                <DoorOpen className="h-4 w-4 text-muted-foreground" />
                 <span>{listing.bedroomCount}</span>
               </>
             ) : (
@@ -152,7 +162,7 @@ export function ListingsTable({
       }
     },
     {
-      header: "Bed Count",
+      header: "Beds",
       accessorKey: "bedCount",
       sortable: true,
       cell: (listing) => {
@@ -160,7 +170,7 @@ export function ListingsTable({
           <div className="flex items-center justify-center gap-1">
             {listing.bedCount !== null && listing.bedCount !== undefined ? (
               <>
-                <Bed className="h-4 w-4 text-muted-foreground" />
+                <BedDouble className="h-4 w-4 text-muted-foreground" />
                 <span>{listing.bedCount}</span>
               </>
             ) : (

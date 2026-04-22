@@ -36,3 +36,33 @@ export interface ListingTypeOption {
 export const LISTING_TYPE_OPTIONS: ReadonlyArray<ListingTypeOption> = LISTING_TYPE_VALUES.map(
   (value) => ({ value, label: LISTING_TYPE_LABELS[value] }),
 );
+
+/**
+ * Types where the "bedroom count" column on a Listing actually represents a
+ * room count (e.g. a hotel/resort reservation of 1 room = 1 bedroom from the
+ * DB's perspective). Used by the UI to choose between "Bedroom" and "Room".
+ *
+ * Kept as a literal tuple + string-literal guard so we can still type-check
+ * membership without importing ListingType as a value (see file header).
+ */
+export const HOTEL_LIKE_LISTING_TYPES = [
+  'HOTEL',
+  'RESORT',
+] as const satisfies ReadonlyArray<ListingType>;
+
+export function isHotelLikeListingType(type: ListingType | null | undefined): boolean {
+  if (type == null) return false;
+  return (HOTEL_LIKE_LISTING_TYPES as ReadonlyArray<ListingType>).includes(type);
+}
+
+/**
+ * Returns "Bedroom"/"Bedrooms" for house-style listings and "Room"/"Rooms" for
+ * hotel-style listings. Pluralized based on count.
+ */
+export function getBedroomLabel(
+  type: ListingType | null | undefined,
+  count: number,
+): string {
+  const singular = isHotelLikeListingType(type) ? 'Room' : 'Bedroom';
+  return count === 1 ? singular : `${singular}s`;
+}

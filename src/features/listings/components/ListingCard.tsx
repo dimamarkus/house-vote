@@ -34,6 +34,7 @@ import {
   DialogTrigger,
 } from '@/ui/shadcn/dialog';
 import { ListingSourceBadge } from './ListingSourceBadge';
+import { ListingTypeBadge } from './ListingTypeBadge';
 import {
   formatListingStatusLabel,
   isVoteEligibleListingStatus,
@@ -41,6 +42,7 @@ import {
   type ListingStatusValue,
 } from '../constants/listing-status';
 import { extractBedCountFromRoomBreakdown, extractSleepsCount } from '../utils/extractSleepsCount';
+import { getBedroomLabel } from '../listingTypeOptions';
 
 interface RoomEntry {
   name: string;
@@ -127,11 +129,18 @@ export function ListingCard({
       badgeClassName="border-background/60 bg-background/90 shadow-sm backdrop-blur"
     />
   );
+  const typeBadge = (
+    <ListingTypeBadge
+      type={listing.listingType}
+      className="border-background/60 bg-background/90 shadow-sm backdrop-blur"
+    />
+  );
   const imageSourceBadge = hasPhotos ? sourceBadge : null;
   const inlineSourceBadge = hasPhotos ? null : sourceBadge;
-  const overlayTopRight = hasPhotos && (imageSourceBadge || actionsMenu) ? (
+  const overlayTopRight = hasPhotos && (imageSourceBadge || typeBadge || actionsMenu) ? (
     <div className="flex flex-col items-end gap-2">
       {imageSourceBadge}
+      {typeBadge}
       {actionsMenu}
     </div>
   ) : undefined;
@@ -181,7 +190,7 @@ export function ListingCard({
       {listing.bedroomCount != null && (
         <span className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs font-medium text-foreground">
           <DoorOpen className="h-3.5 w-3.5 text-muted-foreground" />
-          {listing.bedroomCount === 1 ? '1 Room' : `${listing.bedroomCount} Rooms`}
+          {`${listing.bedroomCount} ${getBedroomLabel(listing.listingType, listing.bedroomCount)}`}
         </span>
       )}
       {bedCount != null && (
@@ -224,10 +233,11 @@ export function ListingCard({
       ) : null}
 
       <CardHeader className={cn(hasPhotos ? 'gap-4 pt-4' : 'gap-4 pt-6', 'pb-4')}>
-        {(inlineStatusBadge || inlineSourceBadge || (!hasPhotos && actionsMenu)) ? (
+        {(inlineStatusBadge || inlineSourceBadge || (!hasPhotos && typeBadge) || (!hasPhotos && actionsMenu)) ? (
           <div className="flex flex-wrap items-center gap-2">
             {inlineStatusBadge}
             {inlineSourceBadge}
+            {!hasPhotos ? typeBadge : null}
             {!hasPhotos && actionsMenu ? (
               <div className="ml-auto">{actionsMenu}</div>
             ) : null}
