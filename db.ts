@@ -42,6 +42,8 @@ export {
   ListingImportStatus,
   ListingSource,
   ListingStatus,
+  ListingType,
+  NightlyPriceSource,
   TripGuestSource,
   Prisma,
 } from "@prisma/client";

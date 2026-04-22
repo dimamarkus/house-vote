@@ -1,8 +1,12 @@
 import { z } from 'zod';
+import { ListingType } from 'db';
+
+export const ListingTypeSchema = z.nativeEnum(ListingType);
 
 export const ListingSchema = z.object({
   id: z.string().cuid(),
   title: z.string().min(1, { message: "Title cannot be empty" }),
+  listingType: ListingTypeSchema.optional(),
   address: z.string().nullable().optional(),
   url: z.string().nullable().optional(),
   price: z.number().int().nullable().optional(),
