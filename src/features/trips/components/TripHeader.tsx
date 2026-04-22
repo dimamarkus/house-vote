@@ -7,6 +7,7 @@ import type { TripFormData } from '../schemas';
 import { TripFormSheet } from '../forms/TripFormSheet';
 import { formatTripDateRange } from '../utils/formatTripDateRange';
 import { generateAirbnbUrl, generateVrboUrl } from '../utils/travelLinks';
+import { TripPriceBasisToggle } from './TripPriceBasisToggle';
 
 interface TripHeaderProps {
   // Use Partial<Trip> again as a workaround for upstream type issues
@@ -77,6 +78,13 @@ export function TripHeader({ trip }: TripHeaderProps) {
           </div>
 
           <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end">
+            <TripPriceBasisToggle
+              tripContext={{
+                numberOfPeople: trip.numberOfPeople ?? null,
+                startDate: trip.startDate ? new Date(trip.startDate) : null,
+                endDate: trip.endDate ? new Date(trip.endDate) : null,
+              }}
+            />
             {canSearchTravelSites ? (
               <>
                 <LinkButton

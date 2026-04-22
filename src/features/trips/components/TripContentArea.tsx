@@ -12,6 +12,7 @@ import { LikeButton } from '@/features/likes/components/LikeButton';
 import { TripViewToggle } from './TripViewToggle';
 import { cn } from '@/ui/utils/cn';
 import { LISTING_STATUS, type ListingStatusValue } from '@/features/listings/constants/listing-status';
+import type { TripPriceContext } from '@/features/listings/utils/priceBasis';
 
 // Dynamically import the map component, disabling SSR
 const ListingsMap = dynamic(
@@ -63,6 +64,7 @@ interface TripContentAreaProps {
   userLikes: Record<string, boolean>;
   userId: string | null;
   tripId: string;
+  tripContext?: TripPriceContext;
   className?: string;
 }
 
@@ -73,6 +75,7 @@ export function TripContentArea({
   userLikes,
   userId,
   tripId,
+  tripContext,
   className,
 }: TripContentAreaProps) {
   // Construct base path for sorting links
@@ -118,6 +121,7 @@ export function TripContentArea({
               currentUserIsOwner={isOwner}
               currentUserLikes={userLikes}
               basePath={basePath}
+              tripContext={tripContext}
             />
           )}
           {viewMode === 'map' && (
@@ -134,6 +138,7 @@ export function TripContentArea({
                   <ListingCard
                     key={listing.id}
                     listing={listing}
+                    tripContext={tripContext}
                     roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
                     actionsMenu={
                       <ListingActionsMenu
@@ -179,6 +184,7 @@ export function TripContentArea({
               currentUserIsOwner={isOwner}
               currentUserLikes={userLikes}
               basePath={basePath}
+              tripContext={tripContext}
             />
           </CardContent>
         </Card>

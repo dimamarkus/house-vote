@@ -43,6 +43,11 @@ import {
 } from '../constants/listing-status';
 import { extractBedCountFromRoomBreakdown, extractSleepsCount } from '../utils/extractSleepsCount';
 import { getBedroomLabel } from '../listingTypeOptions';
+import {
+  computeListingPriceDisplay,
+  type TripPriceContext,
+} from '../utils/priceBasis';
+import { usePriceBasis } from '@/features/trips/hooks/usePriceBasis';
 
 interface RoomEntry {
   name: string;
@@ -70,6 +75,12 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   baseUrl?: string;
   roomBreakdown?: RoomBreakdown | null;
   showAllMetadata?: boolean;
+  /**
+   * Trip-level context used to compute per-guest / total prices when the
+   * user toggles away from per-night display. Omit to keep the card showing
+   * nightly prices (e.g. surfaces outside a trip page).
+   */
+  tripContext?: TripPriceContext;
 }
 
 export function ListingCard({
@@ -82,10 +93,17 @@ export function ListingCard({
   baseUrl = '/listings',
   roomBreakdown,
   showAllMetadata = false,
+  tripContext,
   ...props
 }: ListingCardProps) {
   const [face, setFace] = useState<'default' | 'rooms'>(
     roomBreakdown?.rooms?.length ? 'rooms' : 'default',
+  );
+  const [priceBasis] = usePriceBasis();
+  const priceDisplay = computeListingPriceDisplay(
+    listing.price ?? null,
+    priceBasis,
+    tripContext,
   );
 
   const detailUrl = `${baseUrl}/${listing.id}`;
@@ -263,9 +281,14 @@ export function ListingCard({
           </div>
 
           <div className="flex shrink-0 flex-col items-end gap-2">
-            {listing.price ? (
-              <div className="rounded-md bg-primary/10 px-2.5 py-1 text-lg font-bold tracking-tight text-primary">
-                ${listing.price.toLocaleString()}
+            {priceDisplay.amount ? (
+              <div className="flex flex-col items-end">
+                <div className="rounded-md bg-primary/10 px-2.5 py-1 text-lg font-bold tracking-tight text-primary">
+                  ${priceDisplay.amount}
+                </div>
+                <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {priceDisplay.unitLabel}
+                </span>
               </div>
             ) : null}
             {hasRooms && !showAllMetadata && (

@@ -1,7 +1,7 @@
 'use client';
 
 import { format } from 'date-fns';
-import { DollarSign, BedDouble, Bath, DoorOpen, Image as ImageIcon } from 'lucide-react';
+import { BedDouble, Bath, DoorOpen, Image as ImageIcon } from 'lucide-react';
 import type { Listing, ListingSource, User as PrismaUser, Trip, Like, ListingPhoto } from 'db';
 import { GenericTable, ColumnDef } from '@/ui/core/GenericTable';
 import { LikeButton } from '../../likes/components/LikeButton';
@@ -11,6 +11,8 @@ import { ListingSourceBadge } from '../components/ListingSourceBadge';
 import { ListingTypeBadge } from '../components/ListingTypeBadge';
 import { ListingActionsMenu } from '../components/ListingActionsMenu';
 import { isHotelLikeListingType } from '../listingTypeOptions';
+import { ListingPriceCell } from '../components/ListingPriceCell';
+import type { TripPriceContext } from '../utils/priceBasis';
 
 // Requires getListings action to include: addedBy, likes: { select: { id: true }}
 // to satisfy these types fully.
@@ -36,6 +38,11 @@ interface ListingsTableProps {
   currentUserIsOwner?: boolean;
   currentUserLikes?: Record<string, boolean>;
   basePath?: string;
+  /**
+   * Trip-level context (guests + date range) used to compute per-guest /
+   * total prices. Omit to keep the price column on per-night display.
+   */
+  tripContext?: TripPriceContext;
 }
 
 export function ListingsTable({
@@ -44,6 +51,7 @@ export function ListingsTable({
   currentUserIsOwner = false,
   currentUserLikes = {},
   basePath,
+  tripContext,
 }: ListingsTableProps) {
 
   // Columns expect cell function to receive the item directly
@@ -122,20 +130,9 @@ export function ListingsTable({
       header: "Price",
       accessorKey: "price",
       sortable: true,
-      cell: (listing) => {
-        return (
-          <div className="flex items-center gap-1">
-            {listing.price ? (
-              <>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-                <span>{listing.price.toLocaleString()}</span>
-              </>
-            ) : (
-              <span className="text-muted-foreground italic">N/A</span>
-            )}
-          </div>
-        );
-      }
+      cell: (listing) => (
+        <ListingPriceCell price={listing.price ?? null} tripContext={tripContext} />
+      ),
     },
     {
       // Label reads "Rooms" when every row in view is hotel-like, otherwise

@@ -257,6 +257,11 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
             isOwner={isOwner}
             userLikes={userLikes}
             userId={userId}
+            tripContext={{
+              numberOfPeople: trip.numberOfPeople ?? null,
+              startDate: trip.startDate ? new Date(trip.startDate) : null,
+              endDate: trip.endDate ? new Date(trip.endDate) : null,
+            }}
           />
         </div>
       </div>
