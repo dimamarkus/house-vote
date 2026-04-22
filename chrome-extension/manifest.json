@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "House Vote Importer",
-  "version": "0.1.0",
-  "description": "Capture Airbnb and VRBO listings into House Vote.",
+  "version": "0.2.0",
+  "description": "Capture Airbnb, VRBO, and Booking.com listings into House Vote.",
   "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": ["<all_urls>"],
   "action": {

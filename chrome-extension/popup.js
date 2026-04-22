@@ -195,11 +195,11 @@ async function saveCurrentListing() {
     const capture = await captureListingFromActiveTab(activeTab.id);
 
     if (!capture || !capture.url) {
-      throw new Error('Could not parse this page. Open an Airbnb or VRBO listing and try again.');
+      throw new Error('Could not parse this page. Open a supported listing (Airbnb, VRBO, or Booking.com) and try again.');
     }
 
     if (capture.source === 'UNKNOWN') {
-      throw new Error('This page is not recognized as an Airbnb or VRBO listing page.');
+      throw new Error('This page is not recognized as a supported listing. Open an Airbnb, VRBO, or Booking.com property page and try again.');
     }
 
     previewElement.textContent = formatCapturePreview(capture, debugMode);

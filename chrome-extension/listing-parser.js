@@ -1,5 +1,5 @@
 (function registerHouseVoteListingParser() {
-  const PARSER_VERSION = '2026-04-hardening-1-extension';
+  const PARSER_VERSION = '2026-04-hardening-2-extension-booking';
 
   function normalizeText(value) {
     if (typeof value !== 'string') {
@@ -8,6 +8,36 @@
 
     const trimmed = value.replace(/\s+/g, ' ').trim();
     return trimmed ? trimmed : null;
+  }
+
+  /**
+   * Returns only the direct text nodes of an element, skipping any nested
+   * child elements. Useful when a container interleaves useful top-level
+   * text with nested tooltips / rating widgets / icon labels (Booking's
+   * address wrapper is the canonical example).
+   */
+  function getDirectText(element) {
+    if (!element) {
+      return null;
+    }
+
+    const textNodes = Array.from(element.childNodes)
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent)
+      .join(' ');
+    return normalizeText(textNodes);
+  }
+
+  function getDirectTextFromSelectors(selectors) {
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      const value = getDirectText(element);
+      if (value) {
+        return value;
+      }
+    }
+
+    return null;
   }
 
   function getMetaContent(selector) {
@@ -284,6 +314,18 @@
       };
     }
 
+    if (source === 'BOOKING') {
+      return {
+        title: [
+          '#hp_hotel_name h2.pp-header__title',
+          'h2.pp-header__title',
+          '[data-testid="breadcrumb-current"]',
+        ],
+        address: ['[data-testid="PropertyHeaderAddressDesktop-wrapper"]'],
+        price: ['.js-average-per-night-price', '[data-testid="price-and-discounted-price"]'],
+      };
+    }
+
     return {
       title: ['main h1', 'h1'],
       address: ['main h2'],
@@ -452,6 +494,161 @@
     };
   }
 
+  /**
+   * Mirrors the server-side bookingAdapter.ts. We can't import that module
+   * (it's cheerio-based and bundled server-only), so the selectors and
+   * heuristics live here too. Keep the two in sync when either side changes.
+   */
+  function extractBookingAddress() {
+    const wrapper = document.querySelector('[data-testid="PropertyHeaderAddressDesktop-wrapper"]');
+    if (!wrapper) {
+      return null;
+    }
+
+    const candidates = wrapper.querySelectorAll('div, span, a');
+    for (const element of candidates) {
+      const directText = getDirectText(element);
+      if (!directText) {
+        continue;
+      }
+      // "street, city, region-or-country" — street-number prefix filters out
+      // tooltip copy like "Excellent location - 9.6/10 (3728 reviews)".
+      const commaCount = (directText.match(/,/g) || []).length;
+      if (commaCount >= 2 && /\d/.test(directText)) {
+        return directText;
+      }
+    }
+
+    return null;
+  }
+
+  function extractBookingCheapestNightly() {
+    let cheapest = null;
+    let cheapestRaw = null;
+
+    const nightlyElements = document.querySelectorAll('.js-average-per-night-price');
+
+    for (const element of nightlyElements) {
+      const rawAttr = element.getAttribute('data-price-per-night-raw');
+      if (!rawAttr) {
+        continue;
+      }
+      const parsed = Number.parseFloat(rawAttr);
+      if (Number.isFinite(parsed) && parsed > 0 && (cheapest === null || parsed < cheapest)) {
+        cheapest = parsed;
+        cheapestRaw = rawAttr;
+      }
+    }
+
+    if (cheapest === null) {
+      for (const element of nightlyElements) {
+        const text = normalizeText(element.textContent);
+        if (!text) {
+          continue;
+        }
+        const match = text.match(/\$?([0-9][0-9,]*(?:\.\d+)?)/);
+        if (!match) {
+          continue;
+        }
+        const parsed = Number.parseFloat(match[1].replace(/,/g, ''));
+        if (Number.isFinite(parsed) && parsed > 0 && (cheapest === null || parsed < cheapest)) {
+          cheapest = parsed;
+        }
+      }
+    }
+
+    return {
+      dollars: cheapest === null ? null : Math.round(cheapest),
+      rawAttr: cheapestRaw,
+    };
+  }
+
+  function addDaysToIso(isoStart, days) {
+    const start = new Date(isoStart);
+    if (Number.isNaN(start.getTime())) {
+      return null;
+    }
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + days);
+    return end.toISOString().slice(0, 10);
+  }
+
+  function extractBookingStayMeta() {
+    let startDate = null;
+    let endDate = null;
+
+    try {
+      const url = new URL(window.location.href);
+      startDate = url.searchParams.get('checkin');
+      endDate = url.searchParams.get('checkout');
+    } catch {
+      // Non-URL contexts shouldn't happen in a content script, but fall through
+    }
+
+    if (!startDate) {
+      startDate = normalizeText(document.querySelector('input[name="checkin"]')?.getAttribute('value'));
+    }
+    if (!endDate) {
+      endDate = normalizeText(document.querySelector('input[name="checkout"]')?.getAttribute('value'));
+    }
+
+    let nights = null;
+    const nightsLabelText = Array.from(document.querySelectorAll('.bui-price-display__label'))
+      .map((element) => normalizeText(element.textContent))
+      .find((text) => text && /\b\d+\s+nights?\b/i.test(text));
+    const nightsMatch = nightsLabelText ? nightsLabelText.match(/\b(\d+)\s+nights?\b/i) : null;
+    if (nightsMatch) {
+      nights = Number.parseInt(nightsMatch[1], 10);
+    }
+
+    if (!endDate && startDate && nights) {
+      endDate = addDaysToIso(startDate, nights);
+    }
+
+    return { startDate, endDate, nights };
+  }
+
+  function extractBookingHints() {
+    const title = getDirectTextFromSelectors([
+      '#hp_hotel_name h2.pp-header__title',
+      'h2.pp-header__title',
+      '[data-testid="breadcrumb-current"]',
+    ]);
+    const address = extractBookingAddress();
+    const pricing = extractBookingCheapestNightly();
+    const stayMeta = extractBookingStayMeta();
+    const description = normalizeText(
+      document.querySelector('[data-testid="property-description"]')?.textContent,
+    );
+    const hotelId = normalizeText(document.querySelector('input[name="hotel_id"]')?.getAttribute('value'));
+
+    const priceMeta =
+      pricing.dollars !== null
+        ? {
+            basis: 'NIGHTLY',
+            nights: stayMeta.nights,
+            startDate: stayMeta.startDate,
+            endDate: stayMeta.endDate,
+          }
+        : null;
+
+    return {
+      title: title || null,
+      address: address || null,
+      sourceDescription: description,
+      roomSummaryText: '',
+      price: pricing.dollars !== null ? String(pricing.dollars) : null,
+      priceMeta,
+      rawSignals: {
+        hotelId,
+        rawPricePerNight: pricing.rawAttr,
+        checkin: stayMeta.startDate,
+        checkout: stayMeta.endDate,
+        nights: stayMeta.nights,
+      },
+    };
+  }
+
   function extractVrboHints() {
     const priceSummaryTexts = getAllTextFromSelectors(['[data-test-id="price-summary-message-line"]']);
     const priceSummaryText = getTextFromSelectors(['[data-test-id="price-summary"]']);
@@ -484,30 +681,51 @@
     };
   }
 
+  function detectSourceFromHostname(hostname) {
+    if (hostname.includes('airbnb')) {
+      return 'AIRBNB';
+    }
+    if (hostname.includes('vrbo')) {
+      return 'VRBO';
+    }
+    if (hostname.includes('booking.com')) {
+      return 'BOOKING';
+    }
+    return 'UNKNOWN';
+  }
+
+  const EMPTY_HINTS = {
+    title: null,
+    address: null,
+    roomSummaryText: '',
+    price: null,
+    rawSignals: {},
+    sourceDescription: null,
+    priceMeta: null,
+  };
+
+  function pickHintsForSource(source) {
+    if (source === 'AIRBNB') {
+      return extractAirbnbHints();
+    }
+    if (source === 'VRBO') {
+      return extractVrboHints();
+    }
+    if (source === 'BOOKING') {
+      return extractBookingHints();
+    }
+    return EMPTY_HINTS;
+  }
+
   function extractListingCaptureFromPage() {
     const hostname = window.location.hostname.toLowerCase();
-    const source = hostname.includes('airbnb')
-      ? 'AIRBNB'
-      : hostname.includes('vrbo')
-        ? 'VRBO'
-        : 'UNKNOWN';
+    const source = detectSourceFromHostname(hostname);
     const selectors = getSourceSpecificSelectors(source);
     const jsonLdBlocks = collectJsonLd();
     const structuredListing = findStructuredListing(jsonLdBlocks);
     const nextData = collectJsonById('__NEXT_DATA__');
     const pageText = document.body ? document.body.innerText.replace(/\s+/g, ' ') : '';
-    const sourceHints =
-      source === 'AIRBNB'
-        ? extractAirbnbHints()
-        : source === 'VRBO'
-          ? extractVrboHints()
-          : {
-              title: null,
-              address: null,
-              roomSummaryText: '',
-              price: null,
-              rawSignals: {},
-            };
+    const sourceHints = pickHintsForSource(source);
     const canonicalUrl =
       getAttributeFromSelectors(['link[rel="canonical"]'], 'href') ||
       normalizeImageUrl(getMetaContent('meta[property="og:url"]'), { allowUiAssets: true }) ||
@@ -617,6 +835,8 @@
       title: titleSelection.value,
       address: addressSelection.value,
       price: priceSelection.value,
+      priceMeta: sourceHints.priceMeta || null,
+      sourceDescription: sourceHints.sourceDescription || null,
       bedroomCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+bedrooms?\b/i]),
       bedCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+beds?\b/i]),
       bathroomCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+(?:bathrooms?|baths?)\b/i]),
