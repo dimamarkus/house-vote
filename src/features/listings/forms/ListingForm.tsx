@@ -1,32 +1,16 @@
 'use client';
 
-import { ListingType } from 'db';
 import { Button } from '@/ui/shadcn/button';
 import { ListingFormValues } from '../schemas';
+import { LISTING_TYPE_OPTIONS } from '../listingTypeOptions';
 import { FormSection } from '@/ui/form/FormSection';
 import { InputField } from '@/ui/form/fields/InputField';
-import { SelectField, type SelectOption } from '@/ui/form/fields/SelectField';
+import { SelectField } from '@/ui/form/fields/SelectField';
 import { TextareaField } from '@/ui/form/fields/TextareaField';
 import { createListing } from '../actions/createListing';
 import { updateListing } from '../actions/updateListing';
 import { Form } from '@/ui/form/Form';
 import { cn } from '@/ui/utils/cn';
-
-// Human-readable labels for the ListingType enum. Kept next to the form because
-// that's currently the only place ListingType options are rendered; move to a
-// shared module if/when other surfaces need the same labels.
-const LISTING_TYPE_LABELS: Record<ListingType, string> = {
-  HOUSE: 'House',
-  HOTEL: 'Hotel',
-  APARTMENT: 'Apartment',
-  CABIN: 'Cabin',
-  RESORT: 'Resort',
-  OTHER: 'Other',
-};
-
-const LISTING_TYPE_OPTIONS: ReadonlyArray<SelectOption> = Object.values(ListingType).map(
-  (value) => ({ value, label: LISTING_TYPE_LABELS[value] }),
-);
 
 interface ListingFormProps {
   className?: string;
@@ -83,7 +67,7 @@ export function ListingForm({
           name="listingType"
           label="Type"
           options={LISTING_TYPE_OPTIONS}
-          defaultValue={initialState?.listingType ?? ListingType.HOUSE}
+          defaultValue={initialState?.listingType ?? 'HOUSE'}
         />
 
         <InputField

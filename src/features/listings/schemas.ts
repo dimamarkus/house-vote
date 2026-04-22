@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { ListingType } from 'db';
+import { LISTING_TYPE_VALUES } from './listingTypeOptions';
 
-export const ListingTypeSchema = z.nativeEnum(ListingType);
+export const ListingTypeSchema = z.enum(LISTING_TYPE_VALUES);
 
 export const ListingSchema = z.object({
   id: z.string().cuid(),
