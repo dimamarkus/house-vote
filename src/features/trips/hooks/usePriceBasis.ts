@@ -18,13 +18,8 @@ const PRICE_BASIS_CHANGE_EVENT = 'housevote:pricebasis:change';
 
 function readStoredBasis(): PriceBasis {
   if (typeof window === 'undefined') return DEFAULT_PRICE_BASIS;
-  try {
-    const raw = window.localStorage.getItem(PRICE_BASIS_STORAGE_KEY);
-    return isPriceBasis(raw) ? raw : DEFAULT_PRICE_BASIS;
-  } catch {
-    // Safari private mode etc. — fall back to the default in-memory only.
-    return DEFAULT_PRICE_BASIS;
-  }
+  const raw = window.localStorage.getItem(PRICE_BASIS_STORAGE_KEY);
+  return isPriceBasis(raw) ? raw : DEFAULT_PRICE_BASIS;
 }
 
 function subscribe(onChange: () => void): () => void {
@@ -60,11 +55,7 @@ export function usePriceBasis(): [PriceBasis, (next: PriceBasis) => void] {
 
   const setBasis = useCallback((next: PriceBasis) => {
     if (typeof window === 'undefined') return;
-    try {
-      window.localStorage.setItem(PRICE_BASIS_STORAGE_KEY, next);
-    } catch {
-      // localStorage unavailable — still dispatch so the current tab updates.
-    }
+    window.localStorage.setItem(PRICE_BASIS_STORAGE_KEY, next);
     window.dispatchEvent(new Event(PRICE_BASIS_CHANGE_EVENT));
   }, []);
 

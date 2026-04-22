@@ -12,12 +12,7 @@ import type {
   RoomBreakdown,
 } from './types';
 import { detectListingSource } from './detectListingSource';
-
-function normalizeText(value?: string | null): string | null {
-  const trimmedValue = value?.trim();
-
-  return trimmedValue ? trimmedValue : null;
-}
+import { normalizeText, normalizeMultilineText } from './importHelpers';
 
 function parseNumberish(value?: number | string | null): number | null {
   if (value === null || value === undefined || value === '') {
@@ -270,8 +265,8 @@ export function normalizeImportedListing(
   const canonicalUrl = canonicalizeListingUrl(capture.url, adapter);
   const sourceExternalId = extractSourceExternalId(canonicalUrl, adapter);
   const address = normalizeText(capture.address);
-  const sourceDescription = normalizeText(capture.sourceDescription);
-  const notes = normalizeText(capture.notes);
+  const sourceDescription = normalizeMultilineText(capture.sourceDescription);
+  const notes = normalizeMultilineText(capture.notes);
   const normalizedPhotoUrls = normalizePhotoUrls(capture.imageUrl, capture.photoUrls);
   const imageUrl = normalizedPhotoUrls[0] ?? null;
   const title =

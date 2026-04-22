@@ -24,7 +24,7 @@ The app reads from `.env.local` (Next.js) and `.env` (Prisma via `dotenv/config`
 See `README.md` for the full list. Quick reference:
 
 - **Dev server:** `pnpm dev`
-- **Lint:** `pnpm lint` (3 pre-existing `react-hooks/set-state-in-effect` errors as of initial setup)
+- **Lint:** `pnpm lint`
 - **Type check:** `pnpm check-types` (runs `prisma generate` automatically via `precheck-types`)
 - **Tests:** `pnpm test` (Vitest)
 - **Prisma generate:** `pnpm db:generate`
@@ -37,4 +37,3 @@ See `README.md` for the full list. Quick reference:
 - **Node 24 required:** The project pins Node `>=24.0.0 <25` in `package.json` engines and `24.14.1` in `.nvmrc`. Use `nvm use` or ensure Node 24 is active.
 - **pnpm only:** The project uses `pnpm@10.33.0` (declared via `packageManager`). Do not use npm or yarn.
 - **`pnpm.onlyBuiltDependencies`** is configured in `package.json` — no interactive `pnpm approve-builds` is needed.
-- **Lint has pre-existing errors:** `pnpm lint` currently fails with 3 `react-hooks/set-state-in-effect` errors in `VotingAccessCard.tsx`, `PhotoCarousel.tsx`, and `PhotoLightbox.tsx`. These are not caused by agent changes.

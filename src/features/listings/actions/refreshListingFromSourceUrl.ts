@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { db } from 'db';
 import type { Prisma } from 'db';
 import { auth } from '@clerk/nextjs/server';
 import { ErrorCode } from '@/core/errors';
@@ -13,9 +14,9 @@ import {
   getMissingImportedListingFields,
   recalculateImportStatus,
 } from '../import/normalizeImportedListing';
+import { normalizeMultilineText } from '../import/importHelpers';
 import { scrapeListingMetadataFromUrl } from '../import/scrapeListingMetadataFromUrl';
 import { applyNormalizedImportToListingId } from '../import/upsertImportedListing';
-import { listings } from '../db';
 
 const RefreshListingInputSchema = z.object({
   listingId: z.string().cuid({ message: 'A valid listing id is required.' }),
@@ -40,13 +41,6 @@ const REFRESH_LISTING_SELECT = {
   },
 } satisfies Prisma.ListingSelect;
 
-type RefreshListingSnapshot = Prisma.ListingGetPayload<{ select: typeof REFRESH_LISTING_SELECT }>;
-
-function normalizeText(value: string | null | undefined): string | null {
-  const trimmedValue = value?.trim();
-  return trimmedValue ? trimmedValue : null;
-}
-
 function stripTrailingEllipsis(value: string): string {
   return value.replace(/(?:\.\.\.|…)\s*$/, '').trim();
 }
@@ -55,8 +49,8 @@ function resolveRefreshedSourceDescription(
   existingDescription: string | null | undefined,
   refreshedDescription: string | null,
 ): string | null {
-  const existingText = normalizeText(existingDescription);
-  const refreshedText = normalizeText(refreshedDescription);
+  const existingText = normalizeMultilineText(existingDescription);
+  const refreshedText = normalizeMultilineText(refreshedDescription);
 
   if (!refreshedText) {
     return existingText;
@@ -171,18 +165,18 @@ export async function refreshListingFromSourceUrl(input: unknown) {
   const { listingId } = validationResult.data;
 
   try {
-    const listingResponse = await listings.get(listingId, {
+    const listing = await db.listing.findUnique({
+      where: { id: listingId },
       select: REFRESH_LISTING_SELECT,
     });
 
-    if (!listingResponse.success || !listingResponse.data) {
+    if (!listing) {
       return createErrorResponse({
         error: 'Listing not found.',
         code: ErrorCode.NOT_FOUND,
       });
     }
 
-    const listing = listingResponse.data as unknown as RefreshListingSnapshot;
     const trimmedUrl = listing.url?.trim();
 
     if (!trimmedUrl) {

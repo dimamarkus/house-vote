@@ -10,7 +10,6 @@ import { generateAirbnbUrl, generateVrboUrl } from '../utils/travelLinks';
 import { TripPriceBasisToggle } from './TripPriceBasisToggle';
 
 interface TripHeaderProps {
-  // Use Partial<Trip> again as a workaround for upstream type issues
   trip: Partial<Trip> & Pick<Trip, 'id' | 'name' | 'userId' | 'startDate' | 'endDate' | 'location' | 'numberOfPeople' | 'description'>;
 }
 

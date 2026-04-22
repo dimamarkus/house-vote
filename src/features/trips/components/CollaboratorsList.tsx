@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/ui/shadcn/avatar';
 import { Form } from '@/ui/form/Form';
 import {
@@ -72,12 +73,12 @@ export function CollaboratorsList({
   isOwner,
   publishedShareSummary,
 }: CollaboratorsListProps) {
+  const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const votedBadgeClassName = 'bg-teal-50 text-teal-700';
   const ownerBadgeClassName = 'bg-amber-50 text-amber-700';
 
-  // Re-add useUser hook
   const { isLoaded, user } = useUser();
 
   const ownerDetails = useMemo(() => {
@@ -101,7 +102,6 @@ export function CollaboratorsList({
   const publishedGuests = publishedShareSummary?.guests ?? [];
   const publishedGuestNames = new Set(publishedGuests.map((guest) => guest.guestDisplayName));
 
-  // Get initials for fallback avatar
   const getInitials = (name: string | null | undefined) => {
     if (!name) return '?';
     return name
@@ -111,10 +111,6 @@ export function CollaboratorsList({
       .toUpperCase()
       .slice(0, 2);
   };
-
-  async function refreshAfterSuccess() {
-    window.location.reload();
-  }
 
   async function handleAddGuest(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -133,7 +129,7 @@ export function CollaboratorsList({
 
     setDisplayName('');
     toast.success(`Added ${result.data.guestDisplayName}.`);
-    await refreshAfterSuccess();
+    router.refresh();
   }
 
   async function handleRemoveGuest(guestId: string, guestDisplayName: string) {
@@ -150,7 +146,7 @@ export function CollaboratorsList({
     }
 
     toast.success(`Removed ${guestDisplayName}.`);
-    await refreshAfterSuccess();
+    router.refresh();
   }
 
   function handleInvitationCreated() {

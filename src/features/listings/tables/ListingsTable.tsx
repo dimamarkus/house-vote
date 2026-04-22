@@ -14,9 +14,6 @@ import { isHotelLikeListingType } from '../listingTypeOptions';
 import { ListingPriceCell } from '../components/ListingPriceCell';
 import type { TripPriceContext } from '../utils/priceBasis';
 
-// Requires getListings action to include: addedBy, likes: { select: { id: true }}
-// to satisfy these types fully.
-
 type ListingWithRelations = Listing & {
   title: string;
   address?: string | null;
@@ -215,18 +212,6 @@ export function ListingsTable({
         );
       }
     },
-    // {
-    //   header: "Added By",
-    //   accessorKey: "addedById",
-    //   cell: (listing) => {
-    //     return (
-    //       <div className="flex items-center gap-1">
-    //         <User className="h-4 w-4 text-muted-foreground" />
-    //         <span>{listing.addedById ? listing.addedById.substring(0, 8) + '...' : 'Guest'}</span>
-    //       </div>
-    //     );
-    //   }
-    // },
     {
       header: "Added On",
       accessorKey: "createdAt",

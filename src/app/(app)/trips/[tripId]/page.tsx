@@ -5,47 +5,38 @@ import { getTrip } from '@/features/trips/actions/getTrip';
 import { getTripGuests } from '@/features/trips/actions/getTripGuests';
 import { publishedTrips } from '@/features/trips/publishedDb';
 import { TripContentArea } from '@/features/trips/components/TripContentArea';
-import { TripSidebar } from '@/features/trips/components/TripSidebar'; // Import the new sidebar
-import { auth } from '@clerk/nextjs/server'; // Use server-side auth
+import { TripSidebar } from '@/features/trips/components/TripSidebar';
+import { TripHeader } from '@/features/trips/components/TripHeader';
+import { auth } from '@clerk/nextjs/server';
 import { Prisma } from 'db';
 import type { Trip, User } from 'db';
 import { processSearchParams } from '@/core/search-params';
-import type { SearchParams } from '@/core/types'; // Import the structured SearchParams type
+import type { SearchParams } from '@/core/types';
 import { Card, CardContent } from '@/ui/shadcn/card';
 import { LinkButton } from '@/ui/core/LinkButton';
-import { TripHeader } from '/src/features/trips/components/TripHeader';
 
-// Define allowed sort fields for Listing - Removed count fields
 const allowedSortByFields: ReadonlyArray<Prisma.ListingScalarFieldEnum> = [
   'id', 'createdAt', 'updatedAt', 'address', 'url', 'price', 'notes', 'addedById', 'tripId', 'status'
 ];
 
-// Define the expected shape of the trip data fetched from the server
-// Ensure it includes the relations needed by the client component
 interface TripWithIncludes extends Trip {
   collaborators: User[];
-  user: User | null; // Ensure user relation is included
+  user: User | null;
 }
 
-// Define expected shape for processed custom params
 type CustomProcessedParams = {
     view: 'table' | 'map' | 'card';
 }
 
-// Define Page Props using the pattern from core types
 interface TripDashboardPageProps {
-  // Define params as a Promise resolving to the expected shape
   params: Promise<{ tripId: string }>;
   searchParams: Promise<SearchParams<Prisma.ListingScalarFieldEnum>>;
 }
 
 export default async function TripDashboardPage({ params, searchParams }: TripDashboardPageProps) {
-
-  // Await params first as per the pattern
   const resolvedParams = await params;
   const currentTripId = resolvedParams.tripId;
 
-  // Process searchParams next
   const { query, page, limit, sortBy, sortOrder, view } = await processSearchParams<
     Prisma.ListingScalarFieldEnum,
     CustomProcessedParams,
@@ -61,16 +52,13 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
     }
   );
 
-  // Validate sortBy
   const validatedSortBy = allowedSortByFields.includes(sortBy as Prisma.ListingScalarFieldEnum)
     ? sortBy
     : 'createdAt';
 
-  // Await auth data
   const authData = await auth();
   const userId = authData.userId;
 
-  // --- Data Fetching (use currentTripId) ---
   let trip: TripWithIncludes | null = null;
   let listings: ListingWithMedia[] = [];
   let guestNames: string[] = [];
@@ -184,35 +172,31 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
     if (listingsResponse.success && listingsResponse.data) {
         listings = (listingsResponse.data || []) as ListingWithMedia[];
 
-        // 4. Fetch User Likes (only if logged in)
         if (userId && listings.length > 0) {
             const likePromises = listings.map(async (listing) => {
-                try {
-                    const likeResponse = await checkUserLike(listing.id);
-                    if (likeResponse.success && typeof likeResponse.data === 'boolean') {
-                        return { [listing.id]: likeResponse.data };
-                    }
-                } catch (likeErr) {
-                    console.error(`Failed to check like status for listing ${listing.id}:`, likeErr);
+                const likeResponse = await checkUserLike(listing.id);
+                if (!likeResponse.success) {
+                    throw new Error(
+                        typeof likeResponse.error === 'string'
+                            ? likeResponse.error
+                            : `Failed to check like status for listing ${listing.id}`,
+                    );
                 }
-                return { [listing.id]: false }; // Default to false on error or failure
+                if (typeof likeResponse.data !== 'boolean') {
+                    throw new Error(`Unexpected like response shape for listing ${listing.id}`);
+                }
+                return [listing.id, likeResponse.data] as const;
             });
             const results = await Promise.all(likePromises);
-            userLikes = results.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+            userLikes = Object.fromEntries(results);
         }
     }
 
   } catch (err) {
     console.error("Error fetching trip data:", err);
     fetchError = err instanceof Error ? err.message : 'An unexpected error occurred';
-    // Optionally call notFound() or render specific error UI based on error type
-    // if (err.message === 'Trip not found') notFound();
   }
-  // --- End Data Fetching ---
 
-  // --- Render Logic ---
-  // Handle loading state implicitly (page waits for async operations)
-  // Handle Error State
   if (fetchError || !trip) {
     return (
       <div className="container mx-auto py-8">
@@ -232,8 +216,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
   }
 
   const isOwner = userId === trip.userId;
-  // Determine current guest name (this logic might need adjustment based on session handling)
-  const currentGuestName = null; // Placeholder - Replace with actual guest session logic if applicable
+  const currentGuestName = null;
 
   return (
     <div className="p-6">
