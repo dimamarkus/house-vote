@@ -258,6 +258,7 @@ export function extractListingCaptureFromHtml(
       title: titleSelection.value,
       address: addressSelection.value,
       price: priceSelection.value,
+      priceMeta: sourceHints.priceMeta ?? null,
       bedroomCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+bedrooms?\b/i]),
       bedCount: extractCount(roomSummaryText, [/\b([0-9]+(?:\.[0-9]+)?)\s+beds?\b/i]),
       bathroomCount: extractCount(roomSummaryText, [

@@ -1,11 +1,13 @@
 import { pickListingImportAdapter } from './adapters/registry';
 import type { ListingImportAdapter } from './adapters/types';
 import type {
+  ImportedPriceMeta,
   ListingImportCapture,
   ListingImportDebugInfo,
   ListingImportMethodValue,
   ListingImportSourceValue,
   ListingImportStatusValue,
+  NightlyPriceSourceValue,
   NormalizedImportedListing,
   RoomBreakdown,
 } from './types';
@@ -191,6 +193,63 @@ export function recalculateImportStatus(
   });
 }
 
+function parseIsoDate(value?: string | null): Date | null {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+interface DerivedNightlyPrice {
+  /** Per-night price in whole dollars, or null if we couldn't compute one. */
+  price: number | null;
+  /** How we arrived at that price. Null when we had no price at all. */
+  source: NightlyPriceSourceValue | null;
+  startDate: Date | null;
+  endDate: Date | null;
+}
+
+/**
+ * Converts a raw scraped price + optional `priceMeta` into a per-night price
+ * plus provenance metadata. Defaults to assuming the raw price is already
+ * nightly (matches current Airbnb/Vrbo behavior) unless `priceMeta.basis`
+ * explicitly says it's a total for a multi-night stay.
+ */
+function deriveNightlyPrice(
+  rawPrice: number | null,
+  priceMeta: ImportedPriceMeta | null | undefined,
+): DerivedNightlyPrice {
+  const startDate = parseIsoDate(priceMeta?.startDate);
+  const endDate = parseIsoDate(priceMeta?.endDate);
+
+  if (rawPrice === null) {
+    return { price: null, source: null, startDate, endDate };
+  }
+
+  if (priceMeta?.basis === 'TOTAL') {
+    const nights =
+      priceMeta.nights ??
+      (startDate && endDate
+        ? Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000))
+        : null);
+
+    if (nights && nights > 0) {
+      return {
+        price: Math.round(rawPrice / nights),
+        source: 'DERIVED_FROM_TOTAL',
+        startDate,
+        endDate,
+      };
+    }
+    // Couldn't divide — fall through and treat as nightly, but flag as
+    // DERIVED so downstream knows the dollar amount is suspect. This is
+    // rare; better than silently dropping the price.
+    return { price: rawPrice, source: 'DERIVED_FROM_TOTAL', startDate, endDate };
+  }
+
+  // Default: the scraped number is already a per-night rate.
+  return { price: rawPrice, source: 'SCRAPED_NIGHTLY', startDate, endDate };
+}
+
 function buildFallbackTitle(source: ListingImportSourceValue, sourceExternalId: string | null): string {
   const label =
     source === 'AIRBNB'
@@ -218,7 +277,13 @@ export function normalizeImportedListing(
   const title =
     cleanupImportedTitle(normalizeText(capture.title) ?? address, adapter) ??
     buildFallbackTitle(source, sourceExternalId);
-  const price = parseImportedPrice(capture.price);
+  const rawPrice = parseImportedPrice(capture.price);
+  const {
+    price,
+    source: nightlyPriceSource,
+    startDate: priceQuotedStartDate,
+    endDate: priceQuotedEndDate,
+  } = deriveNightlyPrice(rawPrice, capture.priceMeta ?? null);
   const bedroomCount = parseNumberish(capture.bedroomCount);
   const bedCount = parseNumberish(capture.bedCount ?? deriveBedCountFromRoomBreakdown(capture.roomBreakdown));
   const bathroomCount = parseNumberish(capture.bathroomCount);
@@ -248,6 +313,9 @@ export function normalizeImportedListing(
     title,
     address,
     price,
+    nightlyPriceSource,
+    priceQuotedStartDate,
+    priceQuotedEndDate,
     bedroomCount,
     bedCount,
     bathroomCount,

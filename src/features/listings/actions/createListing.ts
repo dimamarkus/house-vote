@@ -33,10 +33,17 @@ export async function createListing(
     return validationResult;
   }
 
-  // 3. Prepare data for DB operation (include addedById)
+  // 3. Prepare data for DB operation (include addedById).
+  // Any price supplied through the manual form is, by definition, MANUAL —
+  // flag it so downstream price displays can show "set by you" instead of
+  // pretending it came from a scrape.
   const dataToCreate = {
     ...validationResult.data,
     addedById: userId,
+    nightlyPriceSource:
+      validationResult.data.price != null && validationResult.data.price !== undefined
+        ? ('MANUAL' as const)
+        : null,
   };
 
   // 4. Call database operation

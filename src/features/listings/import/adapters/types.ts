@@ -1,5 +1,5 @@
 import type * as cheerio from 'cheerio';
-import type { ListingImportSourceValue, RoomBreakdown } from '../types';
+import type { ImportedPriceMeta, ListingImportSourceValue, RoomBreakdown } from '../types';
 
 export interface ListingImportAdapterSelectors {
   title: string[];
@@ -14,6 +14,13 @@ export interface ListingImportAdapterHints {
   /** Free-text blob that downstream regexes search for bedroom/bed/bath counts. */
   roomSummaryText: string;
   price: string | null;
+  /**
+   * Optional context about how the scraped `price` was measured. If the
+   * adapter can tell whether the number is already per-night (most sites) or
+   * a total for a date range (some hotel/OTA flows), populate this so the
+   * normalizer can label or derive a per-night price.
+   */
+  priceMeta?: ImportedPriceMeta | null;
   rawSignals: Record<string, unknown>;
 }
 
@@ -53,6 +60,7 @@ export const EMPTY_ADAPTER_HINTS: ListingImportAdapterHints = {
   sourceDescription: null,
   roomSummaryText: '',
   price: null,
+  priceMeta: null,
   rawSignals: {},
 };
 

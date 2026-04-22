@@ -60,8 +60,15 @@ export async function updateListing(
       });
     }
 
-    // 4. Prepare data for DB operation
-    const dataToUpdate = validationResult.data;
+    // 4. Prepare data for DB operation. If the user edited the price through
+    // the manual form, mark it as MANUAL so downstream displays know the
+    // value isn't a scrape artifact.
+    const dataToUpdate = {
+      ...validationResult.data,
+      ...(validationResult.data.price != null && validationResult.data.price !== undefined
+        ? { nightlyPriceSource: 'MANUAL' as const }
+        : {}),
+    };
 
     // 5. Call database update operation (using the original options for potential includes)
     const updateResult = await listings.update(listingId, dataToUpdate, options);

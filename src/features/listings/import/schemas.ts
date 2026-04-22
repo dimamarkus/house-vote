@@ -14,12 +14,27 @@ export const ListingImportStatusSchema = z.enum(['NOT_IMPORTED', 'PARTIAL', 'COM
 
 const ImportedNumericFieldSchema = z.union([z.number(), z.string()]).nullable().optional();
 
+/**
+ * Raw, pre-normalized price context the scraper observed. The basis tells the
+ * normalizer whether the `price` field is already per-night ("NIGHTLY") or
+ * represents a total stay ("TOTAL") that needs to be divided by `nights`.
+ * Dates are ISO strings so the payload stays JSON-safe for Chrome extension
+ * / cross-process transport.
+ */
+export const ImportedPriceMetaSchema = z.object({
+  basis: z.enum(['NIGHTLY', 'TOTAL']),
+  nights: z.number().int().positive().nullable().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
+});
+
 export const ListingImportCaptureSchema = z.object({
   source: ListingImportSourceSchema.optional(),
   url: z.string().url({ message: 'A valid listing URL is required.' }),
   title: z.string().trim().nullable().optional(),
   address: z.string().trim().nullable().optional(),
   price: ImportedNumericFieldSchema,
+  priceMeta: ImportedPriceMetaSchema.nullable().optional(),
   bedroomCount: ImportedNumericFieldSchema,
   bedCount: ImportedNumericFieldSchema,
   bathroomCount: ImportedNumericFieldSchema,
