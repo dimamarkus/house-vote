@@ -25,6 +25,64 @@ function captureHasAnyUsefulData(capture: ListingImportCapture): boolean {
   );
 }
 
+interface BotWallFingerprintResult {
+  readonly likelyBotWall: boolean;
+  readonly matchedTextMarkers: readonly string[];
+  readonly matchedStructuralMarkers: readonly string[];
+}
+
+/**
+ * Fingerprint the response for "silent JS challenge" shells (Booking's
+ * intermediate page, Akamai Bot Manager interstitials, etc.) in addition
+ * to the obvious captcha/CDN markers. Any one marker is weak signal; two
+ * or more is strong signal.
+ */
+function fingerprintBotWall(args: {
+  status: number;
+  html: string;
+  docTitle: string | null;
+}): BotWallFingerprintResult {
+  const { status, html, docTitle } = args;
+  const lowerHtml = html.toLowerCase();
+
+  const textMarkers = [
+    'captcha',
+    'cloudflare',
+    'cf-challenge',
+    'px-captcha',
+    'perimeterx',
+    'datadome',
+    'akamai',
+    'incapsula',
+    'robot or human',
+    'please enable javascript',
+    'access denied',
+    'are you a robot',
+  ];
+  const matchedTextMarkers = textMarkers.filter((marker) => lowerHtml.includes(marker));
+
+  // Booking's challenge shell has a very characteristic shape: tiny body,
+  // empty <title>, a 202 status, and a `getAjaxObject` polyfill that sets
+  // up an XHR to complete a handshake before serving the real page.
+  const matchedStructuralMarkers: string[] = [];
+  if (html.includes('getAjaxObject') && html.includes('XMLHttpRequest')) {
+    matchedStructuralMarkers.push('booking-challenge-shell');
+  }
+  if (status === 202) {
+    matchedStructuralMarkers.push('soft-block-202');
+  }
+  if (docTitle === '' && html.length < 20_000) {
+    matchedStructuralMarkers.push('empty-title-tiny-body');
+  }
+
+  const likelyBotWall =
+    matchedTextMarkers.length > 0 ||
+    matchedStructuralMarkers.includes('booking-challenge-shell') ||
+    matchedStructuralMarkers.length >= 2;
+
+  return { likelyBotWall, matchedTextMarkers, matchedStructuralMarkers };
+}
+
 /**
  * Dev diagnostic: dump just enough of the fetched response to figure out
  * what the remote server actually returned. Runs only when a source-specific
@@ -35,26 +93,10 @@ function logEmptyExtractionDiagnostics(context: {
   inputUrl: string;
   response: Response;
   html: string;
+  fingerprint: BotWallFingerprintResult;
+  docTitle: string | null;
 }): void {
-  const { inputUrl, response, html } = context;
-  const docTitle = html.match(/<title[^>]*>([^<]+)<\/title>/i)?.[1]?.trim() ?? null;
-  // Anti-bot walls often load a small HTML shell + a JS challenge. Any of
-  // these markers is a near-certain indicator that the response isn't the
-  // real property page.
-  const challengeMarkers = [
-    'captcha',
-    'cloudflare',
-    'cf-challenge',
-    'px-captcha',
-    'perimeterx',
-    'datadome',
-    'robot or human',
-    'please enable javascript',
-    'access denied',
-  ];
-  const markersFound = challengeMarkers.filter((marker) =>
-    html.toLowerCase().includes(marker),
-  );
+  const { inputUrl, response, html, fingerprint, docTitle } = context;
 
   console.error('[listing-import] empty extraction diagnostic', {
     inputUrl,
@@ -63,9 +105,25 @@ function logEmptyExtractionDiagnostics(context: {
     contentType: response.headers.get('content-type'),
     contentLength: html.length,
     docTitle,
-    challengeMarkers: markersFound,
+    likelyBotWall: fingerprint.likelyBotWall,
+    matchedTextMarkers: fingerprint.matchedTextMarkers,
+    matchedStructuralMarkers: fingerprint.matchedStructuralMarkers,
     htmlPreview: html.slice(0, 1200),
   });
+}
+
+function buildEmptyExtractionErrorMessage(args: {
+  hostname: string;
+  likelyBotWall: boolean;
+}): string {
+  const { hostname, likelyBotWall } = args;
+  const preamble = likelyBotWall
+    ? `${hostname} blocked our server from loading the page (bot detection).`
+    : `Couldn't extract any listing data from ${hostname}.`;
+  return (
+    `${preamble} Try the House Vote browser extension on the page in your logged-in ` +
+    `browser — it captures the rendered DOM directly. See the dev server terminal for the raw response preview.`
+  );
 }
 
 export async function scrapeListingMetadataFromUrl(
@@ -101,7 +159,14 @@ export async function scrapeListingMetadataFromUrl(
   const { capture } = extractListingCaptureFromHtml(html, inputUrl);
 
   if (isSourceSpecificAdapter(adapter) && !captureHasAnyUsefulData(capture)) {
-    logEmptyExtractionDiagnostics({ inputUrl, response, html });
+    const docTitle = html.match(/<title[^>]*>([^<]*)<\/title>/i)?.[1]?.trim() ?? null;
+    const fingerprint = fingerprintBotWall({
+      status: response.status,
+      html,
+      docTitle,
+    });
+
+    logEmptyExtractionDiagnostics({ inputUrl, response, html, fingerprint, docTitle });
 
     const hostname = (() => {
       try {
@@ -112,8 +177,10 @@ export async function scrapeListingMetadataFromUrl(
     })();
 
     throw new Error(
-      `Couldn't extract any listing data from ${hostname}. The page likely blocked server-side scraping ` +
-        `(bot detection). See the dev server terminal for the raw response preview.`,
+      buildEmptyExtractionErrorMessage({
+        hostname,
+        likelyBotWall: fingerprint.likelyBotWall,
+      }),
     );
   }
 
