@@ -47,6 +47,18 @@ export function ListingSourceBadge({
       );
     }
 
+    if (source === 'BOOKING') {
+      return (
+        <Badge
+          weight="hollow"
+          className={`border-blue-300 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-800 ${badgeClassName ?? ''}`}
+          title="Open original Booking.com listing"
+        >
+          Booking
+        </Badge>
+      );
+    }
+
     if (source === 'UNKNOWN' || source === 'OTHER' || normalizedHref) {
       return (
         <Badge

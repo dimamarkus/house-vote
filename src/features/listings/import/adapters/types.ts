@@ -38,10 +38,17 @@ export interface ListingImportAdapter {
   id: ListingImportSourceValue;
   /** True when this adapter should handle the given URL. */
   matches(url: URL): boolean;
+  /**
+   * Optional early rejection. Called before any network fetch. Return a
+   * human-readable reason string to stop the import with a targeted error
+   * (e.g. "This is a Booking.com search page; open a specific hotel first").
+   * Return `null` to let the import proceed.
+   */
+  rejectInputUrl?(url: URL): string | null;
   /** Per-source selector shortlist for title/address/price text. */
   selectors: ListingImportAdapterSelectors;
   /** Per-source hints; usually beat the generic candidates in the debug picker. */
-  extractHints?($: cheerio.CheerioAPI): ListingImportAdapterHints;
+  extractHints?($: cheerio.CheerioAPI, inputUrl: string): ListingImportAdapterHints;
   /** Per-source structured room breakdown (bedrooms, beds, thumbnails). */
   extractRoomBreakdown?($: cheerio.CheerioAPI, inputUrl: string): RoomBreakdown | null;
   /** Per-source contribution to the free-form `notes` field (e.g. "VRBO property id: …"). */

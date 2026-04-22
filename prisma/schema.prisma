@@ -140,6 +140,7 @@ enum ListingSource {
   MANUAL
   AIRBNB
   VRBO
+  BOOKING
   UNKNOWN
   OTHER
 }

@@ -1,4 +1,5 @@
 import { airbnbAdapter } from './airbnbAdapter';
+import { bookingAdapter } from './bookingAdapter';
 import { genericAdapter } from './genericAdapter';
 import { vrboAdapter } from './vrboAdapter';
 import type { ListingImportAdapter } from './types';
@@ -12,6 +13,7 @@ import type { ListingImportAdapter } from './types';
 export const listingImportAdapters: ListingImportAdapter[] = [
   airbnbAdapter,
   vrboAdapter,
+  bookingAdapter,
   genericAdapter,
 ];
 

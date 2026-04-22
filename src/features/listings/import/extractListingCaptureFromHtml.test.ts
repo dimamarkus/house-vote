@@ -71,6 +71,39 @@ describe('extractListingCaptureFromHtml', () => {
     expect(result.debug.price.winner).toBe('source-hint');
   });
 
+  it('parses the Booking.com property-page fixture with stay-quoted nightly price', () => {
+    const result = extractListingCaptureFromHtml(
+      readFixture('fixtures/booking-com.html'),
+      'https://www.booking.com/hotel/us/home2-suites-by-hilton-new-york-times-square.html?checkin=2026-05-21&checkout=2026-05-23&group_adults=2',
+    );
+
+    expect(result.capture.source).toBe('BOOKING');
+    expect(result.capture.title).toBe('Home2 Suites By Hilton New York Times Square');
+    expect(result.capture.address).toBe(
+      '150 W 48th Street, New York, NY 10017, United States',
+    );
+    expect(result.capture.price).toBe('285');
+    expect(result.capture.priceMeta).toEqual({
+      basis: 'NIGHTLY',
+      nights: 2,
+      startDate: '2026-05-21',
+      endDate: '2026-05-23',
+    });
+    expect(result.capture.sourceDescription).toContain('Home2 Suites By Hilton New York Times Square');
+    expect(result.debug.sourceSignals).toMatchObject({ hotelId: '9722158' });
+
+    const normalized = normalizeImportedListing(result.capture, 'URL_FETCH');
+    expect(normalized.source).toBe('BOOKING');
+    expect(normalized.price).toBe(285);
+    expect(normalized.nightlyPriceSource).toBe('SCRAPED_NIGHTLY');
+    expect(normalized.priceQuotedStartDate?.toISOString()).toBe('2026-05-21T00:00:00.000Z');
+    expect(normalized.priceQuotedEndDate?.toISOString()).toBe('2026-05-23T00:00:00.000Z');
+    expect(normalized.sourceExternalId).toBe('home2-suites-by-hilton-new-york-times-square');
+    expect(normalized.canonicalUrl).toBe(
+      'https://www.booking.com/hotel/us/home2-suites-by-hilton-new-york-times-square.html',
+    );
+  });
+
   it('ignores non-price Airbnb widget text during normalization', () => {
     const normalized = normalizeImportedListing(
       {

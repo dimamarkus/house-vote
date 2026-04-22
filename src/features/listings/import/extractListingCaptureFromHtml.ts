@@ -77,8 +77,9 @@ function resolveAdapter(inputUrl: string): ListingImportAdapter | null {
 function resolveHints(
   adapter: ListingImportAdapter | null,
   $: cheerio.CheerioAPI,
+  inputUrl: string,
 ): ListingImportAdapterHints {
-  return adapter?.extractHints?.($) ?? EMPTY_ADAPTER_HINTS;
+  return adapter?.extractHints?.($, inputUrl) ?? EMPTY_ADAPTER_HINTS;
 }
 
 export function extractListingCaptureFromHtml(
@@ -89,7 +90,7 @@ export function extractListingCaptureFromHtml(
   const adapter = resolveAdapter(inputUrl);
   const source: ListingImportSourceValue = adapter?.id ?? 'UNKNOWN';
   const selectors = adapter?.selectors ?? DEFAULT_ADAPTER_SELECTORS;
-  const sourceHints = resolveHints(adapter, $);
+  const sourceHints = resolveHints(adapter, $, inputUrl);
 
   const jsonLdBlocks = collectJsonScripts($, 'script[type="application/ld+json"]');
   const structuredListing = findStructuredListing(jsonLdBlocks);

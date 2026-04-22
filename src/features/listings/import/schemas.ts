@@ -4,6 +4,7 @@ export const ListingImportSourceSchema = z.enum([
   'MANUAL',
   'AIRBNB',
   'VRBO',
+  'BOOKING',
   'UNKNOWN',
   'OTHER',
 ]);

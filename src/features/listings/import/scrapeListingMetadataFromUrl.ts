@@ -1,3 +1,4 @@
+import { pickListingImportAdapter } from './adapters/registry';
 import { extractListingCaptureFromHtml } from './extractListingCaptureFromHtml';
 import { normalizeImportedListing } from './normalizeImportedListing';
 import type { NormalizedImportedListing } from './types';
@@ -5,6 +6,19 @@ import type { NormalizedImportedListing } from './types';
 export async function scrapeListingMetadataFromUrl(
   inputUrl: string,
 ): Promise<NormalizedImportedListing> {
+  const adapter = pickListingImportAdapter(inputUrl);
+  if (adapter?.rejectInputUrl) {
+    try {
+      const rejection = adapter.rejectInputUrl(new URL(inputUrl));
+      if (rejection) {
+        throw new Error(rejection);
+      }
+    } catch (error) {
+      if (error instanceof Error) throw error;
+      throw new Error('Invalid URL');
+    }
+  }
+
   const response = await fetch(inputUrl, {
     headers: {
       'User-Agent':

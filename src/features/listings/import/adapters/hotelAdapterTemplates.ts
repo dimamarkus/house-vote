@@ -1,5 +1,4 @@
 import type { ListingImportAdapter } from './types';
-import { bookingAdapter } from './bookingAdapter';
 import { expediaAdapter } from './expediaAdapter';
 import { hiltonAdapter } from './hiltonAdapter';
 import { hyattAdapter } from './hyattAdapter';
@@ -17,9 +16,11 @@ import { marriottAdapter } from './marriottAdapter';
  * interface changes to `ListingImportAdapter` fail the build here instead of
  * rotting silently as dead files. Ops-wise, flipping any one of them into
  * production is a 3-line change to `registry.ts`.
+ *
+ * NOTE: `bookingAdapter` was promoted out of this barrel — it has a real HTML
+ * fixture and is registered directly in `registry.ts`.
  */
 export const HOTEL_ADAPTER_TEMPLATES: readonly ListingImportAdapter[] = [
-  bookingAdapter,
   expediaAdapter,
   marriottAdapter,
   hiltonAdapter,
