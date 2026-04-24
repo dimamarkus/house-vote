@@ -1,89 +1,27 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
 import { ListingCommentKind } from 'db';
-import { revalidatePath } from 'next/cache';
-import { z } from 'zod';
-import { ErrorCode } from '@/core/errors';
-import { createErrorResponse, createSuccessResponse } from '@/core/responses';
 import type { BasicApiResponse } from '@/core/types';
+import { getListingFeedbackConfig } from '../constants/listing-feedback';
 import { publishedTrips } from '../publishedDb';
 import type { TripShareState } from '../types';
-
-const tripIdSchema = z.object({
-  tripId: z.string().cuid('A valid trip id is required.'),
-});
-
-const updatePublishedTripSettingsSchema = tripIdSchema.extend({
-  votingOpen: z.boolean().optional(),
-  commentsOpen: z.boolean().optional(),
-  allowGuestSuggestions: z.boolean().optional(),
-});
-
-const guestNameSchema = tripIdSchema.extend({
-  displayName: z.string().trim().min(1, 'Guest name is required.').max(50, 'Guest name is too long.'),
-});
-
-const removeGuestSchema = tripIdSchema.extend({
-  guestId: z.string().cuid('A valid guest id is required.'),
-});
-
-const moderateCommentSchema = tripIdSchema.extend({
-  commentId: z.string().cuid('A valid comment id is required.'),
-  hidden: z.boolean(),
-});
-
-const publishedGuestSessionSchema = z.object({
-  token: z.string().uuid('A valid published trip link is required.'),
-  guestId: z.string().cuid('A valid guest id is required.'),
-});
-
-const castVoteSchema = z.object({
-  token: z.string().uuid('A valid published trip link is required.'),
-  guestId: z.string().cuid('A valid guest id is required.'),
-  listingId: z.string().cuid('A valid listing id is required.'),
-});
-
-const submitListingSchema = z.object({
-  token: z.string().uuid('A valid published trip link is required.'),
-  guestId: z.string().cuid('A valid guest id is required.'),
-  url: z.string().url('A valid listing URL is required.'),
-});
-
-const optionalNullableInt = z
-  .union([z.number().int(), z.null()])
-  .optional();
-
-const updateListingDetailsSchema = z
-  .object({
-    token: z.string().uuid('A valid published trip link is required.'),
-    guestId: z.string().cuid('A valid guest id is required.'),
-    listingId: z.string().cuid('A valid listing id is required.'),
-    price: optionalNullableInt,
-    bedroomCount: optionalNullableInt,
-    bedCount: optionalNullableInt,
-    bathroomCount: optionalNullableInt,
-    notes: z.string().trim().max(5000, 'Notes are too long.').nullable().optional(),
-  })
-  .refine(
-    (value) =>
-      typeof value.price !== 'undefined' ||
-      typeof value.bedroomCount !== 'undefined' ||
-      typeof value.bedCount !== 'undefined' ||
-      typeof value.bathroomCount !== 'undefined' ||
-      typeof value.notes !== 'undefined',
-    { message: 'At least one field must be provided.' },
-  );
-
-const addCommentSchema = z.object({
-  token: z.string().uuid('A valid published trip link is required.'),
-  guestId: z.string().cuid('A valid guest id is required.'),
-  listingId: z.string().cuid('A valid listing id is required.'),
-  kind: z.enum(ListingCommentKind),
-  body: z.string().trim().min(1, 'Comment is required.').max(1000, 'Comment is too long.'),
-});
-
-type PublishedTripShareState = TripShareState;
+import {
+  addCommentSchema,
+  castVoteSchema,
+  guestNameSchema,
+  moderateCommentSchema,
+  publishedGuestSessionSchema,
+  removeGuestSchema,
+  submitListingSchema,
+  tripIdSchema,
+  updateListingDetailsSchema,
+  updatePublishedTripSettingsSchema,
+} from './publishedTripSchemas';
+import {
+  requireOwnerUserId,
+  runPublishedAction,
+  toTripShareState,
+} from './publishedTripActionUtils';
 
 type PublishedGuestSession = {
   tripId: string;
@@ -115,93 +53,42 @@ type PublishedCommentModerationResult = {
   hidden: boolean;
 };
 
-function revalidatePublishedTripPaths(tripId: string, token?: string) {
-  revalidatePath(`/trips/${tripId}`);
+export async function publishTripShare(input: { tripId: string }): Promise<BasicApiResponse<TripShareState>> {
+  return runPublishedAction({
+    input,
+    schema: tripIdSchema,
+    errorPrefix: 'Failed to publish trip voting:',
+    validationErrorMessage: 'Invalid publish request.',
+    handler: async ({ tripId }) => {
+      const ownerId = await requireOwnerUserId();
+      const share = await publishedTrips.publish(tripId, ownerId);
 
-  if (token) {
-    revalidatePath(`/share/${token}`);
-    revalidatePath(`/share/${token}/join`);
-  }
-}
-
-async function requireOwnerUserId() {
-  const { userId } = await auth();
-
-  if (!userId) {
-    throw new Error('You must be signed in to manage published trip voting.');
-  }
-
-  return userId;
-}
-
-export async function publishTripShare(input: { tripId: string }): Promise<BasicApiResponse<PublishedTripShareState>> {
-  const validation = tripIdSchema.safeParse(input);
-
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid publish request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const ownerId = await requireOwnerUserId();
-    const share = await publishedTrips.publish(validation.data.tripId, ownerId);
-
-    revalidatePublishedTripPaths(validation.data.tripId, share.token);
-
-    return createSuccessResponse({
-      data: {
-        tripId: validation.data.tripId,
+      return {
+        tripId,
         token: share.token,
-        isPublished: share.isPublished,
-        votingOpen: share.votingOpen,
-        commentsOpen: share.commentsOpen,
-        allowGuestSuggestions: share.allowGuestSuggestions,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to publish trip voting:',
-    });
-  }
+        data: toTripShareState(tripId, share),
+      };
+    },
+  });
 }
 
-export async function unpublishTripShare(input: { tripId: string }): Promise<BasicApiResponse<PublishedTripShareState>> {
-  const validation = tripIdSchema.safeParse(input);
+export async function unpublishTripShare(input: { tripId: string }): Promise<BasicApiResponse<TripShareState>> {
+  return runPublishedAction({
+    input,
+    schema: tripIdSchema,
+    errorPrefix: 'Failed to unpublish trip voting:',
+    validationErrorMessage: 'Invalid publish request.',
+    handler: async ({ tripId }) => {
+      const ownerId = await requireOwnerUserId();
+      const share = await publishedTrips.unpublish(tripId, ownerId);
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid publish request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const ownerId = await requireOwnerUserId();
-    const share = await publishedTrips.unpublish(validation.data.tripId, ownerId);
-
-    revalidatePublishedTripPaths(validation.data.tripId, share.token);
-
-    return createSuccessResponse({
-      data: {
-        tripId: validation.data.tripId,
+      return {
+        tripId,
         token: share.token,
-        isPublished: share.isPublished,
-        votingOpen: share.votingOpen,
-        commentsOpen: share.commentsOpen,
-        allowGuestSuggestions: share.allowGuestSuggestions,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to unpublish trip voting:',
-    });
-  }
+        data: toTripShareState(tripId, share),
+      };
+    },
+  });
 }
 
 export async function updateTripShareSettings(
@@ -211,156 +98,91 @@ export async function updateTripShareSettings(
     commentsOpen?: boolean;
     allowGuestSuggestions?: boolean;
   },
-): Promise<BasicApiResponse<PublishedTripShareState>> {
-  const validation = updatePublishedTripSettingsSchema.safeParse(input);
+): Promise<BasicApiResponse<TripShareState>> {
+  return runPublishedAction({
+    input,
+    schema: updatePublishedTripSettingsSchema,
+    errorPrefix: 'Failed to update published trip settings:',
+    validationErrorMessage: 'Invalid settings update request.',
+    handler: async ({ tripId, votingOpen, commentsOpen, allowGuestSuggestions }) => {
+      const ownerId = await requireOwnerUserId();
+      const share = await publishedTrips.updateSettings(tripId, ownerId, {
+        votingOpen,
+        commentsOpen,
+        allowGuestSuggestions,
+      });
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid settings update request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  if (
-    typeof validation.data.votingOpen === 'undefined' &&
-    typeof validation.data.commentsOpen === 'undefined' &&
-    typeof validation.data.allowGuestSuggestions === 'undefined'
-  ) {
-    return createErrorResponse({
-      error: 'No published trip settings were provided.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const ownerId = await requireOwnerUserId();
-    const share = await publishedTrips.updateSettings(validation.data.tripId, ownerId, {
-      votingOpen: validation.data.votingOpen,
-      commentsOpen: validation.data.commentsOpen,
-      allowGuestSuggestions: validation.data.allowGuestSuggestions,
-    });
-
-    revalidatePublishedTripPaths(validation.data.tripId, share.token);
-
-    return createSuccessResponse({
-      data: {
-        tripId: validation.data.tripId,
+      return {
+        tripId,
         token: share.token,
-        isPublished: share.isPublished,
-        votingOpen: share.votingOpen,
-        commentsOpen: share.commentsOpen,
-        allowGuestSuggestions: share.allowGuestSuggestions,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to update published trip settings:',
-    });
-  }
+        data: toTripShareState(tripId, share),
+      };
+    },
+  });
 }
 
-export async function rotateTripShareToken(input: { tripId: string }): Promise<BasicApiResponse<PublishedTripShareState>> {
-  const validation = tripIdSchema.safeParse(input);
+export async function rotateTripShareToken(input: { tripId: string }): Promise<BasicApiResponse<TripShareState>> {
+  return runPublishedAction({
+    input,
+    schema: tripIdSchema,
+    errorPrefix: 'Failed to rotate published trip link:',
+    validationErrorMessage: 'Invalid rotation request.',
+    handler: async ({ tripId }) => {
+      const ownerId = await requireOwnerUserId();
+      const share = await publishedTrips.rotateToken(tripId, ownerId);
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid rotation request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const ownerId = await requireOwnerUserId();
-    const share = await publishedTrips.rotateToken(validation.data.tripId, ownerId);
-
-    revalidatePublishedTripPaths(validation.data.tripId, share.token);
-
-    return createSuccessResponse({
-      data: {
-        tripId: validation.data.tripId,
+      return {
+        tripId,
         token: share.token,
-        isPublished: share.isPublished,
-        votingOpen: share.votingOpen,
-        commentsOpen: share.commentsOpen,
-        allowGuestSuggestions: share.allowGuestSuggestions,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to rotate published trip link:',
-    });
-  }
+        data: toTripShareState(tripId, share),
+      };
+    },
+  });
 }
 
 export async function addPublishedTripGuest(input: {
   tripId: string;
   displayName: string;
 }): Promise<BasicApiResponse<{ guestId: string; guestDisplayName: string }>> {
-  const validation = guestNameSchema.safeParse(input);
+  return runPublishedAction({
+    input,
+    schema: guestNameSchema,
+    errorPrefix: 'Failed to add guest:',
+    validationErrorMessage: 'Invalid guest request.',
+    handler: async ({ tripId, displayName }) => {
+      const ownerId = await requireOwnerUserId();
+      const guest = await publishedTrips.addOwnerGuest(tripId, ownerId, displayName);
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid guest request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const ownerId = await requireOwnerUserId();
-    const guest = await publishedTrips.addOwnerGuest(validation.data.tripId, ownerId, validation.data.displayName);
-
-    revalidatePublishedTripPaths(validation.data.tripId);
-
-    return createSuccessResponse({
-      data: {
-        guestId: guest.id,
-        guestDisplayName: guest.guestDisplayName,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to add guest:',
-    });
-  }
+      return {
+        tripId,
+        data: {
+          guestId: guest.id,
+          guestDisplayName: guest.guestDisplayName,
+        },
+      };
+    },
+  });
 }
 
 export async function removePublishedTripGuest(input: {
   tripId: string;
   guestId: string;
 }): Promise<BasicApiResponse<{ guestId: string }>> {
-  const validation = removeGuestSchema.safeParse(input);
+  return runPublishedAction({
+    input,
+    schema: removeGuestSchema,
+    errorPrefix: 'Failed to remove guest:',
+    validationErrorMessage: 'Invalid guest removal request.',
+    handler: async ({ tripId, guestId }) => {
+      const ownerId = await requireOwnerUserId();
+      await publishedTrips.removeGuest(tripId, ownerId, guestId);
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid guest removal request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const ownerId = await requireOwnerUserId();
-    await publishedTrips.removeGuest(validation.data.tripId, ownerId, validation.data.guestId);
-
-    revalidatePublishedTripPaths(validation.data.tripId);
-
-    return createSuccessResponse({
-      data: {
-        guestId: validation.data.guestId,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to remove guest:',
-    });
-  }
+      return {
+        tripId,
+        data: { guestId },
+      };
+    },
+  });
 }
 
 export async function claimPublishedTripGuest(
@@ -369,34 +191,25 @@ export async function claimPublishedTripGuest(
     guestId: string;
   },
 ): Promise<BasicApiResponse<PublishedGuestSession>> {
-  const validation = publishedGuestSessionSchema.safeParse(input);
+  return runPublishedAction({
+    input,
+    schema: publishedGuestSessionSchema,
+    errorPrefix: 'Failed to claim guest session:',
+    validationErrorMessage: 'Invalid guest session request.',
+    handler: async ({ token, guestId }) => {
+      const result = await publishedTrips.claimGuestSession(token, guestId);
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid guest session request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const result = await publishedTrips.claimGuestSession(validation.data.token, validation.data.guestId);
-
-    revalidatePublishedTripPaths(result.share.tripId, result.share.token);
-
-    return createSuccessResponse({
-      data: {
+      return {
         tripId: result.share.tripId,
-        guestId: result.guest.id,
-        guestDisplayName: result.guest.guestDisplayName,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to claim guest session:',
-    });
-  }
+        token: result.share.token,
+        data: {
+          tripId: result.share.tripId,
+          guestId: result.guest.id,
+          guestDisplayName: result.guest.guestDisplayName,
+        },
+      };
+    },
+  });
 }
 
 export async function castPublishedTripVote(
@@ -406,38 +219,25 @@ export async function castPublishedTripVote(
     listingId: string;
   },
 ): Promise<BasicApiResponse<PublishedVoteResult>> {
-  const validation = castVoteSchema.safeParse(input);
+  return runPublishedAction({
+    input,
+    schema: castVoteSchema,
+    errorPrefix: 'Failed to cast vote:',
+    validationErrorMessage: 'Invalid vote request.',
+    handler: async ({ token, guestId, listingId }) => {
+      const vote = await publishedTrips.castVote(token, guestId, listingId);
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid vote request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const vote = await publishedTrips.castVote(
-      validation.data.token,
-      validation.data.guestId,
-      validation.data.listingId,
-    );
-
-    revalidatePublishedTripPaths(vote.tripId, validation.data.token);
-
-    return createSuccessResponse({
-      data: {
+      return {
         tripId: vote.tripId,
-        guestId: vote.guestId,
-        listingId: vote.listingId,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to cast vote:',
-    });
-  }
+        token,
+        data: {
+          tripId: vote.tripId,
+          guestId: vote.guestId,
+          listingId: vote.listingId,
+        },
+      };
+    },
+  });
 }
 
 export async function updatePublishedTripListingDetails(
@@ -452,44 +252,30 @@ export async function updatePublishedTripListingDetails(
     notes?: string | null;
   },
 ): Promise<BasicApiResponse<PublishedListingResult>> {
-  const validation = updateListingDetailsSchema.safeParse(input);
+  return runPublishedAction({
+    input,
+    schema: updateListingDetailsSchema,
+    errorPrefix: 'Failed to update listing:',
+    validationErrorMessage: 'Invalid listing update request.',
+    handler: async ({ token, guestId, listingId, price, bedroomCount, bedCount, bathroomCount, notes }) => {
+      const listing = await publishedTrips.updateGuestListingDetails(token, guestId, listingId, {
+        price,
+        bedroomCount,
+        bedCount,
+        bathroomCount,
+        notes,
+      });
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid listing update request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const listing = await publishedTrips.updateGuestListingDetails(
-      validation.data.token,
-      validation.data.guestId,
-      validation.data.listingId,
-      {
-        price: validation.data.price,
-        bedroomCount: validation.data.bedroomCount,
-        bedCount: validation.data.bedCount,
-        bathroomCount: validation.data.bathroomCount,
-        notes: validation.data.notes,
-      },
-    );
-
-    revalidatePublishedTripPaths(listing.tripId, validation.data.token);
-
-    return createSuccessResponse({
-      data: {
+      return {
         tripId: listing.tripId,
-        listingId: listing.id,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to update listing:',
-    });
-  }
+        token,
+        data: {
+          tripId: listing.tripId,
+          listingId: listing.id,
+        },
+      };
+    },
+  });
 }
 
 export async function submitPublishedTripListing(
@@ -499,48 +285,24 @@ export async function submitPublishedTripListing(
     url: string;
   },
 ): Promise<BasicApiResponse<PublishedListingResult>> {
-  const validation = submitListingSchema.safeParse(input);
+  return runPublishedAction({
+    input,
+    schema: submitListingSchema,
+    errorPrefix: 'Failed to submit guest listing:',
+    validationErrorMessage: 'Invalid listing submission request.',
+    handler: async ({ token, guestId, url }) => {
+      const listing = await publishedTrips.submitGuestListingUrl(token, guestId, url);
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid listing submission request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const listing = await publishedTrips.submitGuestListingUrl(
-      validation.data.token,
-      validation.data.guestId,
-      validation.data.url,
-    );
-
-    revalidatePublishedTripPaths(listing.tripId, validation.data.token);
-
-    return createSuccessResponse({
-      data: {
+      return {
         tripId: listing.tripId,
-        listingId: listing.id,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to submit guest listing:',
-    });
-  }
-}
-
-function getFeedbackLabel(kind: ListingCommentKind) {
-  switch (kind) {
-    case ListingCommentKind.PRO:
-      return 'pro';
-    case ListingCommentKind.CON:
-      return 'con';
-    case ListingCommentKind.COMMENT:
-      return 'comment';
-  }
+        token,
+        data: {
+          tripId: listing.tripId,
+          listingId: listing.id,
+        },
+      };
+    },
+  });
 }
 
 export async function addPublishedTripListingFeedback(
@@ -552,41 +314,26 @@ export async function addPublishedTripListingFeedback(
     body: string;
   },
 ): Promise<BasicApiResponse<PublishedCommentResult>> {
-  const validation = addCommentSchema.safeParse(input);
+  return runPublishedAction({
+    input,
+    schema: addCommentSchema,
+    validationErrorMessage: 'Invalid comment request.',
+    errorPrefix: (parsed) => `Failed to add ${getListingFeedbackConfig(parsed.kind).singularLabel.toLowerCase()}:`,
+    handler: async ({ token, guestId, listingId, kind, body }) => {
+      const comment = await publishedTrips.addFeedback(token, guestId, listingId, kind, body);
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid comment request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const comment = await publishedTrips.addFeedback(
-      validation.data.token,
-      validation.data.guestId,
-      validation.data.listingId,
-      validation.data.kind,
-      validation.data.body,
-    );
-
-    revalidatePublishedTripPaths(comment.tripId, validation.data.token);
-
-    return createSuccessResponse({
-      data: {
+      return {
         tripId: comment.tripId,
-        guestId: comment.guestId,
-        listingId: comment.listingId,
-        commentId: comment.id,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: `Failed to add ${getFeedbackLabel(validation.data.kind)}:`,
-    });
-  }
+        token,
+        data: {
+          tripId: comment.tripId,
+          guestId: comment.guestId,
+          listingId: comment.listingId,
+          commentId: comment.id,
+        },
+      };
+    },
+  });
 }
 
 export async function setPublishedTripCommentHidden(
@@ -596,38 +343,24 @@ export async function setPublishedTripCommentHidden(
     hidden: boolean;
   },
 ): Promise<BasicApiResponse<PublishedCommentModerationResult>> {
-  const validation = moderateCommentSchema.safeParse(input);
+  return runPublishedAction({
+    input,
+    schema: moderateCommentSchema,
+    errorPrefix: 'Failed to moderate comment:',
+    validationErrorMessage: 'Invalid comment moderation request.',
+    handler: async ({ tripId, commentId, hidden }) => {
+      const ownerId = await requireOwnerUserId();
+      const result = await publishedTrips.setCommentHidden(tripId, ownerId, commentId, hidden);
 
-  if (!validation.success) {
-    return createErrorResponse({
-      error: validation.error.issues[0]?.message ?? 'Invalid comment moderation request.',
-      code: ErrorCode.VALIDATION_ERROR,
-    });
-  }
-
-  try {
-    const ownerId = await requireOwnerUserId();
-    const result = await publishedTrips.setCommentHidden(
-      validation.data.tripId,
-      ownerId,
-      validation.data.commentId,
-      validation.data.hidden,
-    );
-
-    revalidatePublishedTripPaths(validation.data.tripId, result.shareToken ?? undefined);
-
-    return createSuccessResponse({
-      data: {
-        tripId: validation.data.tripId,
-        commentId: result.comment.id,
-        hidden: result.comment.hiddenAt !== null,
-      },
-    });
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: 'Failed to moderate comment:',
-    });
-  }
+      return {
+        tripId,
+        token: result.shareToken ?? undefined,
+        data: {
+          tripId,
+          commentId: result.comment.id,
+          hidden: result.comment.hiddenAt !== null,
+        },
+      };
+    },
+  });
 }
