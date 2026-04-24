@@ -1,7 +1,7 @@
 ---
 createdAt: 2026-04-22
 title: Phased Refactor and Cleanup Roadmap
-status: in-progress (phases 1, 2, 3, 4 complete)
+status: in-progress (phases 1, 2, 3, 4, 5 complete)
 owner: dima
 ---
 
@@ -17,7 +17,7 @@ The codebase has drifted in a few predictable ways:
 - **Trip UI has two parallel stacks** (dashboard and `/share/<token>`) that re-implement the same meta pills, share state types, and guest-session plumbing side by side.
 - **Core auth + server-action handling is ad-hoc.** Every action does its own Clerk check and its own try/catch with slightly different error codes.
 
-This roadmap breaks the cleanup into **six independently revertable phases**. Per the current workflow we ship each phase as one or more commits on `main` (each commit self-contained and revertable via `git revert`) rather than as a feature branch + PR. Each phase must leave `pnpm check-types`, `pnpm lint`, and `pnpm test` green. The ordering matters: phase 1 fixes real bugs before we touch the files that have them; phase 2 settles the import layer before adding new tests around it; phases 3–4 unify types and shrink the big files before phase 5 breaks up the components that consume them; phase 6 is an optional cross-cutting wrapper that benefits from all the earlier cleanup.
+This roadmap breaks the cleanup into **six independently revertable phases** (plus a future phase 7 stub — see §9a). Per the current workflow we ship each phase as one or more commits on `main` (each commit self-contained and revertable via `git revert`) rather than as a feature branch + PR. Each phase must leave `pnpm check-types`, `pnpm lint`, and `pnpm test` green. The ordering matters: phase 1 fixes real bugs before we touch the files that have them; phase 2 settles the import layer before adding new tests around it; phases 3–4 unify types and shrink the big files before phase 5 breaks up the components that consume them; phase 6 is an optional cross-cutting wrapper that benefits from all the earlier cleanup. Phase 7 (deferred) unifies owner and guest listing UI on top of the now-stable phase 5 shape.
 
 ## 2. Decisions locked in before we start
 
@@ -42,6 +42,7 @@ flowchart TD
   phase3 --> phase5
   phase5 --> phase6["Phase 6 (optional)<br/>core/auth + createServerAction"]
   phase4 --> phase6
+  phase5 --> phase7["Phase 7 (future)<br/>Unify owner + guest listing UI"]
 ```
 
 The only hard dependencies are:
@@ -219,52 +220,53 @@ These two files have grown to ~650 lines each. They mix types, auth guards, and 
 
 ## 8. Phase 5 — Large component breakups + `PublishedTripGuestContext`
 
-**Commit checkpoint:** `refactor(trips): break up large components and introduce PublishedTripGuestContext`
+**Status: complete (2026-04-22)** — shipped as seven commits on `main`. The roadmap's single `Commit checkpoint` was intentionally split into a commit stack so each boundary is independently revertable via `git revert`. Owner smoke-tested the share page and edit sheet after the context migration (commit `a211440`) before the remaining commits landed.
 
 ### Plain English
 
-Every row on the `/share/<token>` page passes `{ token, share, activeGuest }` into its actions menu, footer, comments sheet, feedback section, and edit sheet. That's prop drilling across ~8 components. We introduce a context so any component in the tree can read them. While we're here we break up the biggest client components so each file does one thing.
+Every row on the `/share/<token>` page used to pass `{ token, share, activeGuest }` into its actions menu, footer, comments sheet, feedback section, and edit sheet. That was prop drilling across ~5 components. A new `PublishedTripGuestContext` now carries those values for the whole subtree so every descendant can read whatever slice it needs. While we were in those files we also broke up the biggest client components so each file does one thing, extracted two hooks (`useListingActions`, `usePublishedSharePageLifecycle`), and moved form-parsing utils out of the edit sheet.
 
-### Technical breakdown — Context
+### Technical breakdown — Context (commit `a211440`)
 
-- [ ] Create `src/features/trips/components/PublishedTripGuestContext.tsx` providing `{ token, share, activeGuest }`.
-- [ ] Wrap the tree in [PublishedTripPageClient.tsx](../src/features/trips/components/PublishedTripPageClient.tsx).
-- [ ] Consume from:
-  - [ ] [PublishedListingActionsMenu.tsx](../src/features/trips/components/PublishedListingActionsMenu.tsx)
-  - [ ] [PublishedListingCardFooter.tsx](../src/features/trips/components/PublishedListingCardFooter.tsx)
-  - [ ] [PublishedListingCommentsSheet.tsx](../src/features/trips/components/PublishedListingCommentsSheet.tsx)
-  - [ ] [PublishedListingFeedbackSection.tsx](../src/features/trips/components/PublishedListingFeedbackSection.tsx)
-  - [ ] [PublishedListingEditSheet.tsx](../src/features/trips/components/PublishedListingEditSheet.tsx)
+- [x] Created [PublishedTripGuestContext.tsx](../src/features/trips/components/PublishedTripGuestContext.tsx) providing `{ token, share, activeGuest }`. The context type declares `activeGuest` as non-null by contract because the provider is only mounted after `PublishedTripPageClient` has resolved a guest session. A consumer rendered outside the provider throws a clear error — the intended failure mode for a page that cannot function without a guest.
+- [x] Wrapped the grid in [PublishedTripPageClient.tsx](../src/features/trips/components/PublishedTripPageClient.tsx) with `PublishedTripGuestProvider`.
+- [x] Migrated the five consumers to read from context instead of props:
+  - [x] [PublishedListingActionsMenu.tsx](../src/features/trips/components/PublishedListingActionsMenu.tsx) — drops `token`, `activeGuest`, `guestEditsAllowed` props; keeps only `listing`.
+  - [x] [PublishedListingCardFooter.tsx](../src/features/trips/components/PublishedListingCardFooter.tsx) — drops `token`, `activeGuest`, `commentsOpen`, `votingOpen`.
+  - [x] [PublishedListingCommentsSheet.tsx](../src/features/trips/components/PublishedListingCommentsSheet.tsx) — drops `token`, `activeGuest`, `commentsOpen`.
+  - [x] [PublishedListingFeedbackSection.tsx](../src/features/trips/components/PublishedListingFeedbackSection.tsx) — drops `token`, `activeGuest`, `commentsOpen`. Dead "pick your guest name first" branches removed since the context guarantees non-null.
+  - [x] [PublishedListingEditSheet.tsx](../src/features/trips/components/PublishedListingEditSheet.tsx) — drops `token`, `activeGuest`. The runtime `if (!activeGuest)` guard and the button's `!activeGuest` disable flag are both gone.
 
 ### Technical breakdown — Component breakups
 
-- [ ] [PublishedTripPageClient.tsx](../src/features/trips/components/PublishedTripPageClient.tsx) (194):
-  - [ ] Extract `usePublishedSharePageLifecycle` (the three effects at 43–68) into a hook file.
-  - [ ] Extract `PublishedTripListingsGrid` from the listing rendering (70–115, 127–183).
-- [ ] [ListingCard.tsx](../src/features/listings/components/ListingCard.tsx) (337):
-  - [ ] Move inline `getStatusVariant` / `getStatusIcon` (119–130) into the existing [listing-status.ts](../src/features/listings/components/listing-status.ts).
-  - [ ] Extract `ListingCardDescription` (174–201) and `ListingCardMetrics` (203–233) as sibling components.
-- [ ] [CollaboratorsList.tsx](../src/features/trips/components/CollaboratorsList.tsx) (354):
-  - [ ] Extract `CollaboratorsInviteForms` (160–225).
-  - [ ] Extract `CollaboratorsRoster` (228–354).
-- [ ] [TripContentArea.tsx](../src/features/trips/components/TripContentArea.tsx) (193):
-  - [ ] Extract `TripPotentialListingsTable`, `TripPotentialListingsMap`, `TripPotentialListingsCards` from the three view branches (117–170).
-- [ ] [PublishedListingEditSheet.tsx](../src/features/trips/components/PublishedListingEditSheet.tsx) (243):
-  - [ ] Move `formatInitialNumber`, `parseNumberField`, `buildInitialValues` (40–67) into `src/features/trips/utils/publishedListingForm.ts`.
-  - [ ] Replace the render-phase `setState` at 89–94 with a `key={listing.id}` remount pattern on the sheet.
-- [ ] [ListingActionsMenu.tsx](../src/features/listings/components/ListingActionsMenu.tsx) (269):
-  - [ ] Extract the three action handlers (70–160) into a `useListingActions(listing)` hook. The component becomes markup.
+- [x] [PublishedTripPageClient.tsx](../src/features/trips/components/PublishedTripPageClient.tsx) (commit `5839615`): extracted `usePublishedSharePageLifecycle` (visibility poll + two redirect effects) into [src/features/trips/hooks/usePublishedSharePageLifecycle.ts](../src/features/trips/hooks/usePublishedSharePageLifecycle.ts) and `PublishedTripListingsGrid` (sort + winner + vote handler + listings map) into [src/features/trips/components/PublishedTripListingsGrid.tsx](../src/features/trips/components/PublishedTripListingsGrid.tsx). The page is now ~50 lines (down from 194): grab the guest session, call the lifecycle hook, render the provider, render the grid.
+- [x] [ListingCard.tsx](../src/features/listings/components/ListingCard.tsx) (commit `b4d8589`): moved `getStatusVariant` + `getStatusIcon` into a new [ListingStatusBadge.tsx](../src/features/listings/components/ListingStatusBadge.tsx) component (packaged together rather than as two separate exported helpers — callers render the badge directly instead of calling two functions). Extracted [ListingCardDescription.tsx](../src/features/listings/components/ListingCardDescription.tsx) and [ListingCardMetrics.tsx](../src/features/listings/components/ListingCardMetrics.tsx) as sibling components. `ListingCard.tsx` drops ~75 lines of inline JSX.
+- [x] [CollaboratorsList.tsx](../src/features/trips/components/CollaboratorsList.tsx) (commit `2b5f14a`): split into [CollaboratorsInviteForms.tsx](../src/features/trips/components/CollaboratorsInviteForms.tsx) (owner-only invite + add-guest forms) and [CollaboratorsRoster.tsx](../src/features/trips/components/CollaboratorsRoster.tsx) (published guests + legacy guest names + trip team + empty state). Each sub-component owns its own pending flag so add-guest and remove-guest spinners are independent.
+- [x] [TripContentArea.tsx](../src/features/trips/components/TripContentArea.tsx) (commit `9140f18`): extracted [TripPotentialListingsMap.tsx](../src/features/trips/components/TripPotentialListingsMap.tsx) and [TripPotentialListingsCards.tsx](../src/features/trips/components/TripPotentialListingsCards.tsx). `TripPotentialListingsTable` was **deliberately kept inline** — it's a 7-line pass-through to `ListingsTable` and extracting would add indirection without clear payoff.
+- [x] [PublishedListingEditSheet.tsx](../src/features/trips/components/PublishedListingEditSheet.tsx) (commit `baf1b40`): moved `formatInitialNumber`, `parseNumberField`, `buildInitialValues` into [src/features/trips/utils/publishedListingForm.ts](../src/features/trips/utils/publishedListingForm.ts).
+- [ ] ~~Replace the render-phase `setState` at 89–94 with a `key={listing.id}` remount pattern on the sheet.~~ **Skipped on purpose.** The existing `if (prevOpen !== open) setValues(...)` is the modern React "store information from previous renders" pattern (literally cited in the code comment from react.dev). No lint rule fires on it. A `key={listing.id}` remount would be a regression: `listing.id` is stable per card, so the sheet would never remount between opens, and form values would stick at whatever they were on first open instead of re-seeding from latest server data. To preserve current semantics you'd need `key={`${listing.id}-${openCounter}`}` with an explicit bump on open, which is more convoluted than the pattern we already have.
+- [x] [ListingActionsMenu.tsx](../src/features/listings/components/ListingActionsMenu.tsx) (commit `50ec6bf`): extracted refresh/toggle/delete handlers and pending flags into [src/features/listings/hooks/useListingActions.ts](../src/features/listings/hooks/useListingActions.ts). The hook accepts an `onActionComplete` callback so the component keeps ownership of dropdown-menu open state. Component drops ~80 lines of action wiring.
+
+### Commits
+
+1. `b4d8589` — `refactor(listings): split ListingCard into status badge + description + metrics`
+2. `baf1b40` — `refactor(trips): move PublishedListingEditSheet form utils into shared module`
+3. `9140f18` — `refactor(trips): split TripContentArea view branches into dedicated components`
+4. `2b5f14a` — `refactor(trips): split CollaboratorsList into InviteForms + Roster`
+5. `a211440` — `refactor(trips): introduce PublishedTripGuestContext and collapse prop drilling` *(risk point — owner smoked after this)*
+6. `5839615` — `refactor(trips): extract share-page lifecycle hook and listings grid`
+7. `50ec6bf` — `refactor(listings): extract useListingActions hook from ListingActionsMenu`
 
 ### Exit criteria
 
-- [ ] Grep for `{ token, share, activeGuest }` prop passing returns zero hits.
-- [ ] Manual smoke: dashboard and share page unchanged visually.
-- [ ] `pnpm lint` — the `react-hooks/set-state-in-effect` errors flagged in [AGENTS.md](../AGENTS.md) should be resolved by the remount rewrite.
-- [ ] Commit checkpoint: **`refactor(trips): break up large components and introduce PublishedTripGuestContext`**.
+- [x] Grep for `{ token, share, activeGuest }` prop passing returns zero hits — all five consumers read from context.
+- [x] `pnpm check-types`, `pnpm lint`, `pnpm test` all green on `main` after each commit.
+- [x] Manual smoke (owner, after commit 5 / `a211440`): share page renders, votes update, pros/cons tabs post to slim lists, comments sheet opens and posts, edit sheet saves price/beds, collaborators add/remove with independent pending flags, owner trip page renders all three view modes.
+- [ ] ~~`react-hooks/set-state-in-effect` errors resolved by remount rewrite.~~ **Not applicable.** No such lint errors exist in this codebase — the roadmap item was based on a misdiagnosis. See the skipped remount entry above.
 
-### Cost
+### Cost (actual)
 
-- ~800 LOC changed, ~15 files touched. Perf slightly better (fewer re-renders from context). Hackiness **2**.
+- ~800 LOC changed across 21 files (8 new, 13 modified), matching the estimate. Shipped as 7 commits. Perf slightly better (five components no longer re-render when unrelated vote state changes at the grid level). Hackiness **1**.
 
 ## 9. Phase 6 (optional) — `core/auth` + `createServerAction`
 
@@ -298,6 +300,39 @@ Every server action re-implements `auth()`, a try/catch, and response formatting
 ### Cost
 
 - ~600 LOC changed, ~25 files touched. Perf slightly better. Hackiness **2**.
+
+## 9a. Phase 7 (future) — Unify owner + guest listing UI
+
+**Status: not started.** Tracked here so the intent from the phase 5 discussion doesn't get lost.
+
+### Plain English
+
+Today the same listing concept renders through two nearly-identical paths:
+
+| Surface | Card wrapper | Kebab menu | Footer |
+|---|---|---|---|
+| Owner dashboard (`/trips/<id>`) | `ListingCard` | `ListingActionsMenu` (refresh / reject / delete) | none |
+| Public share (`/share/<token>`) | `ListingCard` | `PublishedListingActionsMenu` (edit + view source, behind `allowGuestSuggestions`) | `PublishedListingCardFooter` (vote button + feedback tabs) |
+
+The wrapper is already shared — it's the two menu components and the permission logic that fork. The long-term goal stated repeatedly by the owner is: **share as much code as possible between the public and admin pages so a feature built in one surface appears in the other by default**. Phase 5 deliberately stopped short of unifying because (a) the menus' permission semantics differ, and (b) doing a permission-driven unification on top of freshly-moved code is harder to review than doing it against a stable base.
+
+### Options to explore
+
+1. **Capability-driven `ListingKebab`** — one component that takes a `capabilities` bag (`{ canEdit, canReject, canDelete, canRefresh, canViewSource }`) and renders the appropriate items. Owner dashboard fills in `{ canRefresh, canReject, canDelete, canViewSource }`, share page fills in `{ canEdit: share.allowGuestSuggestions, canViewSource }`. The existing `useListingActions` hook already covers the owner side.
+2. **Role-derived wrapper** — keep `ListingKebab` pure and put the permission resolution in small `ownerCapabilities(listing, user)` / `guestCapabilities(listing, share, activeGuest)` helpers. Keeps the capability bag declarative and testable.
+3. **Unified footer** — if the owner dashboard ever wants to see vote tallies inline, `PublishedListingCardFooter` becomes a `<ListingEngagementFooter>` that renders differently based on whether a guest context exists.
+
+### Checklist (when the phase starts)
+
+- [ ] Audit every current fork between owner and guest card paths (menu, footer, card chrome, permission checks).
+- [ ] Decide on the capability model (bag vs. subcomponent slot vs. role-derived render props).
+- [ ] Collapse `ListingActionsMenu` and `PublishedListingActionsMenu` into one component.
+- [ ] Grep remaining `isPublished` / `activeGuest`-gated render paths to confirm none still silently fork.
+- [ ] Smoke both surfaces with the same listing data.
+
+### Cost (estimate)
+
+- ~400 LOC changed, ~8 files touched, perf neutral. Hackiness **2** — unifying permission resolution is the risky part; the render collapse is mechanical.
 
 ## 10. Pre-flight checks
 
