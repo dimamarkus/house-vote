@@ -1,7 +1,7 @@
 ---
 createdAt: 2026-04-22
 title: Phased Refactor and Cleanup Roadmap
-status: in-progress (phases 1, 2, 3 complete)
+status: in-progress (phases 1, 2, 3, 4 complete)
 owner: dima
 ---
 
@@ -174,7 +174,7 @@ The dashboard and the public `/share/<token>` page render the same meta pills (l
 
 ## 7. Phase 4 — Split `publishedDb.ts` and `publishedTripActions.ts`
 
-**Commit checkpoint:** `refactor(trips): split publishedDb and publishedTripActions`
+**Status: complete (2026-04-22)** — shipped as three commits on `main`: `12a6242` shared-guard extraction, `4be40a8` publishedDb folder split, `ca9bfab` action boilerplate collapse. See section 7a for the final shape.
 
 ### Plain English
 
@@ -182,36 +182,40 @@ These two files have grown to ~650 lines each. They mix types, auth guards, and 
 
 ### Technical breakdown — `publishedDb.ts`
 
-- [ ] Split [publishedDb.ts](../src/features/trips/publishedDb.ts) into a folder:
-  - [ ] `src/features/trips/publishedDb/types.ts` — Prisma `validator` fragments + `PublishedTrip*Record` types (current lines 1–131).
-  - [ ] `src/features/trips/publishedDb/guards.ts` — `getTripOwnerId`, `assertTripOwner`, `assertPublishedShare`, `assertGuestInTrip`, `assertListingInTrip`, `assertPotentialListing` (147–297).
-  - [ ] `src/features/trips/publishedDb/share.ts` — share lifecycle (`getPublishedTripByToken`, `getOwnerTripShareSummary`, `publish`, `unpublish`, `updateSettings`, `rotateToken`).
-  - [ ] `src/features/trips/publishedDb/guests.ts` — guest CRUD (`addOwnerGuest`, `removeGuest`, `claimGuestSession`).
-  - [ ] `src/features/trips/publishedDb/votes.ts` — `castVote`.
-  - [ ] `src/features/trips/publishedDb/comments.ts` — `addFeedback`, `setCommentHidden`.
-  - [ ] `src/features/trips/publishedDb/listings.ts` — `updateGuestListingDetails`, `submitGuestListingUrl`.
-  - [ ] `src/features/trips/publishedDb/index.ts` — re-export the `publishedTrips` namespace so callers don't change.
-- [ ] Dedupe `assertListingInTrip` vs `assertPotentialListing`: the latter should compose on top of the former (not re-query).
-- [ ] Extract a shared `assertTripOwnerId(tripId, userId)` into `guards.ts` and reuse from [db.ts](../src/features/trips/db.ts) `rotateImportToken` (366–399) and `findOrCreateShareableInvite` (311–326). Keep `trips.get` on its own collaborator-allowed path.
+- [x] Split [publishedDb.ts](../src/features/trips/publishedDb/index.ts) into a folder:
+  - [x] `src/features/trips/publishedDb/prismaFragments.ts` — Prisma `validator` fragments (`publishedVoteInclude`, `publishedCommentInclude`, `publishedListingInclude`, `publishedTripShareSelect`, `ownerShareListingSelect`, `ownerCommentSelect`). Roadmap originally folded this into `types.ts`; split into its own file so `types.ts` stays purely declarative (no runtime values).
+  - [x] `src/features/trips/publishedDb/types.ts` — `Published*Record` / `OwnerTrip*Record` / `DbClient` aliases.
+  - [x] `src/features/trips/publishedDb/guards.ts` — `assertTripOwner` (now a one-liner wrapper around the shared guard), `assertPublishedShare`, `assertGuestInTrip`, `assertListingInTrip`, `mapPublishedTripShareRecord`, `normalizeGuestDisplayName`, `findGuestByName`, `createGuest`, `ensureShareRecord`, `getShareByToken`, `getShareByTripId`. `getTripOwnerId` was dropped — it existed only as a stepping-stone inside the old `assertTripOwner`, and the shared helper handles the "trip not found" case directly.
+  - [x] `src/features/trips/publishedDb/share.ts` — `getPublishedTripByToken`, `getOwnerTripShareSummary`, `publish`, `unpublish`, `updateSettings`, `rotateToken`.
+  - [x] `src/features/trips/publishedDb/guests.ts` — `addOwnerGuest`, `removeGuest`, `claimGuestSession`.
+  - [x] `src/features/trips/publishedDb/votes.ts` — `castVote`.
+  - [x] `src/features/trips/publishedDb/comments.ts` — `addFeedback`, `setCommentHidden`.
+  - [x] `src/features/trips/publishedDb/listings.ts` — `updateGuestListingDetails`, `submitGuestListingUrl`.
+  - [x] `src/features/trips/publishedDb/index.ts` — re-assembles the `publishedTrips` namespace from explicit named imports + re-exports the record types. Callers keep importing from `@/features/trips/publishedDb` (the folder's `index.ts` is the resolved module).
+- [x] Deduped `assertListingInTrip` vs `assertPotentialListing`: the two functions were the same query with one extra status check, so they're now a single `assertListingInTrip(..., { requirePotential })` helper. The vote path passes `requirePotential: true`.
+- [x] Extracted shared `assertTripOwnerId(tripId, userId, action, dbClient?)` into [src/features/trips/guards.ts](../src/features/trips/guards.ts) (top-level, not inside `publishedDb/` — both `db.ts` and `publishedDb/*.ts` need it). Reused from [db.ts](../src/features/trips/db.ts) `rotateImportToken` and `findOrCreateShareableInvite`. `trips.get` stayed on its own collaborator-allowed path as planned.
 
 ### Technical breakdown — `publishedTripActions.ts`
 
-- [ ] Split [publishedTripActions.ts](../src/features/trips/actions/publishedTripActions.ts) into:
-  - [ ] `src/features/trips/actions/publishedTripSchemas.ts` — all Zod schemas (12–83).
-  - [ ] `src/features/trips/actions/publishedTripActionUtils.ts` — `revalidatePublishedTripPaths`, `requireOwnerUserId`, and a new `runPublishedAction(schema, fn)` helper that owns the repeated `safeParse → try → revalidate → response` shape.
-  - [ ] `src/features/trips/actions/publishedTripOwnerActions.ts` — owner-only actions (143–370, 598–639).
-  - [ ] `src/features/trips/actions/publishedTripGuestActions.ts` — token/guest actions (372–596).
-- [ ] Replace `getFeedbackLabel` (541–550) with `getListingFeedbackConfig(kind).singularLabel` from [listing-feedback.ts](../src/features/trips/constants/listing-feedback.ts).
+- [x] Split [publishedTripActions.ts](../src/features/trips/actions/publishedTripActions.ts) into:
+  - [x] `src/features/trips/actions/publishedTripSchemas.ts` — all Zod schemas. The "at least one field" check on `updatePublishedTripSettingsSchema` moved into a `.refine()` so the wrapper handles it uniformly (previously a manual post-parse check inside the action).
+  - [x] `src/features/trips/actions/publishedTripActionUtils.ts` — `revalidatePublishedTripPaths`, `requireOwnerUserId`, `toTripShareState` (projector used by the four share-mutating actions so their response shapes match), and the new `runPublishedAction({ input, schema, handler, errorPrefix, validationErrorMessage? })` wrapper. Handlers return `{ tripId, token?, data }` and the wrapper drives revalidation uniformly. `errorPrefix` accepts a function so the feedback action can emit `Failed to add pro:` vs `Failed to add comment:` based on parsed input. Utils file is **not** marked `'use server'` so `runPublishedAction` can't be accidentally exposed as an RPC endpoint.
+  - [ ] ~~`src/features/trips/actions/publishedTripOwnerActions.ts` / `publishedTripGuestActions.ts`~~ — **skipped on purpose**. Once the wrapper shrank the monolith from 634 → 366 lines, a permission-based file split became cosmetic, and the north star is sharing code between public and admin flows rather than hardening the boundary between them.
+- [x] Replaced `getFeedbackLabel` with `getListingFeedbackConfig(parsed.kind).singularLabel.toLowerCase()`. `singularLabel` is capitalized (`'Comment' | 'Pro' | 'Con'`); lower-casing preserves the old error string (`Failed to add pro:` etc.) byte-for-byte.
 
 ### Exit criteria
 
-- [ ] `pnpm check-types` passes; grep shows no consumer of `publishedTrips` changed its import path.
-- [ ] Full manual pass of the share page: publish, unpublish, rotate link, toggle URL submissions, add guest, cast vote, change vote, add pros/cons/comments, hide comment, submit guest listing URL.
-- [ ] Commit checkpoint: **`refactor(trips): split publishedDb and publishedTripActions`**.
+- [x] `pnpm check-types`, `pnpm lint`, and `pnpm test` all green on `main` after each commit.
+- [x] Grep shows no consumer of `publishedTrips` changed its import path. All 13 call sites still import from `@/features/trips/publishedDb` (now resolving to `publishedDb/index.ts`).
+- [ ] Full manual pass of the share page. *(Owner to verify in dev: publish, unpublish, rotate link, toggle URL submissions, add guest, cast vote, change vote, add pros/cons/comments, hide comment, submit guest listing URL. Every exported action name, input type, and success-response shape is unchanged, so failures would surface as runtime errors in the dev server or misrouted revalidations — not as compile failures.)*
 
-### Cost
+### Cost (actual)
 
-- ~1200 LOC moved, ~15 files added/edited. Perf neutral. Hackiness **2**. Highest-risk non-UI phase.
+- ~1400 LOC moved / refactored (roughly matches estimate), 14 files touched including 10 new files and 1 deletion. Three commits:
+  - `12a6242` — ~50 LOC, 3 files (1 new). Shared `assertTripOwnerId` preparation.
+  - `4be40a8` — 800 insertions / 636 deletions across 10 files (monolith deleted + 8 new domain files + index barrel).
+  - `ca9bfab` — 452 insertions / 501 deletions across 3 files (wrapper + schemas extracted, monolith rewritten in place).
+- Perf neutral. Hackiness **1**. No runtime behaviour changes beyond the bonus `assertListingInTrip` dedup.
 
 ## 8. Phase 5 — Large component breakups + `PublishedTripGuestContext`
 
