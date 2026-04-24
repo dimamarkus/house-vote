@@ -1,7 +1,7 @@
 ---
 createdAt: 2026-04-22
 title: Phased Refactor and Cleanup Roadmap
-status: in-progress (phases 1, 2, 3, 4, 5 complete)
+status: in-progress (phases 1, 2, 3, 4, 5, 6 complete)
 owner: dima
 ---
 
@@ -268,38 +268,82 @@ Every row on the `/share/<token>` page used to pass `{ token, share, activeGuest
 
 - ~800 LOC changed across 21 files (8 new, 13 modified), matching the estimate. Shipped as 7 commits. Perf slightly better (five components no longer re-render when unrelated vote state changes at the grid level). Hackiness **1**.
 
-## 9. Phase 6 (optional) — `core/auth` + `createServerAction`
+## 9. Phase 6 — `core/auth` + `createServerAction`
 
-**Commit checkpoint:** `refactor(core): add createServerAction wrapper and migrate actions`
+**Status: complete (2026-04-22)** — shipped as six commits on `main`. The original roadmap listed phase 6 as a single checkpoint; after surveying the action layer I split it into six revertable commits and **narrowed the migration scope** (see "Deliberate skips" below). Pre-flight discussion with the owner locked in: reduced scope, standalone `toggleLike` bugfix, normalize auth code to `UNAUTHENTICATED` in migrated actions only.
 
 ### Plain English
 
-Every server action re-implements `auth()`, a try/catch, and response formatting. This phase extracts one helper that does all three and migrates the obvious actions to use it. Hold off if the churn isn't worth it right now — this phase is explicitly optional.
+Every server action used to re-implement `auth()`, a try/catch, and response formatting by hand. This phase adds one wrapper (`createServerAction`) that does all three, plus a small `requireUserId` helper that throws a typed `UnauthenticatedError`. Then it migrates the actions where the wrapper actually pays off — the symmetric "auth → validate → db → revalidate" shape — and leaves the more permission-heavy actions on the inline pattern because a wrapper wouldn't have saved much there.
 
 ### Technical breakdown
 
-- [ ] Add `src/core/auth/server/requireUserId.ts` returning `{ userId }` or throwing a typed `UnauthorizedError`.
-- [ ] Extend [src/core/server-actions.ts](../src/core/server-actions.ts) with `createServerAction(schema, handler)`:
-  - Parses input, calls the handler, wraps result in `createSuccessResponse`.
-  - Catches typed errors, maps to `createErrorResponse` with the right code.
-  - Absorbs the `runPublishedAction` helper from phase 4.
-- [ ] Migrate the natural candidates:
-  - [ ] `createTrip`, `updateTrip`.
-  - [ ] `createListing`, `updateListing`, `deleteListing`, `updateListingStatus`.
-  - [ ] `importListingFromUrl`, `refreshListingFromSourceUrl`.
-  - [ ] `toggleLike`.
-  - [ ] All of [publishedTripOwnerActions.ts](../src/features/trips/actions/publishedTripOwnerActions.ts) + [publishedTripGuestActions.ts](../src/features/trips/actions/publishedTripGuestActions.ts) (post-phase-4).
-- [ ] Leave [acceptInvitation.ts](../src/features/trips/actions/acceptInvitation.ts) out — it's a redirect-style action, not JSON.
+#### `src/core/auth/server/requireUserId.ts` (commit `14a42ea`)
+
+- [x] New module exports `requireUserId(message?)` which calls Clerk's `auth()` and throws an `UnauthenticatedError` when no session is present.
+- [x] `UnauthenticatedError` is a named subclass so the wrapper can distinguish "not signed in" from other thrown errors and emit the correct response code.
+
+#### `createServerAction` (commit `40383ac`)
+
+- [x] Added to [src/core/server-actions.ts](../src/core/server-actions.ts). Signature:
+
+  ```ts
+  createServerAction<TInput, TData>({
+    input: unknown,
+    schema: z.ZodType<TInput>,
+    requireAuth: true | false,        // discriminated: if true, handler gets `userId: string`
+    errorPrefix: string | ((input) => string),
+    validationErrorMessage?: string,
+    handler: (ctx) => Promise<{ data: TData; revalidate?: readonly string[] }>,
+  })
+  ```
+- [x] Behavior: parse → (maybe) auth → run handler → `revalidatePath` each returned path → wrap in `createSuccessResponse`. `UnauthenticatedError` is caught first and becomes `UNAUTHENTICATED` without the `errorPrefix`; everything else is caught and becomes `PROCESSING_ERROR` with the prefix applied.
+- [x] Lives in a plain (not `'use server'`) module on purpose — it's called from server actions, not exposed as one.
+
+#### `toggleLike` revalidate bug (commit `7be3992`)
+
+- [x] Standalone fix commit. The previous implementation called `revalidatePath('/trips/[tripId]')` with the literal bracket string — Next.js treats that as a literal path segment without a second `type: 'page'` arg, so no cache entry was invalidated. Replaced with a real-tripId lookup + revalidation of `/trips/<tripId>` and `/trips`. Landed before the migration commit so the fix is independently revertable.
+
+#### Symmetric action migration (commit `3105556`)
+
+- [x] [createTrip](../src/features/trips/actions/createTrip.ts)
+- [x] [updateTrip](../src/features/trips/actions/updateTrip.ts)
+- [x] [createListing](../src/features/listings/actions/createListing.ts)
+- [x] [importListingFromUrl](../src/features/listings/actions/importListingFromUrl.ts)
+- [x] [toggleLike](../src/features/likes/actions/toggleLike.ts) (now also uses the wrapper)
+- [x] Added `errorResponseDataToString` to [src/core/errors.ts](../src/core/errors.ts) to flatten a downstream `BasicApiResponse.error` (which can be `string | Record<string, string[]>`) into a thrown-message string.
+- [x] Auth error code normalized: these five actions now emit `UNAUTHENTICATED` instead of `UNAUTHORIZED` when no Clerk session is present. Verified via repo-wide grep that no client code matches on the code string.
+
+#### Published action migration (commit `44baa4b`)
+
+- [x] All twelve actions in [publishedTripActions.ts](../src/features/trips/actions/publishedTripActions.ts) now use `createServerAction`. Owner actions opt into `requireAuth: true`; guest actions pass `requireAuth: false` since their authorization comes from a share token.
+- [x] [publishedTripActionUtils.ts](../src/features/trips/actions/publishedTripActionUtils.ts) slimmed down. Removed: `runPublishedAction` (absorbed by the wrapper), `requireOwnerUserId` (replaced by `requireAuth: true`), `PublishedActionResult` (replaced by the wrapper's `ServerActionResult`), and the old action-style `revalidatePublishedTripPaths`. Kept: `toTripShareState` (unchanged) and a renamed `publishedTripRevalidationPaths(tripId, token?)` that returns the paths array for the wrapper to apply.
+
+### Deliberate skips
+
+- ~~Migrate `updateListing`, `deleteListing`, `updateListingStatus`~~ — **Skipped on purpose.** These actions have a `fetch-existing-row → permission check against fetched data → db` pipeline. The permission check is real product logic, not boilerplate. A wrapper that handled it would either force each call site to pass a `checkPermission(data, userId)` callback (boilerplate in a less readable place) or miss the authorization step entirely. Leaving them on the inline pattern keeps the three-file section of the codebase honest about what it's doing.
+- ~~Migrate `refreshListingFromSourceUrl`~~ — **Skipped on purpose.** Same shape as above, and the auth/revalidate block is < 5% of the file. Wrapping would be a rounding error on readability.
+- ~~Migrate `acceptInvitation.ts` / `handleInvitation`~~ — Redirect-style action (calls `redirect()` from the error branch too); the wrapper's JSON-response contract isn't applicable.
+- ~~Migrate `joinTripAsGuest`, `createInvitation`, `generateShareableInvite`, `generateTripImportToken`, `getTrips`, `getTrip`, `getTripGuests`, `getListings*`, `checkUserLike`, `getLikeCount`, `getGuestCollaborators`~~ — Read-side or one-off flows, not the symmetric shape that benefits from the wrapper.
+
+### Commits
+
+1. `7be3992` — `fix(likes): revalidate the real trip path after toggling a like`
+2. `14a42ea` — `refactor(core): add requireUserId helper and UnauthenticatedError`
+3. `40383ac` — `refactor(core): add createServerAction wrapper`
+4. `3105556` — `refactor(actions): migrate symmetric actions to createServerAction`
+5. `44baa4b` — `refactor(trips): migrate published actions onto createServerAction`
+6. *(this commit)* — `docs(roadmap): mark phase 6 complete`
 
 ### Exit criteria
 
-- [ ] `pnpm check-types` and `pnpm lint` clean.
-- [ ] Response contract unchanged from the caller's perspective (check client call sites).
-- [ ] Commit checkpoint: **`refactor(core): add createServerAction wrapper and migrate actions`**.
+- [x] `pnpm check-types`, `pnpm lint`, and `pnpm test` all green on `main` after each commit.
+- [x] No caller-side behavior change: callers see the same `success / data / error / code` shape on both paths. Auth-failure code changes from `UNAUTHORIZED` to `UNAUTHENTICATED` in migrated actions; zero client code in the repo matches on the code string.
+- [x] `runPublishedAction`, `requireOwnerUserId`, and `PublishedActionResult` no longer exist in the codebase (grep returns zero hits).
 
-### Cost
+### Cost (actual)
 
-- ~600 LOC changed, ~25 files touched. Perf slightly better. Hackiness **2**.
+- ~550 LOC changed across 10 files (1 new, 9 modified), 1 deletion expected (old `publishedTripActionUtils` helpers). Shipped as six commits. Perf neutral. Hackiness **1**.
 
 ## 9a. Phase 7 (future) — Unify owner + guest listing UI
 
