@@ -2,52 +2,33 @@
 
 import { useState, type HTMLAttributes } from 'react';
 import { format } from 'date-fns';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/ui/shadcn/card';
-import type { Listing as PrismaListing, ListingPhoto } from 'db';
-
-type Listing = PrismaListing & {
-  imageUrl?: string | null;
-  photos?: ListingPhoto[];
-};
-
 import Link from 'next/link';
-import { Badge, BadgeProps } from '@/ui/shadcn/badge';
 import {
-  BedDouble,
-  Bath,
-  DoorOpen,
-  StickyNote,
-  XCircle,
-  LayoutGrid,
   Image as ImageIcon,
-  Users,
+  LayoutGrid,
 } from 'lucide-react';
+import type { Listing as PrismaListing, ListingPhoto } from 'db';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { PhotoCarousel } from '@/ui/core/PhotoCarousel';
 import { RoomBreakdownGrid } from '@/ui/core/RoomBreakdownGrid';
 import { cn } from '@/ui/utils/cn';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/ui/shadcn/dialog';
 import { ListingSourceBadge } from './ListingSourceBadge';
 import { ListingTypeBadge } from './ListingTypeBadge';
-import {
-  formatListingStatusLabel,
-  isVoteEligibleListingStatus,
-  LISTING_STATUS,
-  type ListingStatusValue,
-} from '../constants/listing-status';
+import { ListingStatusBadge } from './ListingStatusBadge';
+import { ListingCardDescription } from './ListingCardDescription';
+import { ListingCardMetrics } from './ListingCardMetrics';
+import { isVoteEligibleListingStatus } from '../constants/listing-status';
 import { extractBedCountFromRoomBreakdown, extractSleepsCount } from '../utils/extractSleepsCount';
-import { getBedroomLabel } from '../listingTypeOptions';
 import {
   computeListingPriceDisplay,
   type TripPriceContext,
 } from '../utils/priceBasis';
 import { usePriceBasis } from '@/features/trips/hooks/usePriceBasis';
+
+type Listing = PrismaListing & {
+  imageUrl?: string | null;
+  photos?: ListingPhoto[];
+};
 
 interface RoomEntry {
   name: string;
@@ -116,25 +97,8 @@ export function ListingCard({
   const sleepsCount = extractSleepsCount({ title: listing.title, roomBreakdown });
   const bedCount = listing.bedCount ?? extractBedCountFromRoomBreakdown(roomBreakdown);
 
-  const getStatusVariant = (status: ListingStatusValue): BadgeProps['variant'] => {
-    switch (status) {
-      case LISTING_STATUS.REJECTED: return 'destructive';
-      default: return 'secondary';
-    }
-  };
-
-  const getStatusIcon = (status: ListingStatusValue) => {
-    switch (status) {
-      case LISTING_STATUS.REJECTED: return <XCircle className="h-4 w-4 mr-1" />;
-      default: return null;
-    }
-  };
-
   const statusBadge = !hasDefaultStatus ? (
-    <Badge variant={getStatusVariant(listing.status)} className="flex items-center shadow-sm">
-      {getStatusIcon(listing.status)}
-      {formatListingStatusLabel(listing.status)}
-    </Badge>
+    <ListingStatusBadge status={listing.status} />
   ) : null;
 
   const inlineStatusBadge = hasPhotos ? null : statusBadge;
@@ -162,75 +126,6 @@ export function ListingCard({
       {actionsMenu}
     </div>
   ) : undefined;
-  const trimmedSourceDescription = listing.sourceDescription?.trim() ?? '';
-  const trimmedNotes = listing.notes?.trim() ?? '';
-  const detailText = trimmedSourceDescription || trimmedNotes || null;
-  const detailLabel = trimmedSourceDescription ? 'Description' : 'Notes';
-  const detailPreview =
-    detailText && detailText.length > 160
-      ? `${detailText.slice(0, 160).trimEnd()}...`
-      : detailText;
-  const hasLongDescription = Boolean(detailText && detailText.length > 160);
-  const descriptionBlock = detailText ? (
-    <Dialog>
-      <div className="col-span-2 flex items-start gap-1">
-        <StickyNote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        <div className="min-w-0">
-          <p className="text-muted-foreground wrap-break-word">{detailPreview}</p>
-          {hasLongDescription ? (
-            <DialogTrigger asChild>
-              <button
-                type="button"
-                className="mt-1 text-xs font-medium text-muted-foreground/90 hover:text-foreground hover:underline"
-              >
-                {`Read Full ${detailLabel}`}
-              </button>
-            </DialogTrigger>
-          ) : null}
-        </div>
-      </div>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{`Listing ${detailLabel}`}</DialogTitle>
-          <DialogDescription>{listing.title}</DialogDescription>
-        </DialogHeader>
-        <div className="max-h-[65vh] overflow-y-auto pr-1">
-          <p className="whitespace-pre-wrap text-sm text-muted-foreground">{detailText}</p>
-        </div>
-      </DialogContent>
-    </Dialog>
-  ) : null;
-  const summaryMetrics = (listing.bedroomCount != null ||
-    bedCount != null ||
-    listing.bathroomCount != null ||
-    sleepsCount != null) ? (
-    <div className="flex flex-wrap items-center gap-2 pt-1">
-      {listing.bedroomCount != null && (
-        <span className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs font-medium text-foreground">
-          <DoorOpen className="h-3.5 w-3.5 text-muted-foreground" />
-          {`${listing.bedroomCount} ${getBedroomLabel(listing.listingType, listing.bedroomCount)}`}
-        </span>
-      )}
-      {bedCount != null && (
-        <span className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs font-medium text-foreground">
-          <BedDouble className="h-3.5 w-3.5 text-muted-foreground" />
-          {bedCount === 1 ? '1 Bed' : `${bedCount} Beds`}
-        </span>
-      )}
-      {listing.bathroomCount != null && (
-        <span className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs font-medium text-foreground">
-          <Bath className="h-3.5 w-3.5 text-muted-foreground" />
-          {listing.bathroomCount === 1 ? '1 Bath' : `${listing.bathroomCount} Baths`}
-        </span>
-      )}
-      {sleepsCount != null && (
-        <span className="flex items-center gap-1.5 rounded-md bg-muted/80 px-2 py-1 text-xs font-medium text-foreground">
-          <Users className="h-3.5 w-3.5 text-muted-foreground" />
-          {`Sleeps ${sleepsCount}`}
-        </span>
-      )}
-    </div>
-  ) : null;
 
   return (
     <Card className={cn("flex flex-col", className)} {...props}>
@@ -309,7 +204,13 @@ export function ListingCard({
           </div>
         </div>
 
-        {summaryMetrics}
+        <ListingCardMetrics
+          listingType={listing.listingType}
+          bedroomCount={listing.bedroomCount}
+          bedCount={bedCount}
+          bathroomCount={listing.bathroomCount}
+          sleepsCount={sleepsCount}
+        />
       </CardHeader>
 
       <CardContent className="flex flex-1 flex-col text-sm">
@@ -317,7 +218,11 @@ export function ListingCard({
           {showingRooms && hasRooms && (
             <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
           )}
-          {descriptionBlock}
+          <ListingCardDescription
+            listingTitle={listing.title}
+            sourceDescription={listing.sourceDescription}
+            notes={listing.notes}
+          />
         </div>
 
         <div className="mt-auto pt-6">
