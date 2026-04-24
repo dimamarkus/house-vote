@@ -1,7 +1,7 @@
 ---
 createdAt: 2026-04-22
 title: Phased Refactor and Cleanup Roadmap
-status: in-progress (phases 1 & 2 complete)
+status: in-progress (phases 1, 2, 3 complete)
 owner: dima
 ---
 
@@ -118,7 +118,7 @@ Right now the Airbnb, VRBO, Booking, generic, and hotel-template adapters all ca
 - [x] Decide the hotel scaffolds: **deleted** `expediaAdapter`, `hiltonAdapter`, `hyattAdapter`, `marriottAdapter`, `hotelAdapterTemplates` AND `createHotelAdapterTemplate` (the factory became orphaned once its four consumers were removed). The 260421 hotels roadmap has been annotated with a recovery note for when that work resumes.
 - Remove scraping-side fallbacks per the no-fallbacks rule:
   - [ ] `extractNightlyPriceFromText` in [importHelpers.ts](../src/features/listings/import/importHelpers.ts) — "first `$N` in body" fallback. **Deferred**: the Airbnb fixture (`example-airbnb.html`) relies on this to get any price at all, because its price block only shows "$X" + "$X for N nights" (both are the stay total, not nightly). Dropping the fallback here returns `price: null` for real Airbnb imports. Fixing it properly means adding per-adapter `priceMeta` TOTAL detection so the normalizer divides by nights — that's tracked in phase 7 of the 260421 hotels roadmap. A NOTE comment in `importHelpers.ts` flags the technical debt and why it stays.
-  - [ ] `buildFallbackTitle` in [normalizeImportedListing.ts](../src/features/listings/import/normalizeImportedListing.ts). **Deferred**: `Listing.title` is a non-null `String` in the Prisma schema, so removing the fallback needs either a schema change or a hard-throw from the import action. Reopen with a schema decision before executing.
+  - [x] `buildFallbackTitle` in [normalizeImportedListing.ts](../src/features/listings/import/normalizeImportedListing.ts). **Resolved (2026-04-22)**: `NormalizedImportedListing.title` is now `string | null`; `importListingCapture` throws a user-facing error when the fresh scrape returns null; `refreshListingFromSourceUrl` merges the existing `listing.title` back in so refresh never downgrades an existing title to a placeholder; `upsertImportedListing.buildImportedListingImportPayload` throws as a defense-in-depth invariant at the DB boundary. `Listing.title` stays non-null in Prisma — every listing persisted is guaranteed to have a real title. Shipped as `refactor(listings-import): drop buildFallbackTitle, hard-fail imports without a title` on `main`.
   - [x] Booking `extractCheapestNightly` fallback — removed. The primary signal is `data-price-per-night-raw` which is already a proper per-night rate; the visible-text branch was guessing from whatever dollar amount showed up in the price block if Booking ever dropped the data attribute. Tests green.
 
 ### Exit criteria
@@ -130,7 +130,7 @@ Right now the Airbnb, VRBO, Booking, generic, and hotel-template adapters all ca
 ### Deferrals from the original plan
 
 - `extractNightlyPriceFromText` body-text fallback — kept; removing it regresses Airbnb price capture until per-adapter `priceMeta` TOTAL detection lands (phase 7 of 260421).
-- `buildFallbackTitle` — kept; removing it requires making `Listing.title` nullable or throwing from the import action. Needs a schema decision.
+- `buildFallbackTitle` — **resolved post-phase-2** via type change + throw. See the checklist entry above for details.
 - `cleanupTitle(title, suffix)` abstraction — skipped as too small to justify.
 - `createHotelAdapterTemplate.ts` — actively deleted rather than kept as idle scaffold, matching the no-unused-code rule.
 
@@ -141,6 +141,7 @@ Right now the Airbnb, VRBO, Booking, generic, and hotel-template adapters all ca
 ## 6. Phase 3 — Cross-cutting UI reuse
 
 **Commit checkpoint:** `refactor(trips): shared meta pills, share-state type, and localStorage hook`
+**Status:** ✅ complete. Shipped as four commits on `main` (share-summary types, `TripMetaPill`, `getInitials`, `createLocalStorageSubscriber`).
 
 ### Plain English
 
@@ -148,25 +149,28 @@ The dashboard and the public `/share/<token>` page render the same meta pills (l
 
 ### Technical breakdown
 
-- [ ] Create one `PublishedShareState` / `PublishedShareSummary` type in [src/features/trips/types.ts](../src/features/trips/types.ts) (or export it from `publishedDb` derived from the Prisma `validator` fragments). Replace the three duplicates:
-  - [VotingAccessCard.tsx](../src/features/trips/components/VotingAccessCard.tsx) lines 20–26.
-  - [CollaboratorsList.tsx](../src/features/trips/components/CollaboratorsList.tsx) lines 42–63.
-  - [publishedTripActions.ts](../src/features/trips/actions/publishedTripActions.ts) lines 85–92.
-- [ ] Create `src/features/trips/components/TripMetaPills.tsx` with `location`, `dateRange`, and `guestCount` pills. Replace the inline blocks in:
-  - [TripHeader.tsx](../src/features/trips/components/TripHeader.tsx) lines 47–71.
-  - [PublishedTripMasthead.tsx](../src/features/trips/components/PublishedTripMasthead.tsx) lines 29–58.
-- [ ] Create `src/ui/utils/getInitials.ts`. Replace the local helper in [CollaboratorsList.tsx](../src/features/trips/components/CollaboratorsList.tsx) lines 105–113.
-- [ ] Create `src/ui/utils/subscribeLocalStorageKey.ts` (or a small `useSyncedLocalStorageState` hook) that both [usePriceBasis.ts](../src/features/trips/hooks/usePriceBasis.ts) and [usePublishedGuestSession.ts](../src/features/trips/hooks/usePublishedGuestSession.ts) can use. The cookie-mirroring in the published hook composes on top; no behavior change.
+- [x] Created two shared types in [src/features/trips/types.ts](../src/features/trips/types.ts): `TripShareSettings` (and `TripShareState = TripShareSettings & { tripId }` for action responses) plus `OwnerTripShareSummary` (flattened `{ share, listings, comments, guests }` projection of `getOwnerTripShareSummary`). Replaced **five** inline duplicates — the roadmap originally listed three, but the full owner-summary shape was also repeated in `TripSidebar.tsx` and the trip dashboard page:
+  - [VotingAccessCard.tsx](../src/features/trips/components/VotingAccessCard.tsx) — now uses `TripShareSettings`.
+  - [CollaboratorsList.tsx](../src/features/trips/components/CollaboratorsList.tsx) — now uses `Pick<OwnerTripShareSummary, 'share' | 'guests'>`.
+  - [TripSidebar.tsx](../src/features/trips/components/TripSidebar.tsx) — now uses `OwnerTripShareSummary`.
+  - [src/app/(app)/trips/[tripId]/page.tsx](../src/app/(app)/trips/[tripId]/page.tsx) — the inline summary type was replaced and the field-by-field identity mapping over `listings` / `comments` / `guests` was dropped (pure slop; shapes already matched structurally).
+  - [publishedTripActions.ts](../src/features/trips/actions/publishedTripActions.ts) — `PublishedTripShareState` is now a local alias for `TripShareState`.
+- [x] Created [src/features/trips/components/TripMetaPill.tsx](../src/features/trips/components/TripMetaPill.tsx) — a single icon+label pill primitive, not a wrapper row, since the two call sites differ in container styling (`xl:justify-end`, emphatic variant with `shadow-sm sm:text-base`). Replaced the inline pill trios in both:
+  - [TripHeader.tsx](../src/features/trips/components/TripHeader.tsx) — passes `DASHBOARD_META_PILL_CLASSNAME = 'shadow-sm sm:text-base'` for the dashboard variant.
+  - [PublishedTripMasthead.tsx](../src/features/trips/components/PublishedTripMasthead.tsx) — uses the default styling.
+  - Side benefit: the dashboard pills now pick up `max-w-full` / `wrap-break-word` / `shrink-0` defensive styling the masthead already had.
+- [x] Created [src/ui/utils/getInitials.ts](../src/ui/utils/getInitials.ts). Behaviour equivalent for typical inputs; edge case improvement: whitespace-only strings now return `'?'` instead of `''` so avatar fallbacks always render a character.
+- [x] Created [src/ui/utils/createLocalStorageSubscriber.ts](../src/ui/utils/createLocalStorageSubscriber.ts) — a `useSyncExternalStore`-compatible subscribe/publish pair for localStorage-backed state. Used by both [usePriceBasis.ts](../src/features/trips/hooks/usePriceBasis.ts) (with a `storageKey` filter) and [usePublishedGuestSession.ts](../src/features/trips/hooks/usePublishedGuestSession.ts) (no filter — per-trip keys). No behaviour change.
 
 ### Exit criteria
 
-- [ ] Visual diff against staging: dashboard and share page look identical.
-- [ ] `pnpm check-types` clean; one shared `PublishedShareState` in import graph.
-- [ ] Commit checkpoint: **`refactor(trips): shared meta pills, share-state type, and localStorage hook`**.
+- [ ] Visual diff against staging: dashboard and share page look identical. *(Owner to verify on next run; expected no change other than the minor defensive-styling inheritance on the dashboard pills.)*
+- [x] `pnpm check-types`, `pnpm lint`, and `pnpm test` all green on `main` after the phase.
+- [x] Shipped as four commits on `main`: share-summary types; `TripMetaPill` primitive; `getInitials` util; `createLocalStorageSubscriber`.
 
-### Cost
+### Cost (actual)
 
-- ~250 LOC changed, ~8 files touched. Perf neutral. Hackiness **1**.
+- ~250 LOC changed (matches estimate). 10 files touched + 3 new files. Perf neutral. Hackiness **1**.
 
 ## 7. Phase 4 — Split `publishedDb.ts` and `publishedTripActions.ts`
 
