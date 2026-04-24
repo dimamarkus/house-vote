@@ -2,9 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Edit, EllipsisVertical, Eye, RefreshCw, Trash2, Ban, Check } from 'lucide-react';
-import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
+import { Ban, Check, Edit, EllipsisVertical, Eye, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/ui/shadcn/button';
 import {
   DropdownMenu,
@@ -14,10 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/ui/shadcn/dropdown-menu';
 import { ListingFormSheet } from '@/features/listings/forms/ListingFormSheet';
-import { deleteListing } from '@/features/listings/actions/deleteListing';
-import { updateListingStatus } from '@/features/listings/actions/updateListingStatus';
-import { refreshListingFromSourceUrl } from '@/features/listings/actions/refreshListingFromSourceUrl';
-import { errorToString } from '@/core/errors';
+import { useListingActions } from '@/features/listings/hooks/useListingActions';
 import {
   LISTING_STATUS,
   type ListingStatusValue,
@@ -49,116 +44,24 @@ export function ListingActionsMenu({
   canToggleStatus,
   initialStateForEdit,
 }: ListingActionsMenuProps) {
-  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+
+  const { refresh, toggleStatus, deleteListing, isRefreshing, isTogglingStatus, isDeleting } =
+    useListingActions({
+      listingId,
+      listingTitle,
+      listingStatus,
+      onActionComplete: () => setIsMenuOpen(false),
+    });
 
   const canViewSource = typeof listingUrl === 'string' && listingUrl.length > 0;
   const isRejected = listingStatus === LISTING_STATUS.REJECTED;
-  const nextStatus: ListingStatusValue = isRejected
-    ? LISTING_STATUS.POTENTIAL
-    : LISTING_STATUS.REJECTED;
   const toggleStatusLabel = isRejected ? 'Unreject listing' : 'Reject listing';
   const ToggleStatusIcon = isRejected ? Check : Ban;
 
   const noActions =
     !canEdit && !canDelete && !canRefreshFromSource && !canToggleStatus && !canViewSource;
-
-  async function handleRefresh() {
-    setIsRefreshing(true);
-    const loadingToastId = toast.loading('Refreshing from source…');
-
-    try {
-      const result = await refreshListingFromSourceUrl({ listingId });
-
-      if (!result.success) {
-        toast.error(errorToString(result.error || 'Refresh failed'), { id: loadingToastId });
-        return;
-      }
-
-      if (!result.data) {
-        toast.error('Refresh finished without listing data.', { id: loadingToastId });
-        return;
-      }
-
-      const missingFields = result.data.missingFields ?? [];
-      const successMessage =
-        missingFields.length > 0
-          ? `Updated "${result.data.listingTitle}". Still missing: ${missingFields.join(', ')}.`
-          : `Updated "${result.data.listingTitle}".`;
-
-      toast.success(successMessage, { id: loadingToastId });
-      setIsMenuOpen(false);
-      router.refresh();
-    } catch (error) {
-      toast.error(errorToString(error), { id: loadingToastId });
-    } finally {
-      setIsRefreshing(false);
-    }
-  }
-
-  async function handleToggleStatus() {
-    setIsTogglingStatus(true);
-    const formData = new FormData();
-    formData.append('listingId', listingId);
-    formData.append('status', nextStatus);
-
-    try {
-      const result = await updateListingStatus(formData);
-      if (!result.success) {
-        toast.error('Failed to update listing status');
-        return;
-      }
-      toast.success(
-        isRejected ? 'Listing has been unrejected' : 'Listing has been rejected',
-      );
-      setIsMenuOpen(false);
-      router.refresh();
-    } catch {
-      toast.error('An error occurred while updating status');
-    } finally {
-      setIsTogglingStatus(false);
-    }
-  }
-
-  async function handleDelete() {
-    const confirmed = window.confirm(
-      listingTitle
-        ? `Delete "${listingTitle}"? This cannot be undone.`
-        : 'This will permanently delete the listing. Continue?',
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setIsDeleting(true);
-    try {
-      const result = await deleteListing(listingId);
-      if (!result.success) {
-        toast.error(
-          typeof result.error === 'string'
-            ? result.error
-            : listingTitle
-              ? `Failed to delete ${listingTitle}.`
-              : 'Failed to delete listing',
-        );
-        return;
-      }
-      toast.success(
-        listingTitle ? `${listingTitle} deleted successfully.` : 'Listing deleted successfully',
-      );
-      setIsMenuOpen(false);
-      router.refresh();
-    } catch {
-      toast.error('An error occurred while deleting the listing');
-    } finally {
-      setIsDeleting(false);
-    }
-  }
 
   return (
     <>
@@ -208,7 +111,7 @@ export function ListingActionsMenu({
               disabled={isRefreshing}
               onSelect={(event) => {
                 event.preventDefault();
-                void handleRefresh();
+                void refresh();
               }}
             >
               <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -222,7 +125,7 @@ export function ListingActionsMenu({
               destructive={!isRejected}
               onSelect={(event) => {
                 event.preventDefault();
-                void handleToggleStatus();
+                void toggleStatus();
               }}
             >
               <ToggleStatusIcon className="h-4 w-4" />
@@ -240,7 +143,7 @@ export function ListingActionsMenu({
                 destructive
                 onSelect={(event) => {
                   event.preventDefault();
-                  void handleDelete();
+                  void deleteListing();
                 }}
               >
                 <Trash2 className="h-4 w-4" />
