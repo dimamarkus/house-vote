@@ -2,6 +2,7 @@ import type { Trip, User } from 'db';
 import { CollaboratorsList } from '@/features/trips/components/CollaboratorsList';
 import { PublishedCommentsModerationCard } from '@/features/trips/components/PublishedCommentsModerationCard';
 import { VotingAccessCard } from '@/features/trips/components/VotingAccessCard';
+import type { OwnerTripShareSummary } from '@/features/trips/types';
 
 interface TripSidebarProps {
   trip: Pick<Trip, 'id' | 'userId' | 'location' | 'startDate' | 'endDate' | 'numberOfPeople' | 'name' | 'description'> & {
@@ -10,43 +11,7 @@ interface TripSidebarProps {
   guestNames: string[];
   currentGuestName: string | null; // Pass through from page
   isOwner: boolean; // Pass through from page
-  publishedShareSummary?: {
-    share: {
-      token: string;
-      isPublished: boolean;
-      votingOpen: boolean;
-      commentsOpen: boolean;
-      allowGuestSuggestions: boolean;
-    } | null;
-    listings: Array<{
-      id: string;
-      title: string;
-      status: string;
-    }>;
-    comments: Array<{
-      id: string;
-      kind: 'COMMENT' | 'PRO' | 'CON';
-      body: string;
-      createdAt: Date;
-      hiddenAt: Date | null;
-      guest: {
-        id: string;
-        guestDisplayName: string;
-      };
-      listing: {
-        id: string;
-        title: string;
-      };
-    }>;
-    guests: Array<{
-      id: string;
-      guestDisplayName: string;
-      source: 'OWNER_ADDED';
-      votes: Array<{
-        listingId: string;
-      }>;
-    }>;
-  };
+  publishedShareSummary?: OwnerTripShareSummary;
 }
 
 /**

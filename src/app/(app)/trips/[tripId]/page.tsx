@@ -7,6 +7,7 @@ import { publishedTrips } from '@/features/trips/publishedDb';
 import { TripContentArea } from '@/features/trips/components/TripContentArea';
 import { TripSidebar } from '@/features/trips/components/TripSidebar';
 import { TripHeader } from '@/features/trips/components/TripHeader';
+import type { OwnerTripShareSummary } from '@/features/trips/types';
 import { auth } from '@clerk/nextjs/server';
 import { Prisma } from 'db';
 import type { Trip, User } from 'db';
@@ -63,45 +64,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
   let listings: ListingWithMedia[] = [];
   let guestNames: string[] = [];
   let userLikes: Record<string, boolean> = {};
-  let publishedShareSummary:
-    | {
-        share: {
-          token: string;
-          isPublished: boolean;
-          votingOpen: boolean;
-          commentsOpen: boolean;
-          allowGuestSuggestions: boolean;
-        } | null;
-        listings: Array<{
-          id: string;
-          title: string;
-          status: string;
-        }>;
-        comments: Array<{
-          id: string;
-          kind: 'COMMENT' | 'PRO' | 'CON';
-          body: string;
-          createdAt: Date;
-          hiddenAt: Date | null;
-          guest: {
-            id: string;
-            guestDisplayName: string;
-          };
-          listing: {
-            id: string;
-            title: string;
-          };
-        }>;
-        guests: Array<{
-          id: string;
-          guestDisplayName: string;
-          source: 'OWNER_ADDED';
-          votes: Array<{
-            listingId: string;
-          }>;
-        }>;
-      }
-    | undefined;
+  let publishedShareSummary: OwnerTripShareSummary | undefined;
   let fetchError: string | null = null;
 
   try {
@@ -123,41 +86,18 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
     if (isOwner && userId) {
         const shareSummary = await publishedTrips.getOwnerTripShareSummary(currentTripId, userId);
         publishedShareSummary = {
-          share: shareSummary.share ? {
-            token: shareSummary.share.token,
-            isPublished: shareSummary.share.isPublished,
-            votingOpen: shareSummary.share.votingOpen,
-            commentsOpen: shareSummary.share.commentsOpen,
-            allowGuestSuggestions: shareSummary.share.allowGuestSuggestions,
-          } : null,
-          listings: shareSummary.listings.map((listing) => ({
-            id: listing.id,
-            title: listing.title,
-            status: listing.status,
-          })),
-          comments: shareSummary.comments.map((comment) => ({
-            id: comment.id,
-            kind: comment.kind,
-            body: comment.body,
-            createdAt: comment.createdAt,
-            hiddenAt: comment.hiddenAt,
-            guest: {
-              id: comment.guest.id,
-              guestDisplayName: comment.guest.guestDisplayName,
-            },
-            listing: {
-              id: comment.listing.id,
-              title: comment.listing.title,
-            },
-          })),
-          guests: shareSummary.share?.guests.map((guest) => ({
-            id: guest.id,
-            guestDisplayName: guest.guestDisplayName,
-            source: guest.source,
-            votes: guest.votes.map((vote) => ({
-              listingId: vote.listingId,
-            })),
-          })) ?? [],
+          share: shareSummary.share
+            ? {
+                token: shareSummary.share.token,
+                isPublished: shareSummary.share.isPublished,
+                votingOpen: shareSummary.share.votingOpen,
+                commentsOpen: shareSummary.share.commentsOpen,
+                allowGuestSuggestions: shareSummary.share.allowGuestSuggestions,
+              }
+            : null,
+          listings: shareSummary.listings,
+          comments: shareSummary.comments,
+          guests: shareSummary.share?.guests ?? [],
         };
     }
 

@@ -22,6 +22,7 @@ import {
   removePublishedTripGuest,
 } from '../actions/publishedTripActions';
 import { createInvitation } from '../actions/createInvitation';
+import type { OwnerTripShareSummary } from '../types';
 
 interface CollaboratorsListProps {
   tripId: string;
@@ -40,28 +41,7 @@ interface CollaboratorsListProps {
   guestNames: string[];
   currentGuestName: string | null;
   isOwner: boolean;
-  publishedShareSummary?: {
-    share: {
-      token: string;
-      isPublished: boolean;
-      votingOpen: boolean;
-      commentsOpen: boolean;
-      allowGuestSuggestions: boolean;
-    } | null;
-    listings: Array<{
-      id: string;
-      title: string;
-      status: string;
-    }>;
-    guests: Array<{
-      id: string;
-      guestDisplayName: string;
-      source: 'OWNER_ADDED';
-      votes: Array<{
-        listingId: string;
-      }>;
-    }>;
-  };
+  publishedShareSummary?: Pick<OwnerTripShareSummary, 'share' | 'guests'>;
 }
 
 export function CollaboratorsList({

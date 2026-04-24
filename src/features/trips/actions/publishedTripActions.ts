@@ -8,6 +8,7 @@ import { ErrorCode } from '@/core/errors';
 import { createErrorResponse, createSuccessResponse } from '@/core/responses';
 import type { BasicApiResponse } from '@/core/types';
 import { publishedTrips } from '../publishedDb';
+import type { TripShareState } from '../types';
 
 const tripIdSchema = z.object({
   tripId: z.string().cuid('A valid trip id is required.'),
@@ -82,14 +83,7 @@ const addCommentSchema = z.object({
   body: z.string().trim().min(1, 'Comment is required.').max(1000, 'Comment is too long.'),
 });
 
-type PublishedTripShareState = {
-  tripId: string;
-  token: string;
-  isPublished: boolean;
-  votingOpen: boolean;
-  commentsOpen: boolean;
-  allowGuestSuggestions: boolean;
-};
+type PublishedTripShareState = TripShareState;
 
 type PublishedGuestSession = {
   tripId: string;

@@ -8,6 +8,7 @@ import {
   unpublishTripShare,
   updateTripShareSettings,
 } from '@/features/trips/actions/publishedTripActions';
+import type { TripShareSettings } from '@/features/trips/types';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Input } from '@/ui/shadcn/input';
@@ -17,13 +18,7 @@ import { Copy, ExternalLink, Globe, RotateCcw } from 'lucide-react';
 
 interface VotingAccessCardProps {
   tripId: string;
-  share: {
-    token: string;
-    isPublished: boolean;
-    votingOpen: boolean;
-    commentsOpen: boolean;
-    allowGuestSuggestions: boolean;
-  } | null;
+  share: TripShareSettings | null;
 }
 
 interface VotingSettingRowProps {
