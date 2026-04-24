@@ -17,13 +17,13 @@ The codebase has drifted in a few predictable ways:
 - **Trip UI has two parallel stacks** (dashboard and `/share/<token>`) that re-implement the same meta pills, share state types, and guest-session plumbing side by side.
 - **Core auth + server-action handling is ad-hoc.** Every action does its own Clerk check and its own try/catch with slightly different error codes.
 
-This roadmap breaks the cleanup into **six independently revertable phases**, each on its own branch, each passing `pnpm check-types` and `pnpm lint` on its own. The ordering matters: phase 1 fixes real bugs before we touch the files that have them; phase 2 settles the import layer before adding new tests around it; phases 3–4 unify types and shrink the big files before phase 5 breaks up the components that consume them; phase 6 is an optional cross-cutting wrapper that benefits from all the earlier cleanup.
+This roadmap breaks the cleanup into **six independently revertable phases**. Per the current workflow we ship each phase as one or more commits on `main` (each commit self-contained and revertable via `git revert`) rather than as a feature branch + PR. Each phase must leave `pnpm check-types`, `pnpm lint`, and `pnpm test` green. The ordering matters: phase 1 fixes real bugs before we touch the files that have them; phase 2 settles the import layer before adding new tests around it; phases 3–4 unify types and shrink the big files before phase 5 breaks up the components that consume them; phase 6 is an optional cross-cutting wrapper that benefits from all the earlier cleanup.
 
 ## 2. Decisions locked in before we start
 
 | Decision | Chosen | Why |
 |---|---|---|
-| One branch/PR per phase | Yes | Each phase is revertable on its own; conflicts stay small. |
+| One commit (or small stack) per phase, directly on `main` | Yes | Matches current local-only workflow. Each commit is revertable via `git revert`. |
 | `ListingFormOLD` disposition | Default: delete and repoint dialog at `ListingForm`. Fallback: rename to `ListingFormWithUrlImport` if there is a reason to keep the URL-import flow separate. | `ListingFormDialog` currently ships with outdated fields (no `listingType`, no `sourceDescription`). The drift is the bug. |
 | Hotel adapter stubs | Default: delete `expedia/hilton/marriott/hyatt` adapters and `hotelAdapterTemplates.ts` until they are actually wired into `registry.ts`. Add a TODO back into [docs/260421LISTINGS__HOTELS_AND_CUSTOM_LISTINGS_ROADMAP.md](260421LISTINGS__HOTELS_AND_CUSTOM_LISTINGS_ROADMAP.md). | They are dead weight right now; the roadmap already tracks the real work. |
 | Silent fallback removal | Remove them (per standing "let it fail" rule). Where a try is genuinely needed (hot user path), narrow the caught error and rethrow. | Matches your general-rules policy. |
@@ -54,7 +54,8 @@ Everything else can be shuffled if priorities change.
 
 ## 4. Phase 1 — Deslop and bug fixes
 
-**Branch:** `chore/deslop-and-small-bug-fixes`
+**Commit checkpoint:** `chore: phase 1 deslop and surgical bug fixes`
+**Status:** ✅ complete (shipped as `chore(cleanup): phase 1 — deslop and surgical bug fixes` on `main`).
 
 ### Plain English
 
@@ -62,44 +63,37 @@ Before any structural refactoring, fix the real bugs and delete the obvious slop
 
 ### Technical breakdown — Bugs (behavior changes)
 
-- [ ] **`ListingFormDialog` points at the wrong form.** [src/features/listings/forms/ListingFormDialog.tsx](../src/features/listings/forms/ListingFormDialog.tsx) lines 15, 70–75 import from `./ListingFormOLD`. The dialog is therefore missing `listingType` and `sourceDescription`, while the in-trip edit sheet has them. Repoint at the current `ListingForm.tsx` and delete `ListingFormOLD.tsx`. Confirm the "Add listing" modal from the trip page still renders and submits.
-- [ ] **Silent `.catch()` in `joinTripAsGuest`.** [src/features/trips/actions/joinTripAsGuest.ts](../src/features/trips/actions/joinTripAsGuest.ts) lines 51–52 call `tripInvitation.update(...).catch()` with no handler. Remove the `.catch`; if the update genuinely can race, handle the specific Prisma error code explicitly.
-- [ ] **Like-check fallback on trip dashboard.** [src/app/(app)/trips/[tripId]/page.tsx](../src/app/(app)/trips/%5BtripId%5D/page.tsx) wraps each listing's `checkUserLike` call in a try/catch that defaults `liked = false`. Remove the swallow — let the action-level response fail cleanly.
-- [ ] **Broken absolute import.** Same file imports `TripHeader` from `'/src/features/trips/components/TripHeader'` (filesystem-style), not the `@/...` alias. Fix the path.
-- [ ] **Two `normalizeText` implementations with different semantics.** [importHelpers.ts](../src/features/listings/import/importHelpers.ts) exports a `normalizeText` that collapses whitespace; [normalizeImportedListing.ts](../src/features/listings/import/normalizeImportedListing.ts) line 16 defines a local `normalizeText` that only trims. This is a real scraping-bug risk. Delete the local one and import the shared one, or rename them to `collapseWhitespace` vs `trimText` to make the difference loud.
-- [ ] **`TripOwnerDetails` fallback.** [src/features/trips/components/TripOwnerDetails.tsx](../src/features/trips/components/TripOwnerDetails.tsx) lines 10–38 try/catch the Clerk fetch and return `'Trip Owner'` on failure. There is also a TODO. Delete the fallback and the TODO; let the error propagate so we can fix it when we see it.
+- [x] **`ListingFormDialog` points at the wrong form.** Resolved by deleting the orphan chain: `AddListingButton` → `ListingFormDialog` → `ListingFormOLD` → `fetchListingMetadata`. The in-trip edit sheet is the only entrypoint now.
+- [x] **Silent `.catch()` in `joinTripAsGuest`.** Removed. The enclosing transaction rolls back on `throw`, so the swallowed update was pointless.
+- [x] **Like-check fallback on trip dashboard.** Removed try/catch; errors from `checkUserLike` now propagate. Also rewrote the reduce to `Object.fromEntries` to tighten the type.
+- [x] **Broken absolute import.** Fixed `/src/features/trips/components/TripHeader` → `@/features/trips/components/TripHeader`.
+- [x] **Two `normalizeText` implementations with different semantics.** Deleted the local trim-only copy in `normalizeImportedListing.ts`; now uses shared `normalizeText` (collapses whitespace) and `normalizeMultilineText` (preserves line breaks) from `importHelpers.ts` with per-field intent made explicit.
+- [x] **`TripOwnerDetails` fallback.** Deleted — the whole component was orphaned.
 
 ### Technical breakdown — Deslop (no behavior change)
 
-- [ ] Delete unused component files (confirmed zero imports):
+- [x] Delete unused component files (confirmed zero imports):
   - `src/ui/core/MetadataItem.tsx`
   - `src/ui/core/Flex.tsx`
-- [ ] Delete unused schema `genericSearchSchema` from [src/core/schemas.ts](../src/core/schemas.ts).
-- [ ] Delete unused `InviteStatus` enum and `InvitationUpdateData` from [src/features/trips/types.ts](../src/features/trips/types.ts) lines 60–68. Runtime code already uses Prisma's `InviteStatus`.
-- [ ] Remove `as unknown as` casts:
-  - [src/features/listings/actions/getListing.ts](../src/features/listings/actions/getListing.ts) line 32 — tighten the `ListingGetOptions` signature instead of casting.
-  - [src/features/listings/actions/refreshListingFromSourceUrl.ts](../src/features/listings/actions/refreshListingFromSourceUrl.ts) line 185 — tighten the response type from `importListingCapture`.
-- [ ] Remove stale/narrative comments:
-  - [src/features/listings/import/detectListingSource.ts](../src/features/listings/import/detectListingSource.ts) lines 4–7 (UNKNOWN→OTHER comment is obsolete — the generic adapter is wired).
-  - [src/proxy.ts](../src/proxy.ts) stale `/about` and "Example public API webhook route" comments.
-  - [src/features/listings/tables/ListingsTable.tsx](../src/features/listings/tables/ListingsTable.tsx) lines 218–229 — commented-out "Added By" column.
-  - [src/features/trips/components/CollaboratorsList.tsx](../src/features/trips/components/CollaboratorsList.tsx) line 80 — `// Re-add useUser hook`.
-  - [src/features/trips/components/TripHeader.tsx](../src/features/trips/components/TripHeader.tsx) line 13 — `workaround for upstream type issues`.
-  - [src/features/trips/types.ts](../src/features/trips/types.ts) line 7 — placeholder comment.
-- [ ] Silent localStorage catches:
-  - [src/features/trips/hooks/usePriceBasis.ts](../src/features/trips/hooks/usePriceBasis.ts) lines 21–27 and 63–67.
-  - [src/features/trips/constants/publishedGuestSession.ts](../src/features/trips/constants/publishedGuestSession.ts) lines 17–26 and 42–46.
-  - Either remove entirely or narrow to `QuotaExceededError`/`SecurityError` with an explanatory comment. Default: remove.
-- [ ] Use `router.refresh()` instead of `window.location.reload()` in [CollaboratorsList.tsx](../src/features/trips/components/CollaboratorsList.tsx) line 115, matching the rest of the app.
-- [ ] Update [AGENTS.md](../AGENTS.md) line 27 — the claim that `VotingAccessCard.tsx` has `react-hooks/set-state-in-effect` errors is stale (no `useEffect` there anymore). Run `pnpm lint` and write down the actual current known-failing list.
+- [ ] Delete unused schema `genericSearchSchema` from [src/core/schemas.ts](../src/core/schemas.ts). **Deferred:** the `GenericSearchType` type alias is still imported by trip/listing actions, so the schema stays for now.
+- [x] Delete unused `InviteStatus` enum and `InvitationUpdateData` from [src/features/trips/types.ts](../src/features/trips/types.ts). Runtime code already uses Prisma's `InviteStatus`.
+- [x] Remove `as unknown as` casts:
+  - `getListing.ts` was orphan → deleted.
+  - `refreshListingFromSourceUrl.ts` now calls `db.listing.findUnique` directly with a `select`, which typechecks without the cast.
+- [x] Remove stale/narrative comments in `detectListingSource.ts`, `proxy.ts` (also dropped `/about` and the webhook placeholder from `isPublicRoute`), `ListingsTable.tsx`, `CollaboratorsList.tsx`, `TripHeader.tsx`, `types.ts`.
+- [x] Silent localStorage catches:
+  - [x] `usePriceBasis.ts` — removed.
+  - [ ] `publishedGuestSession.ts` — **kept** because those `try/catch` blocks are validating JSON parsed from user-controlled cookies. That's essential input validation, not error suppression.
+- [x] Use `router.refresh()` instead of `window.location.reload()` in `CollaboratorsList.tsx`.
+- [x] Update [AGENTS.md](../AGENTS.md) — the stale `VotingAccessCard.tsx` lint claim is gone. `pnpm lint` now passes cleanly (0 warnings).
 
 ### Exit criteria
 
-- [ ] `pnpm check-types` passes.
-- [ ] `pnpm lint` is no worse than before (document the delta in the PR body).
-- [ ] `pnpm test` passes.
-- [ ] Manual smoke: add listing via the trip dashboard dialog; edit listing via the row sheet; both forms show the same field set.
-- [ ] Commit checkpoint: **`chore: phase 1 deslop and surgical bug fixes`**.
+- [x] `pnpm check-types` passes.
+- [x] `pnpm lint` passes cleanly (0 warnings — improvement from the stale pre-phase-1 state documented in `AGENTS.md`).
+- [x] `pnpm test` passes.
+- [ ] Manual smoke: add listing via the trip dashboard dialog; edit listing via the row sheet. *(Owner to verify on next run; the add-listing dialog path was removed entirely along with the orphan chain — add-listing now flows through the URL importer only.)*
+- [x] Commit checkpoint: shipped as `chore(cleanup): phase 1 — deslop and surgical bug fixes` on `main`.
 
 ### Cost
 
@@ -107,7 +101,7 @@ Before any structural refactoring, fix the real bugs and delete the obvious slop
 
 ## 5. Phase 2 — Listings import adapter dedup
 
-**Branch:** `refactor/listings-adapter-helpers`
+**Commit checkpoint:** `refactor(listings): collapse adapter duplication and drop import fallbacks`
 
 ### Plain English
 
@@ -142,7 +136,7 @@ Right now the Airbnb, VRBO, Booking, generic, and hotel-template adapters all ca
 
 ## 6. Phase 3 — Cross-cutting UI reuse
 
-**Branch:** `refactor/shared-trip-ui-and-types`
+**Commit checkpoint:** `refactor(trips): shared meta pills, share-state type, and localStorage hook`
 
 ### Plain English
 
@@ -172,7 +166,7 @@ The dashboard and the public `/share/<token>` page render the same meta pills (l
 
 ## 7. Phase 4 — Split `publishedDb.ts` and `publishedTripActions.ts`
 
-**Branch:** `refactor/split-published-db-and-actions`
+**Commit checkpoint:** `refactor(trips): split publishedDb and publishedTripActions`
 
 ### Plain English
 
@@ -213,7 +207,7 @@ These two files have grown to ~650 lines each. They mix types, auth guards, and 
 
 ## 8. Phase 5 — Large component breakups + `PublishedTripGuestContext`
 
-**Branch:** `refactor/published-trip-component-split`
+**Commit checkpoint:** `refactor(trips): break up large components and introduce PublishedTripGuestContext`
 
 ### Plain English
 
@@ -262,7 +256,7 @@ Every row on the `/share/<token>` page passes `{ token, share, activeGuest }` in
 
 ## 9. Phase 6 (optional) — `core/auth` + `createServerAction`
 
-**Branch:** `refactor/core-server-action-wrapper`
+**Commit checkpoint:** `refactor(core): add createServerAction wrapper and migrate actions`
 
 ### Plain English
 
@@ -295,17 +289,16 @@ Every server action re-implements `auth()`, a try/catch, and response formatting
 
 ## 10. Pre-flight checks
 
-Before each phase branch:
+Before each phase:
 
-- [ ] Start from a clean `main` (`git checkout main && git pull`).
+- [ ] Start from a clean `main` with a clean working tree (`git status` empty).
 - [ ] Run `pnpm check-types && pnpm lint && pnpm test` on `main` first so you know the baseline.
-- [ ] Cut the phase branch with the name listed at the top of each phase.
 
-After each phase branch:
+After each phase:
 
 - [ ] Run the same three commands again; none should regress.
-- [ ] Open a PR that references this roadmap and ticks the specific checklist for that phase.
-- [ ] Keep PR bodies tight — summary, what changed, how QA should click through it (per the standing PR rule).
+- [ ] Commit with the `Commit checkpoint:` message listed for that phase. Use smaller checkpoint commits inside the phase if the diff is large.
+- [ ] Tick the phase's checklist in this file (or note intentional deferrals with the reason).
 
 ## 11. Open questions before phase 1
 
