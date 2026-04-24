@@ -10,8 +10,13 @@ import {
   type PublishedGuestSessionValue,
 } from '@/features/trips/constants/publishedGuestSession';
 import type { PublishedTripGuestRecord } from '@/features/trips/publishedDb';
+import { createLocalStorageSubscriber } from '@/ui/utils/createLocalStorageSubscriber';
 
-const PUBLISHED_GUEST_SESSION_EVENT = 'housevote-published-guest-session-change';
+// No `storageKey` filter — the session key is per-trip (`housevote.guest.<tripId>`)
+// and a cross-tab change to any of them can invalidate our active snapshot.
+const { subscribe, publishChange: publishGuestSessionChange } = createLocalStorageSubscriber({
+  sameTabEventName: 'housevote-published-guest-session-change',
+});
 
 function readPublishedGuestSessionSnapshot(sessionKey: string): string | null {
   if (typeof window === 'undefined') {
@@ -19,28 +24,6 @@ function readPublishedGuestSessionSnapshot(sessionKey: string): string | null {
   }
 
   return localStorage.getItem(sessionKey);
-}
-
-function subscribeToPublishedGuestSession(onStoreChange: () => void) {
-  if (typeof window === 'undefined') {
-    return () => {};
-  }
-
-  const handleChange = () => onStoreChange();
-
-  window.addEventListener('storage', handleChange);
-  window.addEventListener(PUBLISHED_GUEST_SESSION_EVENT, handleChange);
-
-  return () => {
-    window.removeEventListener('storage', handleChange);
-    window.removeEventListener(PUBLISHED_GUEST_SESSION_EVENT, handleChange);
-  };
-}
-
-function publishGuestSessionChange() {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(PUBLISHED_GUEST_SESSION_EVENT));
-  }
 }
 
 function clearPublishedGuestSession(sessionKey: string) {
@@ -59,7 +42,7 @@ export function usePublishedGuestSession(
   const sessionKey = getPublishedGuestSessionKey(tripId);
   const initialRawSession = initialSession ? serializePublishedGuestSession(initialSession) : null;
   const rawSession = useSyncExternalStore(
-    subscribeToPublishedGuestSession,
+    subscribe,
     () => readPublishedGuestSessionSnapshot(sessionKey),
     () => initialRawSession,
   );
