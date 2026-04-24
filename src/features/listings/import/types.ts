@@ -74,7 +74,15 @@ export interface RoomBreakdown {
 
 export interface NormalizedImportedListing {
   canonicalUrl: string;
-  title: string;
+  /**
+   * The scraped title, or `null` when every signal (source-hint / meta /
+   * structured data / selector) came back empty. Fresh URL imports reject
+   * listings with `title === null`; refresh flows preserve the existing
+   * title on the record and never persist a null. The DB column itself is
+   * still non-null — anything that reaches `upsertImportedListing` has a
+   * real title by then.
+   */
+  title: string | null;
   address: string | null;
   price: number | null;
   nightlyPriceSource: NightlyPriceSourceValue | null;

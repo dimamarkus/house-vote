@@ -28,6 +28,16 @@ function buildImportedListingImportPayload(
   listing: NormalizedImportedListing,
   importedAt: Date,
 ): Prisma.ListingUncheckedUpdateInput {
+  if (listing.title === null) {
+    // Unreachable in practice — `importListingCapture` throws before calling this
+    // on fresh imports, and the refresh path merges the existing title back in
+    // before calling `applyNormalizedImportToListingId`. This guard makes the
+    // invariant explicit at the DB boundary so a future caller can't bypass it.
+    throw new Error(
+      'Refusing to persist an imported listing without a title. Caller must enforce a non-null title before writing to the DB.',
+    );
+  }
+
   return {
     title: listing.title,
     address: listing.address,

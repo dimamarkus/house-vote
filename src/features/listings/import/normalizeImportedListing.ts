@@ -5,7 +5,6 @@ import type {
   ListingImportCapture,
   ListingImportDebugInfo,
   ListingImportMethodValue,
-  ListingImportSourceValue,
   ListingImportStatusValue,
   NightlyPriceSourceValue,
   NormalizedImportedListing,
@@ -238,17 +237,6 @@ function deriveNightlyPrice(
   return { price: rawPrice, source: 'SCRAPED_NIGHTLY', startDate, endDate };
 }
 
-function buildFallbackTitle(source: ListingImportSourceValue, sourceExternalId: string | null): string {
-  const label =
-    source === 'AIRBNB'
-      ? 'Airbnb Listing'
-      : source === 'VRBO'
-        ? 'Vrbo Listing'
-        : 'Imported Listing';
-
-  return sourceExternalId ? `${label} ${sourceExternalId}` : label;
-}
-
 export function normalizeImportedListing(
   capture: ListingImportCapture,
   importMethod: ListingImportMethodValue,
@@ -262,9 +250,7 @@ export function normalizeImportedListing(
   const notes = normalizeMultilineText(capture.notes);
   const normalizedPhotoUrls = normalizePhotoUrls(capture.imageUrl, capture.photoUrls);
   const imageUrl = normalizedPhotoUrls[0] ?? null;
-  const title =
-    cleanupImportedTitle(normalizeText(capture.title) ?? address, adapter) ??
-    buildFallbackTitle(source, sourceExternalId);
+  const title = cleanupImportedTitle(normalizeText(capture.title) ?? address, adapter);
   const rawPrice = parseImportedPrice(capture.price);
   const {
     price,

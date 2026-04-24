@@ -27,6 +27,7 @@ const REFRESH_LISTING_SELECT = {
   tripId: true,
   url: true,
   addedById: true,
+  title: true,
   address: true,
   price: true,
   bedroomCount: true,
@@ -215,6 +216,10 @@ export async function refreshListingFromSourceUrl(input: unknown) {
       listing.roomBreakdown,
       normalizedListing.roomBreakdown,
     );
+    // `listing.title` is always non-null per Prisma schema, so the merged title
+    // is too — narrow the type manually since keepExisting widens to `string | null`.
+    const mergedTitle = normalizedListing.title ?? listing.title;
+    normalizedListing.title = mergedTitle;
     normalizedListing.price = keepExisting(normalizedListing.price, listing.price);
     normalizedListing.bedroomCount = keepExisting(normalizedListing.bedroomCount, listing.bedroomCount);
     normalizedListing.bedCount = keepExisting(normalizedListing.bedCount, listing.bedCount);
@@ -246,7 +251,7 @@ export async function refreshListingFromSourceUrl(input: unknown) {
     return createSuccessResponse({
       data: {
         listingId,
-        listingTitle: normalizedListing.title,
+        listingTitle: mergedTitle,
         tripId: listing.tripId,
         importStatus: normalizedListing.importStatus,
         missingFields,

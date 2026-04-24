@@ -25,6 +25,13 @@ export async function importListingCapture({
 }: ImportListingCaptureOptions): Promise<ListingImportResult> {
   const normalizedListing = normalizeImportedListing(capture, importMethod);
 
+  const { title } = normalizedListing;
+  if (title === null) {
+    throw new Error(
+      "Couldn't extract a title from this listing. The page may be gated behind a login, a bot wall, or missing the usual title markup — try the browser extension on the page in your logged-in browser.",
+    );
+  }
+
   const savedListing = await upsertImportedListing(tripId, normalizedListing, {
     addedById,
   });
@@ -32,7 +39,7 @@ export async function importListingCapture({
 
   return {
     listingId: savedListing.id,
-    listingTitle: normalizedListing.title,
+    listingTitle: title,
     tripId,
     tripPath: `/trips/${tripId}`,
     source: normalizedListing.source,
