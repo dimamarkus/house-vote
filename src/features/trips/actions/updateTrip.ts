@@ -1,58 +1,42 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { auth } from '@clerk/nextjs/server';
-import { TripFormSchema } from '../schemas';
-import { validateActionInput } from '@/core/form-data';
-import { createErrorResponse, createSuccessResponse } from '@/core/responses';
 import type { Trip } from 'db';
-import { ErrorCode } from '@/core/errors';
+import { ErrorCode, errorResponseDataToString } from '@/core/errors';
+import { createErrorResponse } from '@/core/responses';
+import { createServerAction } from '@/core/server-actions';
+import type { BasicApiResponse } from '@/core/types';
+import { TripFormSchema } from '../schemas';
 import { trips } from '../db';
-import { BasicApiResponse } from '@/core/types';
 
 export async function updateTrip(
-  tripId: string, // Add tripId as the first argument
-  formData: FormData
+  tripId: string,
+  formData: FormData,
 ): Promise<BasicApiResponse<Trip>> {
-  // Validate input
-  const validationResult = validateActionInput(formData, TripFormSchema);
-  if (!validationResult.success) {
-    return validationResult;
-  }
-
-  // Get validated data
-  const data = validationResult.data;
-
-  // Check authentication
-  const { userId } = await auth();
-  if (!userId) {
-    return createErrorResponse({ error: 'Unauthorized', code: ErrorCode.UNAUTHORIZED });
-  }
-
   if (!tripId) {
-    return createErrorResponse({ error: 'Trip ID is required for update', code: ErrorCode.VALIDATION_ERROR });
-  }
-
-  // Perform database operation using the trips db layer
-  try {
-    // User existence is implicitly checked by trips.update's auth check
-    const result = await trips.update(tripId, userId, data);
-
-    if (!result.success) {
-      return result;
-    }
-
-    // Revalidate the specific trip page and the list page
-    revalidatePath('/trips');
-    revalidatePath(`/trips/${tripId}`);
-
-    return createSuccessResponse({ data: result.data });
-
-  } catch (error) {
-    console.error("Failed to update trip:", error);
     return createErrorResponse({
-      error: 'Failed to update trip. Please try again.',
-      code: ErrorCode.DATABASE_ERROR,
+      error: 'Trip ID is required for update',
+      code: ErrorCode.VALIDATION_ERROR,
     });
   }
+
+  return createServerAction({
+    input: Object.fromEntries(formData.entries()),
+    schema: TripFormSchema,
+    requireAuth: true,
+    errorPrefix: 'Failed to update trip:',
+    validationErrorMessage: 'Invalid trip update form data.',
+    handler: async ({ input, userId }) => {
+      const result = await trips.update(tripId, userId, input);
+      if (!result.success) {
+        throw new Error(
+          errorResponseDataToString(result.error, 'Unable to update the trip.'),
+        );
+      }
+
+      return {
+        data: result.data,
+        revalidate: ['/trips', `/trips/${tripId}`],
+      };
+    },
+  });
 }

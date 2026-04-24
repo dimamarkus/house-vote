@@ -47,3 +47,28 @@ export function errorToString(error: unknown) {
 
   return String(error);
 }
+
+/**
+ * Convert a downstream `ErrorResponse.error` payload (which is `string |
+ * Record<string, string[]>`) into a plain string message suitable for
+ * re-throwing, logging, or showing to the user. Field-error maps are
+ * flattened into `"field1: msg; field2: msg"` form so nothing gets silently
+ * dropped.
+ */
+export function errorResponseDataToString(
+  error: string | Record<string, string[]>,
+  fallback: string,
+): string {
+  if (typeof error === "string") {
+    return error.length > 0 ? error : fallback;
+  }
+
+  const parts: string[] = [];
+  for (const [field, messages] of Object.entries(error)) {
+    if (messages.length > 0) {
+      parts.push(`${field}: ${messages.join(", ")}`);
+    }
+  }
+
+  return parts.length > 0 ? parts.join("; ") : fallback;
+}

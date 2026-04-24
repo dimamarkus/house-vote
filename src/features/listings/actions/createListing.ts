@@ -1,72 +1,47 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
-import { auth } from '@clerk/nextjs/server';
-import { ErrorCode } from '@/core/errors';
-import { validateActionInput } from '@/core/form-data';
-import { createErrorResponse } from '@/core/responses';
-
+import { errorResponseDataToString } from '@/core/errors';
+import { createServerAction } from '@/core/server-actions';
 import { listings } from '../db';
 import { ListingFormDataSchema } from '../schemas';
 import { ListingResponse } from '../types';
 
 /**
- * Server action for creating a new listing.
- * Requires authentication.
+ * Server action for creating a new listing. Requires authentication.
  * Validates input using ListingFormDataSchema.
  */
-export async function createListing(
-  formData: FormData
-): Promise<ListingResponse> {
-  // 1. Authentication Check
-  const { userId } = await auth();
-  if (!userId) {
-    return createErrorResponse({
-      error: 'Authentication required to create a listing.',
-      code: ErrorCode.UNAUTHORIZED,
-    });
-  }
+export async function createListing(formData: FormData): Promise<ListingResponse> {
+  return createServerAction({
+    input: Object.fromEntries(formData.entries()),
+    schema: ListingFormDataSchema,
+    requireAuth: true,
+    errorPrefix: 'Failed to create listing:',
+    validationErrorMessage: 'Invalid listing form data.',
+    handler: async ({ input, userId }) => {
+      // Any price supplied through the manual form is, by definition, MANUAL —
+      // flag it so downstream price displays can show "set by you" instead of
+      // pretending it came from a scrape.
+      const dataToCreate = {
+        ...input,
+        addedById: userId,
+        nightlyPriceSource: input.price != null ? ('MANUAL' as const) : null,
+      };
 
-  // 2. Validate input
-  const validationResult = validateActionInput(formData, ListingFormDataSchema);
-  if (!validationResult.success) {
-    return validationResult;
-  }
-
-  // 3. Prepare data for DB operation (include addedById).
-  // Any price supplied through the manual form is, by definition, MANUAL —
-  // flag it so downstream price displays can show "set by you" instead of
-  // pretending it came from a scrape.
-  const dataToCreate = {
-    ...validationResult.data,
-    addedById: userId,
-    nightlyPriceSource:
-      validationResult.data.price != null && validationResult.data.price !== undefined
-        ? ('MANUAL' as const)
-        : null,
-  };
-
-  // 4. Call database operation
-  try {
-    const result = await listings.create(dataToCreate);
-
-    // 5. Revalidation (if successful)
-    if (result.success && result.data) {
-      // Ensure tripId is a string before revalidating
-      if (typeof result.data.tripId === 'string') {
-        revalidatePath(`/trips/${result.data.tripId}`);
+      const result = await listings.create(dataToCreate);
+      if (!result.success) {
+        throw new Error(
+          errorResponseDataToString(result.error, 'Unable to create the listing.'),
+        );
       }
-    }
 
-    // 6. Return result
-    return result;
+      const revalidate = typeof result.data.tripId === 'string'
+        ? [`/trips/${result.data.tripId}`]
+        : [];
 
-  } catch (error) {
-    // 7. Handle potential DB errors
-    console.error("Failed to create listing:", error);
-    return createErrorResponse({
-      error: 'Failed to create listing. Please try again.',
-      code: ErrorCode.DATABASE_ERROR,
-    });
-  }
+      return {
+        data: result.data,
+        revalidate,
+      };
+    },
+  });
 }

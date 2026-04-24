@@ -1,57 +1,50 @@
 'use server';
 
-import { auth } from '@clerk/nextjs/server';
 import { db } from 'db';
-import { createErrorResponse } from '@/core/responses';
-import { ErrorCode } from '@/core/errors';
+import { z } from 'zod';
+import { errorResponseDataToString } from '@/core/errors';
+import { createServerAction } from '@/core/server-actions';
 import { likes } from '../db';
-import { revalidatePath } from 'next/cache';
-import { LikeToggleResponse } from "../types";
+import { LikeToggleResponse } from '../types';
+
+const toggleLikeSchema = z.object({
+  listingId: z.string().min(1, 'Listing ID is required.'),
+});
 
 /**
  * Toggle a like for a listing. If the user has already liked the listing it
  * removes the like; otherwise it adds one.
  */
-export async function toggleLike(
-  listingId: string
-): Promise<LikeToggleResponse> {
-  try {
-    const { userId } = await auth();
+export async function toggleLike(listingId: string): Promise<LikeToggleResponse> {
+  return createServerAction({
+    input: { listingId },
+    schema: toggleLikeSchema,
+    requireAuth: true,
+    errorPrefix: 'Failed to toggle like:',
+    handler: async ({ input, userId }) => {
+      const result = await likes.toggle({ userId, listingId: input.listingId });
+      if (!result.success) {
+        throw new Error(
+          errorResponseDataToString(result.error, 'Unable to toggle like.'),
+        );
+      }
 
-    if (!userId) {
-      return createErrorResponse({
-        error: "You must be logged in to like listings",
-        code: ErrorCode.UNAUTHORIZED,
-      });
-    }
-
-    const result = await likes.toggle({
-      userId,
-      listingId,
-    });
-
-    if (result.success) {
-      // Revalidate the actual trip page the listing lives on, not the literal
-      // `[tripId]` string used previously — that form does not revalidate any
-      // real route. Resolving the tripId requires a tiny lookup, but it
-      // only runs on a successful toggle so the cost is bounded.
+      // Resolve the real tripId so revalidatePath can actually invalidate
+      // the trip route. Previously this used the literal
+      // `'/trips/[tripId]'` string which does not match any concrete route.
       const listing = await db.listing.findUnique({
-        where: { id: listingId },
+        where: { id: input.listingId },
         select: { tripId: true },
       });
 
-      if (listing) {
-        revalidatePath(`/trips/${listing.tripId}`);
-      }
-      revalidatePath(`/trips`);
-    }
+      const revalidate = listing
+        ? [`/trips/${listing.tripId}`, '/trips']
+        : ['/trips'];
 
-    return result;
-  } catch (error) {
-    return createErrorResponse({
-      error,
-      code: ErrorCode.PROCESSING_ERROR,
-      prefix: "Failed to toggle like:",
-    });
-  }
+      return {
+        data: result.data,
+        revalidate,
+      };
+    },
+  });
 }
