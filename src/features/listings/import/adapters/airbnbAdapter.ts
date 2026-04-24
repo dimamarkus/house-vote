@@ -1,5 +1,6 @@
 import type * as cheerio from 'cheerio';
 import {
+  canonicalizeListingUrlShared,
   deepCollectByKey,
   extractFormattedTextFromElement,
   extractNightlyPriceFromText,
@@ -28,13 +29,6 @@ const AIRBNB_SELECTORS: ListingImportAdapterSelectors = {
     '[data-testid="structured-display-price"]',
   ],
 };
-
-const AIRBNB_NIGHTLY_PRICE_PATTERNS: RegExp[] = [
-  /The current price is \$([0-9][0-9,]*)/i,
-  /\$([0-9][0-9,]*)\s*x?\s*night/i,
-  /\$([0-9][0-9,]*)\s*\/\s*night/i,
-  /\$([0-9][0-9,]*)\s+per\s+night/i,
-];
 
 function extractAirbnbDescription($: cheerio.CheerioAPI): string | null {
   const section = $(
@@ -84,7 +78,7 @@ function extractHints($: cheerio.CheerioAPI): ListingImportAdapterHints {
       ]) ?? null,
     sourceDescription,
     roomSummaryText: summaryText || titleSectionText || '',
-    price: extractNightlyPriceFromText(priceContainerText || '', AIRBNB_NIGHTLY_PRICE_PATTERNS),
+    price: extractNightlyPriceFromText(priceContainerText || ''),
     rawSignals: {
       titleSectionText,
       summaryText,
@@ -239,10 +233,7 @@ export const airbnbAdapter: ListingImportAdapter = {
     return title.replace(/\s+-\s+Airbnb\s*$/i, '').trim();
   },
   canonicalizeUrl(url) {
-    url.hash = '';
-    url.search = '';
-    url.pathname = url.pathname.replace(/\/+$/, '') || '/';
-    return url;
+    return canonicalizeListingUrlShared(url, { stripSearch: true });
   },
   extractExternalId(canonicalUrl) {
     const roomMatch = canonicalUrl.pathname.match(/\/rooms\/([^/]+)/i);

@@ -12,7 +12,11 @@ import type {
   RoomBreakdown,
 } from './types';
 import { detectListingSource } from './detectListingSource';
-import { normalizeText, normalizeMultilineText } from './importHelpers';
+import {
+  canonicalizeListingUrlShared,
+  normalizeMultilineText,
+  normalizeText,
+} from './importHelpers';
 
 function parseNumberish(value?: number | string | null): number | null {
   if (value === null || value === undefined || value === '') {
@@ -101,28 +105,17 @@ function deriveBedCountFromRoomBreakdown(
   return totalBeds > 0 ? totalBeds : null;
 }
 
-const TRACKING_QUERY_PARAMS = [
-  'utm_source',
-  'utm_medium',
-  'utm_campaign',
-  'utm_term',
-  'utm_content',
-];
-
 function canonicalizeListingUrl(inputUrl: string, adapter: ListingImportAdapter | null): string {
   const url = new URL(inputUrl);
-  url.hash = '';
 
   if (adapter?.canonicalizeUrl) {
     return adapter.canonicalizeUrl(url).toString();
   }
 
-  for (const param of TRACKING_QUERY_PARAMS) {
-    url.searchParams.delete(param);
-  }
-  url.pathname = url.pathname.replace(/\/+$/, '') || '/';
-
-  return url.toString();
+  // Adapter fallback: strip hash + known tracking params + trailing slash.
+  // In practice the generic adapter always matches, so this path is rarely
+  // hit, but it keeps behavior consistent if callers pass an unmatched URL.
+  return canonicalizeListingUrlShared(url, { stripTrackingParams: true }).toString();
 }
 
 function extractSourceExternalId(

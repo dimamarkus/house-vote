@@ -189,6 +189,49 @@ export const DEFAULT_NIGHTLY_PRICE_PATTERNS: RegExp[] = [
   /\$([0-9][0-9,]*)\s+per\s+night/i,
 ];
 
+/**
+ * Query params we strip during URL canonicalization so two different
+ * marketing links land on the same canonical URL for dedupe.
+ */
+export const TRACKING_QUERY_PARAMS: readonly string[] = [
+  'utm_source',
+  'utm_medium',
+  'utm_campaign',
+  'utm_term',
+  'utm_content',
+];
+
+interface CanonicalizeListingUrlOptions {
+  /** Remove every query param (Airbnb / Vrbo do this — identity lives in the path). */
+  stripSearch?: boolean;
+  /**
+   * When `stripSearch` is false, remove only the known tracking params so the
+   * remaining query string (dates, guest counts) stays intact.
+   */
+  stripTrackingParams?: boolean;
+}
+
+/**
+ * Shared canonicalizer used by every adapter that has a "URL without hash,
+ * without trailing slash, and optionally without query string" canonical form.
+ * Booking intentionally does NOT use this — it rewrites the path slug too.
+ */
+export function canonicalizeListingUrlShared(
+  url: URL,
+  options: CanonicalizeListingUrlOptions = {},
+): URL {
+  url.hash = '';
+  if (options.stripSearch) {
+    url.search = '';
+  } else if (options.stripTrackingParams) {
+    for (const param of TRACKING_QUERY_PARAMS) {
+      url.searchParams.delete(param);
+    }
+  }
+  url.pathname = url.pathname.replace(/\/+$/, '') || '/';
+  return url;
+}
+
 export function extractNightlyPriceFromText(
   text: string,
   patternPriorities: RegExp[] = DEFAULT_NIGHTLY_PRICE_PATTERNS,

@@ -1,6 +1,7 @@
 import type * as cheerio from 'cheerio';
 import {
   buildAddress,
+  canonicalizeListingUrlShared,
   extractFormattedTextFromElement,
   extractNightlyPriceFromText,
   getAllTextFromSelectors,
@@ -27,6 +28,8 @@ const VRBO_SELECTORS: ListingImportAdapterSelectors = {
   ],
 };
 
+// Vrbo prefers explicit "$X per night" over "x night" — the same patterns as
+// the default, re-ordered to bias toward Vrbo's typical price-block copy.
 const VRBO_NIGHTLY_PRICE_PATTERNS: RegExp[] = [
   /The current price is \$([0-9][0-9,]*)/i,
   /\$([0-9][0-9,]*)\s+per\s+night/i,
@@ -145,10 +148,7 @@ export const vrboAdapter: ListingImportAdapter = {
     return title.replace(/\s+\|\s+Vrbo\s*$/i, '').trim();
   },
   canonicalizeUrl(url) {
-    url.hash = '';
-    url.search = '';
-    url.pathname = url.pathname.replace(/\/+$/, '') || '/';
-    return url;
+    return canonicalizeListingUrlShared(url, { stripSearch: true });
   },
   extractExternalId(canonicalUrl) {
     const pathSegment = canonicalUrl.pathname.split('/').filter(Boolean).at(-1) ?? null;

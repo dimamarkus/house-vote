@@ -1,13 +1,6 @@
+import { canonicalizeListingUrlShared } from '../importHelpers';
 import type { ListingImportAdapter } from './types';
 import { DEFAULT_ADAPTER_SELECTORS } from './types';
-
-const TRACKING_QUERY_PARAMS = [
-  'utm_source',
-  'utm_medium',
-  'utm_campaign',
-  'utm_term',
-  'utm_content',
-];
 
 /**
  * Catch-all fallback. Matches any parseable URL, so the registry MUST keep it
@@ -27,11 +20,6 @@ export const genericAdapter: ListingImportAdapter = {
   },
   selectors: DEFAULT_ADAPTER_SELECTORS,
   canonicalizeUrl(url) {
-    url.hash = '';
-    for (const param of TRACKING_QUERY_PARAMS) {
-      url.searchParams.delete(param);
-    }
-    url.pathname = url.pathname.replace(/\/+$/, '') || '/';
-    return url;
+    return canonicalizeListingUrlShared(url, { stripTrackingParams: true });
   },
 };
