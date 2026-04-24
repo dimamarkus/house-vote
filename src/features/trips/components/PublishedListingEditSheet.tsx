@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { updatePublishedTripListingDetails } from '@/features/trips/actions/publishedTripActions';
 import type { PublishedTripGuestRecord, PublishedTripListingRecord } from '@/features/trips/publishedDb';
+import {
+  buildInitialValues,
+  parseNumberField,
+  type PublishedListingFormValues,
+} from '@/features/trips/utils/publishedListingForm';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
 import { Label } from '@/ui/shadcn/label';
@@ -29,43 +34,6 @@ interface PublishedListingEditSheetProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-type FormValues = {
-  price: string;
-  bedroomCount: string;
-  bedCount: string;
-  bathroomCount: string;
-  notes: string;
-};
-
-function formatInitialNumber(value: number | null | undefined): string {
-  if (value === null || typeof value === 'undefined') {
-    return '';
-  }
-  return String(value);
-}
-
-function parseNumberField(raw: string): number | null | undefined {
-  const trimmed = raw.trim();
-  if (trimmed === '') {
-    return null;
-  }
-  const parsed = Number(trimmed);
-  if (!Number.isFinite(parsed)) {
-    return undefined;
-  }
-  return Math.trunc(parsed);
-}
-
-function buildInitialValues(listing: PublishedTripListingRecord): FormValues {
-  return {
-    price: formatInitialNumber(listing.price),
-    bedroomCount: formatInitialNumber(listing.bedroomCount),
-    bedCount: formatInitialNumber(listing.bedCount),
-    bathroomCount: formatInitialNumber(listing.bathroomCount),
-    notes: listing.notes ?? '',
-  };
-}
-
 export function PublishedListingEditSheet({
   token,
   listing,
@@ -78,7 +46,7 @@ export function PublishedListingEditSheet({
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = typeof controlledOpen === 'boolean';
   const open = isControlled ? controlledOpen : uncontrolledOpen;
-  const [values, setValues] = useState<FormValues>(() => buildInitialValues(listing));
+  const [values, setValues] = useState<PublishedListingFormValues>(() => buildInitialValues(listing));
   const [prevOpen, setPrevOpen] = useState(open);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
