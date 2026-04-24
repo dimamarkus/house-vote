@@ -15,6 +15,7 @@ import { Badge } from '@/ui/shadcn/badge';
 import { Users, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/ui/shadcn/button';
 import { Input } from '@/ui/shadcn/input';
+import { getInitials } from '@/ui/utils/getInitials';
 import { useUser } from '@clerk/nextjs';
 import { toast } from 'sonner';
 import {
@@ -81,16 +82,6 @@ export function CollaboratorsList({
 
   const publishedGuests = publishedShareSummary?.guests ?? [];
   const publishedGuestNames = new Set(publishedGuests.map((guest) => guest.guestDisplayName));
-
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return '?';
-    return name
-      .split(' ')
-      .map(part => part[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   async function handleAddGuest(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
