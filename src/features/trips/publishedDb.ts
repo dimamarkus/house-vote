@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { db, ListingCommentKind, ListingStatus, Prisma, TripGuestSource } from 'db';
 import { scrapeListingMetadataFromUrl } from '@/features/listings/import/scrapeListingMetadataFromUrl';
 import { upsertImportedListing } from '@/features/listings/import/upsertImportedListing';
+import { assertTripOwnerId } from './guards';
 
 const publishedVoteInclude = Prisma.validator<Prisma.TripVoteInclude>()({
   guest: {
@@ -144,25 +145,8 @@ function normalizeGuestDisplayName(displayName: string) {
   return displayName.trim().replace(/\s+/g, ' ');
 }
 
-async function getTripOwnerId(tripId: string, dbClient: DbClient) {
-  const trip = await dbClient.trip.findUnique({
-    where: { id: tripId },
-    select: { userId: true },
-  });
-
-  if (!trip) {
-    throw new Error('Trip not found.');
-  }
-
-  return trip.userId;
-}
-
-async function assertTripOwner(tripId: string, userId: string, dbClient: DbClient) {
-  const ownerId = await getTripOwnerId(tripId, dbClient);
-
-  if (ownerId !== userId) {
-    throw new Error('Only the trip owner can manage published voting.');
-  }
+function assertTripOwner(tripId: string, userId: string, dbClient: DbClient) {
+  return assertTripOwnerId(tripId, userId, 'manage published voting', dbClient);
 }
 
 async function findGuestByName(tripId: string, displayName: string, dbClient: DbClient) {

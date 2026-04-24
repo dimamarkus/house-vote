@@ -5,6 +5,7 @@ import type { TripFormData } from './schemas';
 import { TripOperationOptions, TripGetOptions } from './types';
 import { randomUUID } from 'node:crypto';
 import { handleDbOperation } from '@/core/responses';
+import { assertTripOwnerId } from './guards';
 import { hashTripImportToken } from './utils/hashTripImportToken';
 
 type TripWithCollaborators = Prisma.TripGetPayload<{
@@ -312,18 +313,7 @@ export const trips = {
     void _options;
     const dbClient = db;
     return handleDbOperation(async () => {
-      // First, verify the user is the owner of the trip
-      const trip = await dbClient.trip.findUnique({
-        where: { id: tripId },
-        select: { userId: true }
-      });
-
-      if (!trip) {
-        throw new Error('Trip not found.');
-      }
-      if (trip.userId !== ownerId) {
-        throw new Error('Only the trip owner can generate shareable links.');
-      }
+      await assertTripOwnerId(tripId, ownerId, 'generate shareable links', dbClient);
 
       // Try to find an existing, valid shareable invite (email is empty string instead of null)
       const existingInvite = await dbClient.tripInvitation.findFirst({
@@ -365,18 +355,7 @@ export const trips = {
 
   rotateImportToken: async (tripId: string, ownerId: string) => {
     return handleDbOperation(async () => {
-      const trip = await db.trip.findUnique({
-        where: { id: tripId },
-        select: { userId: true },
-      });
-
-      if (!trip) {
-        throw new Error('Trip not found.');
-      }
-
-      if (trip.userId !== ownerId) {
-        throw new Error('Only the trip owner can rotate import tokens.');
-      }
+      await assertTripOwnerId(tripId, ownerId, 'rotate import tokens');
 
       const plainToken = randomUUID();
       const tokenHash = hashTripImportToken(plainToken);
