@@ -1,7 +1,7 @@
 ---
 createdAt: 2026-04-22
 title: Phased Refactor and Cleanup Roadmap
-status: in-progress (phases 1, 2, 3, 4, 5, 6 complete)
+status: complete (phases 1–6 shipped; phase 7 closed out by audit)
 owner: dima
 ---
 
@@ -17,7 +17,9 @@ The codebase has drifted in a few predictable ways:
 - **Trip UI has two parallel stacks** (dashboard and `/share/<token>`) that re-implement the same meta pills, share state types, and guest-session plumbing side by side.
 - **Core auth + server-action handling is ad-hoc.** Every action does its own Clerk check and its own try/catch with slightly different error codes.
 
-This roadmap breaks the cleanup into **six independently revertable phases** (plus a future phase 7 stub — see §9a). Per the current workflow we ship each phase as one or more commits on `main` (each commit self-contained and revertable via `git revert`) rather than as a feature branch + PR. Each phase must leave `pnpm check-types`, `pnpm lint`, and `pnpm test` green. The ordering matters: phase 1 fixes real bugs before we touch the files that have them; phase 2 settles the import layer before adding new tests around it; phases 3–4 unify types and shrink the big files before phase 5 breaks up the components that consume them; phase 6 is an optional cross-cutting wrapper that benefits from all the earlier cleanup. Phase 7 (deferred) unifies owner and guest listing UI on top of the now-stable phase 5 shape.
+This roadmap breaks the cleanup into **six independently revertable phases**. Per the current workflow we ship each phase as one or more commits on `main` (each commit self-contained and revertable via `git revert`) rather than as a feature branch + PR. Each phase must leave `pnpm check-types`, `pnpm lint`, and `pnpm test` green. The ordering matters: phase 1 fixes real bugs before we touch the files that have them; phase 2 settles the import layer before adding new tests around it; phases 3–4 unify types and shrink the big files before phase 5 breaks up the components that consume them; phase 6 is an optional cross-cutting wrapper that benefits from all the earlier cleanup.
+
+Phase 7 was originally scoped as a follow-up to unify owner and guest listing UI. After the audit documented in §9a, it was **closed out without code changes**: the remaining forks turned out to be legitimate product differences, not accidental duplication. The sharing goal is already satisfied by the phase 3 shared types + phase 5 slot/context boundaries.
 
 ## 2. Decisions locked in before we start
 
@@ -42,7 +44,7 @@ flowchart TD
   phase3 --> phase5
   phase5 --> phase6["Phase 6 (optional)<br/>core/auth + createServerAction"]
   phase4 --> phase6
-  phase5 --> phase7["Phase 7 (future)<br/>Unify owner + guest listing UI"]
+  phase5 -.->|closed out by audit| phase7["Phase 7<br/>Unify owner + guest listing UI<br/>(audit-only, no code)"]
 ```
 
 The only hard dependencies are:
@@ -345,38 +347,64 @@ Every server action used to re-implement `auth()`, a try/catch, and response for
 
 - ~550 LOC changed across 10 files (1 new, 9 modified), 1 deletion expected (old `publishedTripActionUtils` helpers). Shipped as six commits. Perf neutral. Hackiness **1**.
 
-## 9a. Phase 7 (future) — Unify owner + guest listing UI
+## 9a. Phase 7 — Unify owner + guest listing UI
 
-**Status: not started.** Tracked here so the intent from the phase 5 discussion doesn't get lost.
+**Status: closed out by audit (2026-04-22).** No code shipped. The stub that originally framed this phase turned out to overstate the duplication; the audit below is preserved so a future refactor pass doesn't re-litigate the question.
 
 ### Plain English
 
-Today the same listing concept renders through two nearly-identical paths:
+Phase 7 was originally scoped as "the menus and permission logic fork — collapse them." After finishing phase 6 the author audited both listing surfaces side-by-side and concluded that most of the apparent fork is **legitimate product difference**, not accidental duplication. Unifying would have added ~130 LOC of a capability-bag component, removed ~200 LOC from the two existing menus, and concealed two different "edit" semantics inside one API — exactly the anti-pattern flagged at the end of phase 6. The more honest outcome is to leave the current shape alone and document why.
 
-| Surface | Card wrapper | Kebab menu | Footer |
-|---|---|---|---|
-| Owner dashboard (`/trips/<id>`) | `ListingCard` | `ListingActionsMenu` (refresh / reject / delete) | none |
-| Public share (`/share/<token>`) | `ListingCard` | `PublishedListingActionsMenu` (edit + view source, behind `allowGuestSuggestions`) | `PublishedListingCardFooter` (vote button + feedback tabs) |
+### Audit — what's actually shared vs. forked
 
-The wrapper is already shared — it's the two menu components and the permission logic that fork. The long-term goal stated repeatedly by the owner is: **share as much code as possible between the public and admin pages so a feature built in one surface appears in the other by default**. Phase 5 deliberately stopped short of unifying because (a) the menus' permission semantics differ, and (b) doing a permission-driven unification on top of freshly-moved code is harder to review than doing it against a stable base.
+| | Owner dashboard (`/trips/<id>`) | Public share (`/share/<token>`) |
+|---|---|---|
+| Card shell, photo carousel, badges, metrics, description, price display, room breakdown | **Shared** via [`ListingCard`](../src/features/listings/components/ListingCard.tsx) + its `actionsMenu` / `footerContent` / `imageOverlayContent` slots | Same |
+| Guest/share state plumbing | N/A | **Shared** via [`PublishedTripGuestContext`](../src/features/trips/components/PublishedTripGuestContext.tsx) for the five descendants that need it |
+| Action wrappers | **Shared** via [`createServerAction`](../src/core/server-actions.ts) | Same |
+| Actions menu | [`ListingActionsMenu`](../src/features/listings/components/ListingActionsMenu.tsx) — View listing, Edit (full form), Refresh from source, Reject/Unreject, Delete | [`PublishedListingActionsMenu`](../src/features/trips/components/PublishedListingActionsMenu.tsx) — View source, Edit details (price/beds/notes only) |
+| Edit sheet | [`ListingFormSheet`](../src/features/listings/forms/ListingFormSheet.tsx) → full form; `updateListing` action; `ListingFormDataSchema`; `Listing` Prisma type | [`PublishedListingEditSheet`](../src/features/trips/components/PublishedListingEditSheet.tsx) → 4 fields; `updatePublishedTripListingDetails` action; `updateListingDetailsSchema`; `PublishedTripListingRecord` type |
+| Footer | [`LikeButton`](../src/features/likes/components/LikeButton.tsx) only | [`PublishedListingCardFooter`](../src/features/trips/components/PublishedListingCardFooter.tsx) — votes/pros/cons tabs + vote button + comments sheet |
 
-### Options to explore
+### Why each remaining fork is intentional
 
-1. **Capability-driven `ListingKebab`** — one component that takes a `capabilities` bag (`{ canEdit, canReject, canDelete, canRefresh, canViewSource }`) and renders the appropriate items. Owner dashboard fills in `{ canRefresh, canReject, canDelete, canViewSource }`, share page fills in `{ canEdit: share.allowGuestSuggestions, canViewSource }`. The existing `useListingActions` hook already covers the owner side.
-2. **Role-derived wrapper** — keep `ListingKebab` pure and put the permission resolution in small `ownerCapabilities(listing, user)` / `guestCapabilities(listing, share, activeGuest)` helpers. Keeps the capability bag declarative and testable.
-3. **Unified footer** — if the owner dashboard ever wants to see vote tallies inline, `PublishedListingCardFooter` becomes a `<ListingEngagementFooter>` that renders differently based on whether a guest context exists.
+- **Edit sheets** — Different schemas, different server actions, different data models, different field sets. The owner edits the canonical listing; the guest submits a subset the owner can accept or override. Forcing these into one component would carry two meanings of "edit" through the same API. **Keep separate.**
+- **Kebab menus** — After the edit-sheet decision above, the menus collapse to "render a dropdown shell + View source item + (one or five) action items." The only mechanical duplication is ~15 LOC of shadcn `DropdownMenu` chrome, which is itself the generic abstraction. Extracting a `<ListingActionsMenuShell>` over shadcn's already-generic primitives would be indirection-on-indirection. **Keep separate.**
+- **Footers** — `LikeButton` vs. vote+pros+cons+comments are different product surfaces, not duplicated code. The owner's "like" and the guest's "vote" use different data models (`Like` row per user vs. single vote per guest per trip). Unifying would be a product decision ("should the owner dashboard show vote tallies instead of likes?"), not a refactor. **Keep separate.**
 
-### Checklist (when the phase starts)
+### Rejected options (from the original stub)
 
-- [ ] Audit every current fork between owner and guest card paths (menu, footer, card chrome, permission checks).
-- [ ] Decide on the capability model (bag vs. subcomponent slot vs. role-derived render props).
-- [ ] Collapse `ListingActionsMenu` and `PublishedListingActionsMenu` into one component.
-- [ ] Grep remaining `isPublished` / `activeGuest`-gated render paths to confirm none still silently fork.
-- [ ] Smoke both surfaces with the same listing data.
+- ~~**Capability-driven `ListingKebab`**~~ — Would save ~40–60 LOC net while adding one component whose API has to express both owner-edit and guest-edit-details semantics. Fails the "don't reintroduce boilerplate in a different shape" test.
+- ~~**Role-derived wrapper**~~ — Same trade-off as above; moves the permission logic into helpers but keeps the conflated `canEdit` boolean.
+- ~~**Unified engagement footer**~~ — Requires a product decision to fold `Like` into `Vote`. Out of scope for a refactor phase.
 
-### Cost (estimate)
+### What actually lives in the codebase today
 
-- ~400 LOC changed, ~8 files touched, perf neutral. Hackiness **2** — unifying permission resolution is the risky part; the render collapse is mechanical.
+- `ListingCard` is the shared primitive; both surfaces compose it.
+- `PublishedTripGuestContext` is the shared plumbing for the guest side.
+- `createServerAction` is the shared server-side wrapper.
+- Two thin, honest menu composers — each ~90–170 LOC — that render only the items their surface actually supports.
+
+That's the phase 7 goal ("share as much code as possible between public and admin") already satisfied at the layer where sharing makes sense.
+
+### Exit criteria
+
+- [x] Audit performed against both listing surfaces.
+- [x] Audit findings documented above so the next refactor pass starts here instead of redoing the analysis.
+- [x] Roadmap status updated from `in-progress` to `complete`.
+- [x] No code changes shipped.
+
+### Cost (actual)
+
+- 0 LOC of app code changed. ~60 LOC of roadmap doc changed. Perf neutral. Hackiness **0** — not doing unnecessary work is a feature.
+
+### If a future phase revisits this
+
+The honest triggers for reopening phase 7 are all **product-driven**, not refactor-driven:
+
+- The owner dashboard gains a "vote tallies for admin" feature → reuse `PublishedListingCardFooter` directly with a read-only guest context shim.
+- The guest menu gains more actions (e.g. "hide this listing from the board") → at 4+ items, extract a shared shell may pay off.
+- `Like` and `Vote` get merged at the schema level → unify the footer at the same time.
 
 ## 10. Pre-flight checks
 
