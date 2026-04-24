@@ -10,7 +10,7 @@ import {
   getListingFeedbackConfig,
   type ListingFeedbackKind,
 } from '@/features/trips/constants/listing-feedback';
-import type { PublishedTripGuestRecord } from '@/features/trips/publishedDb';
+import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
 import { Button } from '@/ui/shadcn/button';
 import {
   Dialog,
@@ -35,12 +35,9 @@ type PublishedListingFeedbackEntry = {
 };
 
 interface PublishedListingFeedbackSectionProps {
-  token: string;
   listingId: string;
   kind: ListingFeedbackKind;
   entries: PublishedListingFeedbackEntry[];
-  activeGuest: PublishedTripGuestRecord | null;
-  commentsOpen: boolean;
   className?: string;
   formClassName?: string;
   listClassName?: string;
@@ -50,12 +47,9 @@ interface PublishedListingFeedbackSectionProps {
 }
 
 export function PublishedListingFeedbackSection({
-  token,
   listingId,
   kind,
   entries,
-  activeGuest,
-  commentsOpen,
   className,
   formClassName,
   listClassName,
@@ -63,19 +57,21 @@ export function PublishedListingFeedbackSection({
   showComposerIdentity = true,
   entryVariant = 'card',
 }: PublishedListingFeedbackSectionProps) {
+  const { token, share, activeGuest } = usePublishedTripGuest();
+  const commentsOpen = share.commentsOpen;
   const router = useRouter();
   const [draft, setDraft] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const trimmedDraft = draft.trim();
-  const isComposerDisabled = !activeGuest || !commentsOpen || isSubmitting;
+  const isComposerDisabled = !commentsOpen || isSubmitting;
   const config = getListingFeedbackConfig(kind);
   const composerHelperText = !commentsOpen ? 'Guest feedback is closed.' : `${trimmedDraft.length}/1000`;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!activeGuest || !trimmedDraft) {
+    if (!trimmedDraft) {
       return;
     }
 
@@ -106,7 +102,7 @@ export function PublishedListingFeedbackSection({
         {showComposerIdentity ? (
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium">
-              {activeGuest ? `${config.singularLabel} as ${activeGuest.guestDisplayName}` : `Pick a guest name to add a ${config.singularLabel.toLowerCase()}`}
+              {`${config.singularLabel} as ${activeGuest.guestDisplayName}`}
             </p>
             {!commentsOpen ? (
               <p className="text-xs text-muted-foreground">Guest feedback is closed.</p>
@@ -203,7 +199,7 @@ export function PublishedListingFeedbackSection({
               <Button
                 weight="hollow"
                 size="sm"
-                disabled={!activeGuest || !commentsOpen}
+                disabled={!commentsOpen}
                 className="h-10 w-full rounded-xl border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:text-sky-800"
               >
                 <Plus className="h-4 w-4" />
@@ -218,12 +214,7 @@ export function PublishedListingFeedbackSection({
               {renderComposerForm()}
             </DialogContent>
           </Dialog>
-          {!activeGuest ? (
-            <p className="text-xs text-muted-foreground">
-              Pick a guest name to add a {config.singularLabel.toLowerCase()}.
-            </p>
-          ) : null}
-          {activeGuest && !commentsOpen ? (
+          {!commentsOpen ? (
             <p className="text-xs text-muted-foreground">Guest feedback is closed.</p>
           ) : null}
         </div>

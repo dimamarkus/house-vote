@@ -10,6 +10,7 @@ import {
 } from '@/features/listings/constants/listing-status';
 import { PublishedListingActionsMenu } from '@/features/trips/components/PublishedListingActionsMenu';
 import { PublishedListingCardFooter } from '@/features/trips/components/PublishedListingCardFooter';
+import { PublishedTripGuestProvider } from '@/features/trips/components/PublishedTripGuestContext';
 import { usePublishedGuestSession } from '@/features/trips/hooks/usePublishedGuestSession';
 import type { PublishedTripListingRecord, PublishedTripShareRecord } from '@/features/trips/publishedDb';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
@@ -125,70 +126,61 @@ export function PublishedTripPageClient({
   }
 
   return (
-    <div className="flex w-full flex-col gap-6">
-      {sortedListings.length > 0 ? (
-        <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {sortedListings.map((listing) => {
-            const isVoteEligible = isVoteEligibleListingStatus(listing.status);
-            const isCurrentVote = currentVoteListingId === listing.id;
-            const isCurrentWinner = currentWinnerListingId === listing.id;
-            const voteButtonLabel = !share.votingOpen
-              ? 'Voting closed'
-              : !isVoteEligible
-                ? (isCurrentVote ? 'Your vote' : formatListingStatusLabel(listing.status))
-                : isCurrentVote
-                  ? 'Your vote'
-                  : currentVoteListingId
-                    ? 'Move my vote here'
-                    : 'Vote for this house';
+    <PublishedTripGuestProvider value={{ token, share, activeGuest }}>
+      <div className="flex w-full flex-col gap-6">
+        {sortedListings.length > 0 ? (
+          <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {sortedListings.map((listing) => {
+              const isVoteEligible = isVoteEligibleListingStatus(listing.status);
+              const isCurrentVote = currentVoteListingId === listing.id;
+              const isCurrentWinner = currentWinnerListingId === listing.id;
+              const voteButtonLabel = !share.votingOpen
+                ? 'Voting closed'
+                : !isVoteEligible
+                  ? (isCurrentVote ? 'Your vote' : formatListingStatusLabel(listing.status))
+                  : isCurrentVote
+                    ? 'Your vote'
+                    : currentVoteListingId
+                      ? 'Move my vote here'
+                      : 'Vote for this house';
 
-            return (
-              <ListingCard
-                key={listing.id}
-                listing={listing}
-                roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
-                showAllMetadata
-                className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
-                imageOverlayContent={
-                  isCurrentWinner ? (
-                    <Badge className="bg-emerald-600 text-white shadow-sm">
-                      Current winner
-                    </Badge>
-                  ) : undefined
-                }
-                actionsMenu={
-                  <PublishedListingActionsMenu
-                    token={token}
-                    listing={listing}
-                    activeGuest={activeGuest}
-                    guestEditsAllowed={share.allowGuestSuggestions}
-                  />
-                }
-                footerContent={
-                  <PublishedListingCardFooter
-                    token={token}
-                    listing={listing}
-                    activeGuest={activeGuest}
-                    commentsOpen={share.commentsOpen}
-                    votingOpen={share.votingOpen}
-                    isVoteEligible={isVoteEligible}
-                    isCurrentVote={isCurrentVote}
-                    pendingVote={pendingAction === `vote-${listing.id}`}
-                    voteButtonLabel={voteButtonLabel}
-                    onVote={() => handleVote(listing.id)}
-                  />
-                }
-              />
-            );
-          })}
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            No homes are on the board yet. Add one to get voting started.
-          </CardContent>
-        </Card>
-      )}
-    </div>
+              return (
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
+                  showAllMetadata
+                  className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
+                  imageOverlayContent={
+                    isCurrentWinner ? (
+                      <Badge className="bg-emerald-600 text-white shadow-sm">
+                        Current winner
+                      </Badge>
+                    ) : undefined
+                  }
+                  actionsMenu={<PublishedListingActionsMenu listing={listing} />}
+                  footerContent={
+                    <PublishedListingCardFooter
+                      listing={listing}
+                      isVoteEligible={isVoteEligible}
+                      isCurrentVote={isCurrentVote}
+                      pendingVote={pendingAction === `vote-${listing.id}`}
+                      voteButtonLabel={voteButtonLabel}
+                      onVote={() => handleVote(listing.id)}
+                    />
+                  }
+                />
+              );
+            })}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="py-10 text-center text-muted-foreground">
+              No homes are on the board yet. Add one to get voting started.
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </PublishedTripGuestProvider>
   );
 }

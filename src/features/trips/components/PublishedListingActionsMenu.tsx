@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Edit, EllipsisVertical, Eye } from 'lucide-react';
-import type { PublishedTripGuestRecord, PublishedTripListingRecord } from '@/features/trips/publishedDb';
+import type { PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { PublishedListingEditSheet } from '@/features/trips/components/PublishedListingEditSheet';
+import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
 import { Button } from '@/ui/shadcn/button';
 import {
   DropdownMenu,
@@ -14,32 +15,19 @@ import {
 } from '@/ui/shadcn/dropdown-menu';
 
 interface PublishedListingActionsMenuProps {
-  token: string;
   listing: PublishedTripListingRecord;
-  activeGuest: PublishedTripGuestRecord | null;
-  /**
-   * Whether the trip owner currently allows guests to contribute listing data.
-   * Mirrors the gate used for `submitGuestListingUrl` so disabling guest
-   * suggestions also blocks guest edits.
-   */
-  guestEditsAllowed: boolean;
 }
 
-export function PublishedListingActionsMenu({
-  token,
-  listing,
-  activeGuest,
-  guestEditsAllowed,
-}: PublishedListingActionsMenuProps) {
+export function PublishedListingActionsMenu({ listing }: PublishedListingActionsMenuProps) {
+  const { share } = usePublishedTripGuest();
   const [editOpen, setEditOpen] = useState(false);
 
+  const guestEditsAllowed = share.allowGuestSuggestions;
   const canViewSource = typeof listing.url === 'string' && listing.url.length > 0;
-  const canEdit = Boolean(activeGuest) && guestEditsAllowed;
+  const canEdit = guestEditsAllowed;
   const editDisabledReason = !guestEditsAllowed
     ? 'The trip owner has disabled guest edits'
-    : !activeGuest
-      ? 'Pick your guest name first'
-      : undefined;
+    : undefined;
 
   return (
     <>
@@ -88,9 +76,7 @@ export function PublishedListingActionsMenu({
 
       {canEdit ? (
         <PublishedListingEditSheet
-          token={token}
           listing={listing}
-          activeGuest={activeGuest}
           open={editOpen}
           onOpenChange={setEditOpen}
         />

@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { updatePublishedTripListingDetails } from '@/features/trips/actions/publishedTripActions';
-import type { PublishedTripGuestRecord, PublishedTripListingRecord } from '@/features/trips/publishedDb';
+import type { PublishedTripListingRecord } from '@/features/trips/publishedDb';
+import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
 import {
   buildInitialValues,
   parseNumberField,
@@ -24,9 +25,7 @@ import {
 } from '@/ui/shadcn/sheet';
 
 interface PublishedListingEditSheetProps {
-  token: string;
   listing: PublishedTripListingRecord;
-  activeGuest: PublishedTripGuestRecord | null;
   children?: React.ReactNode;
   /** Controlled open state. When provided, children is optional. */
   open?: boolean;
@@ -35,13 +34,12 @@ interface PublishedListingEditSheetProps {
 }
 
 export function PublishedListingEditSheet({
-  token,
   listing,
-  activeGuest,
   children,
   open: controlledOpen,
   onOpenChange,
 }: PublishedListingEditSheetProps) {
+  const { token, activeGuest } = usePublishedTripGuest();
   const router = useRouter();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = typeof controlledOpen === 'boolean';
@@ -70,11 +68,6 @@ export function PublishedListingEditSheet({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!activeGuest) {
-      toast.error('Pick your name first to edit this listing.');
-      return;
-    }
 
     const price = parseNumberField(values.price);
     const bedroomCount = parseNumberField(values.bedroomCount);
@@ -200,7 +193,7 @@ export function PublishedListingEditSheet({
             <Button type="button" weight="hollow" onClick={() => setOpen(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || !activeGuest}>
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Saving...' : 'Save changes'}
             </Button>
           </div>

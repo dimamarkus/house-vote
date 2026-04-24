@@ -6,7 +6,8 @@ import {
   getListingFeedbackConfig,
 } from '@/features/trips/constants/listing-feedback';
 import { PublishedListingFeedbackSection } from '@/features/trips/components/PublishedListingFeedbackSection';
-import type { PublishedTripGuestRecord, PublishedTripListingRecord } from '@/features/trips/publishedDb';
+import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
+import type { PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -19,20 +20,15 @@ import {
 } from '@/ui/shadcn/sheet';
 
 interface PublishedListingCommentsSheetProps {
-  token: string;
   listing: PublishedTripListingRecord;
-  activeGuest: PublishedTripGuestRecord | null;
-  commentsOpen: boolean;
   triggerLabel: string;
 }
 
 export function PublishedListingCommentsSheet({
-  token,
   listing,
-  activeGuest,
-  commentsOpen,
   triggerLabel,
 }: PublishedListingCommentsSheetProps) {
+  const { share } = usePublishedTripGuest();
   const commentKind = LISTING_FEEDBACK_KIND.COMMENT;
   const comments = listing.comments.filter((comment) => comment.kind === commentKind);
   const commentConfig = getListingFeedbackConfig(commentKind);
@@ -49,17 +45,14 @@ export function PublishedListingCommentsSheet({
         <SheetHeader className="border-b pb-4">
           <div className="flex items-center gap-2">
             <SheetTitle>{commentConfig.pluralLabel}</SheetTitle>
-            {!commentsOpen ? <Badge variant="secondary">Closed</Badge> : null}
+            {!share.commentsOpen ? <Badge variant="secondary">Closed</Badge> : null}
           </div>
           <SheetDescription>{listing.title}</SheetDescription>
         </SheetHeader>
         <PublishedListingFeedbackSection
-          token={token}
           listingId={listing.id}
           kind={commentKind}
           entries={comments}
-          activeGuest={activeGuest}
-          commentsOpen={commentsOpen}
           className="flex h-full flex-col"
           listClassName="flex-1 overflow-y-auto py-4"
           formClassName="border-t pt-4"

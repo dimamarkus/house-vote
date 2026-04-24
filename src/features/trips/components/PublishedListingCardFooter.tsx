@@ -7,18 +7,15 @@ import {
 } from '@/features/trips/constants/listing-feedback';
 import { PublishedListingCommentsSheet } from '@/features/trips/components/PublishedListingCommentsSheet';
 import { PublishedListingFeedbackSection } from '@/features/trips/components/PublishedListingFeedbackSection';
-import type { PublishedTripCommentRecord, PublishedTripGuestRecord, PublishedTripListingRecord } from '@/features/trips/publishedDb';
+import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
+import type { PublishedTripCommentRecord, PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { cn } from '@/ui/utils/cn';
 
 interface PublishedListingCardFooterProps {
-  token: string;
   listing: PublishedTripListingRecord;
-  activeGuest: PublishedTripGuestRecord | null;
-  commentsOpen: boolean;
-  votingOpen: boolean;
   isVoteEligible: boolean;
   isCurrentVote: boolean;
   pendingVote: boolean;
@@ -33,17 +30,15 @@ const TAB_VALUE = {
 } as const;
 
 export function PublishedListingCardFooter({
-  token,
   listing,
-  activeGuest,
-  commentsOpen,
-  votingOpen,
   isVoteEligible,
   isCurrentVote,
   pendingVote,
   voteButtonLabel,
   onVote,
 }: PublishedListingCardFooterProps) {
+  const { share } = usePublishedTripGuest();
+  const votingOpen = share.votingOpen;
   const comments = listing.comments as PublishedTripCommentRecord[];
   const pros = comments.filter((comment) => comment.kind === LISTING_FEEDBACK_KIND.PRO);
   const cons = comments.filter((comment) => comment.kind === LISTING_FEEDBACK_KIND.CON);
@@ -122,12 +117,9 @@ export function PublishedListingCardFooter({
 
         <TabsContent value={TAB_VALUE.pros}>
           <PublishedListingFeedbackSection
-            token={token}
             listingId={listing.id}
             kind={LISTING_FEEDBACK_KIND.PRO}
             entries={pros}
-            activeGuest={activeGuest}
-            commentsOpen={commentsOpen}
             listClassName="max-h-40 space-y-2 overflow-y-auto pr-1"
             composerVariant="dialog"
             showComposerIdentity={false}
@@ -137,12 +129,9 @@ export function PublishedListingCardFooter({
 
         <TabsContent value={TAB_VALUE.cons}>
           <PublishedListingFeedbackSection
-            token={token}
             listingId={listing.id}
             kind={LISTING_FEEDBACK_KIND.CON}
             entries={cons}
-            activeGuest={activeGuest}
-            commentsOpen={commentsOpen}
             listClassName="max-h-40 space-y-2 overflow-y-auto pr-1"
             composerVariant="dialog"
             showComposerIdentity={false}
@@ -153,10 +142,7 @@ export function PublishedListingCardFooter({
 
       <div className="border-t border-border/50 pt-3">
         <PublishedListingCommentsSheet
-          token={token}
           listing={listing}
-          activeGuest={activeGuest}
-          commentsOpen={commentsOpen}
           triggerLabel={commentCount === 0 ? 'Add a comment' : `View ${commentCount} comment${commentCount === 1 ? '' : 's'}`}
         />
       </div>
