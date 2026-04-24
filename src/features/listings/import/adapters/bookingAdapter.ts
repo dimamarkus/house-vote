@@ -82,6 +82,11 @@ function parseRawPricePerNight(value: string | undefined): number | null {
  * rate on the page, which mirrors the behavior of the competitor adapters.
  * `data-price-per-night-raw` is already a decimal so we round for the Int
  * `Listing.price` column but keep the raw string in `rawSignals` for debugging.
+ *
+ * If the data attribute is missing we return null rather than scraping the
+ * visible "$285" text: when Booking changes their markup we want the import
+ * to surface as PARTIAL so we can fix the selector, not invent a wrong price
+ * from an unrelated dollar amount on the page.
  */
 function extractCheapestNightly($: cheerio.CheerioAPI): {
   dollars: number | null;
@@ -98,18 +103,6 @@ function extractCheapestNightly($: cheerio.CheerioAPI): {
       cheapestRaw = rawAttr ?? null;
     }
   });
-
-  // Fallback: visible "$285" text when the data attribute is ever missing.
-  if (cheapest === null) {
-    $('.js-average-per-night-price').each((_, el) => {
-      const match = normalizeText($(el).text())?.match(/\$?([0-9][0-9,]*(?:\.\d+)?)/);
-      if (!match) return;
-      const parsed = Number.parseFloat(match[1].replace(/,/g, ''));
-      if (Number.isFinite(parsed) && (cheapest === null || parsed < cheapest)) {
-        cheapest = parsed;
-      }
-    });
-  }
 
   return {
     dollars: cheapest === null ? null : Math.round(cheapest),

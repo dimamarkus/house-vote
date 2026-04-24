@@ -247,6 +247,16 @@ export function extractNightlyPriceFromText(
     }
   }
 
+  // Heuristic fallback: walk non-total price lines first, then any $N.
+  //
+  // NOTE: this is technically a "fallback" the roadmap wants removed, but
+  // dropping it regresses Airbnb price extraction on pages whose price block
+  // only shows "$X for N nights" + a bare "$X" (both are the stay total, not
+  // nightly). Removing this safely requires per-adapter `priceMeta` TOTAL
+  // detection so the normalizer divides by nights — which is tracked as a
+  // separate phase in the hotels roadmap, not here. The line-level filter
+  // below intentionally skips "for N nights" / "fees included" lines to
+  // avoid catching obvious totals/aggregates.
   const priceLines = text
     .split(/\n+/)
     .map((line) => normalizeText(line))

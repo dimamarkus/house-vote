@@ -1,7 +1,7 @@
 ---
 createdAt: 2026-04-22
 title: Phased Refactor and Cleanup Roadmap
-status: in-progress (phase 1 complete)
+status: in-progress (phases 1 & 2 complete)
 owner: dima
 ---
 
@@ -109,30 +109,34 @@ Right now the Airbnb, VRBO, Booking, generic, and hotel-template adapters all ca
 
 ### Technical breakdown
 
-- [ ] Create `src/features/listings/import/adapterHelpers.ts` exporting:
-  - `NIGHTLY_PRICE_PATTERNS` (currently in [importHelpers.ts](../src/features/listings/import/importHelpers.ts) 185–190, [airbnbAdapter.ts](../src/features/listings/import/adapters/airbnbAdapter.ts) 32–37, [vrboAdapter.ts](../src/features/listings/import/adapters/vrboAdapter.ts) 30–35, [createHotelAdapterTemplate.ts](../src/features/listings/import/adapters/createHotelAdapterTemplate.ts) 68–73).
-  - `TRACKING_QUERY_PARAMS` (duplicated in [normalizeImportedListing.ts](../src/features/listings/import/normalizeImportedListing.ts) 109–115 and [genericAdapter.ts](../src/features/listings/import/adapters/genericAdapter.ts) 4–10).
-  - `canonicalizeUrl(url, opts)` with options for `stripSearch` and `siteHost`. Used by airbnb/vrbo/generic/template. Booking stays on its own canonicalizer because of `rejectInputUrl` + external-id extraction.
-  - `cleanupTitle(title, suffix)` — used by all three real adapters.
-- [ ] Migrate adapters to import from `adapterHelpers.ts`. Delete the local copies.
-- [ ] Ensure `extractFormattedTextFromElement` and `getTextFromSelectors` are imported from [importHelpers.ts](../src/features/listings/import/importHelpers.ts) (not re-declared in adapters).
-- [ ] Decide the hotel scaffolds:
-  - [ ] Default path: delete `expediaAdapter.ts`, `hiltonAdapter.ts`, `hyattAdapter.ts`, `marriottAdapter.ts`, `hotelAdapterTemplates.ts`. They are only referenced by the barrel, which is referenced by nothing. Keep `createHotelAdapterTemplate.ts` for when we actually wire a hotel.
-  - [ ] Alternative path: wire them into `registry.ts` with documented TODOs. Only do this if you want the "at least they are typechecked" benefit.
-- [ ] Remove scraping-side fallbacks per the no-fallbacks rule:
-  - [ ] `extractNightlyPriceFromText` in [importHelpers.ts](../src/features/listings/import/importHelpers.ts) 212–224 — "first `$N` in body" fallback. Replace with a clear missing-field on the capture.
-  - [ ] `buildFallbackTitle` in [normalizeImportedListing.ts](../src/features/listings/import/normalizeImportedListing.ts) 253. Missing title should surface through `getMissingImportedListingFields`.
-  - [ ] Booking `extractCheapestNightly` fallback (lines 102–112) — keep the explicit-currency pass, drop the "first visible `$N`" fallback.
+- [x] Consolidate shared adapter helpers. **Decision:** added the new shared exports to the existing `importHelpers.ts` rather than spawning a sibling `adapterHelpers.ts` — `importHelpers.ts` is already the adapter utility file, and a second file just for URL canonicalization felt like indirection for indirection's sake.
+  - [x] `DEFAULT_NIGHTLY_PRICE_PATTERNS` already lived in `importHelpers.ts`; the identical copy in `airbnbAdapter.ts` is deleted. Vrbo keeps its re-ordered list with an explanatory comment.
+  - [x] `TRACKING_QUERY_PARAMS` centralized; duplicates in `normalizeImportedListing.ts` and `genericAdapter.ts` deleted.
+  - [x] `canonicalizeListingUrlShared(url, { stripSearch | stripTrackingParams })` used by airbnb/vrbo/generic plus the no-adapter fallback in `normalizeImportedListing`. Booking's own canonicalizer is kept (it rewrites the path slug).
+  - [ ] `cleanupTitle(title, suffix)` — **skipped**. It's a one-liner (`title.replace(suffix, '').trim()`) and factoring it out replaces literal code with equally short indirection for zero deduplication savings. Revisit only if more than three adapters need identical behavior.
+- [x] Confirmed `extractFormattedTextFromElement` / `getTextFromSelectors` are only imported from `importHelpers.ts` — no adapter redeclares them.
+- [x] Decide the hotel scaffolds: **deleted** `expediaAdapter`, `hiltonAdapter`, `hyattAdapter`, `marriottAdapter`, `hotelAdapterTemplates` AND `createHotelAdapterTemplate` (the factory became orphaned once its four consumers were removed). The 260421 hotels roadmap has been annotated with a recovery note for when that work resumes.
+- Remove scraping-side fallbacks per the no-fallbacks rule:
+  - [ ] `extractNightlyPriceFromText` in [importHelpers.ts](../src/features/listings/import/importHelpers.ts) — "first `$N` in body" fallback. **Deferred**: the Airbnb fixture (`example-airbnb.html`) relies on this to get any price at all, because its price block only shows "$X" + "$X for N nights" (both are the stay total, not nightly). Dropping the fallback here returns `price: null` for real Airbnb imports. Fixing it properly means adding per-adapter `priceMeta` TOTAL detection so the normalizer divides by nights — that's tracked in phase 7 of the 260421 hotels roadmap. A NOTE comment in `importHelpers.ts` flags the technical debt and why it stays.
+  - [ ] `buildFallbackTitle` in [normalizeImportedListing.ts](../src/features/listings/import/normalizeImportedListing.ts). **Deferred**: `Listing.title` is a non-null `String` in the Prisma schema, so removing the fallback needs either a schema change or a hard-throw from the import action. Reopen with a schema decision before executing.
+  - [x] Booking `extractCheapestNightly` fallback — removed. The primary signal is `data-price-per-night-raw` which is already a proper per-night rate; the visible-text branch was guessing from whatever dollar amount showed up in the price block if Booking ever dropped the data attribute. Tests green.
 
 ### Exit criteria
 
-- [ ] [extractListingCaptureFromHtml.test.ts](../src/features/listings/import/extractListingCaptureFromHtml.test.ts) passes with no fixture changes.
-- [ ] Manual import against Airbnb, VRBO, and Booking fixtures still extracts title, price, images.
-- [ ] Commit checkpoint: **`refactor(listings): collapse adapter duplication and drop import fallbacks`**.
+- [x] [extractListingCaptureFromHtml.test.ts](../src/features/listings/import/extractListingCaptureFromHtml.test.ts) passes with no fixture changes.
+- [x] `pnpm check-types` + `pnpm lint` + `pnpm test` all green on `main` after the phase.
+- [x] Shipped as three commits: hotel scaffold removal, shared canonicalizer/tracking params, Booking visible-text fallback removal. Full `refactor(listings): collapse adapter duplication and drop import fallbacks` checkpoint is the union of those three.
 
-### Cost
+### Deferrals from the original plan
 
-- ~500 LOC changed, ~10 files touched. Perf neutral. Hackiness **2**.
+- `extractNightlyPriceFromText` body-text fallback — kept; removing it regresses Airbnb price capture until per-adapter `priceMeta` TOTAL detection lands (phase 7 of 260421).
+- `buildFallbackTitle` — kept; removing it requires making `Listing.title` nullable or throwing from the import action. Needs a schema decision.
+- `cleanupTitle(title, suffix)` abstraction — skipped as too small to justify.
+- `createHotelAdapterTemplate.ts` — actively deleted rather than kept as idle scaffold, matching the no-unused-code rule.
+
+### Cost (actual)
+
+- ~200 LOC changed (vs. ~500 estimated — most of the saving came from deleting 6 hotel-adapter files outright). 10 files touched + 6 deleted + 2 roadmap docs. Perf neutral. Hackiness **1**.
 
 ## 6. Phase 3 — Cross-cutting UI reuse
 
