@@ -7,7 +7,10 @@ import type { TripFormData } from '../schemas';
 import { TripFormSheet } from '../forms/TripFormSheet';
 import { formatTripDateRange } from '../utils/formatTripDateRange';
 import { generateAirbnbUrl, generateVrboUrl } from '../utils/travelLinks';
+import { TripMetaPill } from './TripMetaPill';
 import { TripPriceBasisToggle } from './TripPriceBasisToggle';
+
+const DASHBOARD_META_PILL_CLASSNAME = 'shadow-sm sm:text-base';
 
 interface TripHeaderProps {
   trip: Partial<Trip> & Pick<Trip, 'id' | 'name' | 'userId' | 'startDate' | 'endDate' | 'location' | 'numberOfPeople' | 'description'>;
@@ -47,24 +50,27 @@ export function TripHeader({ trip }: TripHeaderProps) {
               {(trip.location || tripDateRange || trip.numberOfPeople) ? (
                 <div className="flex flex-wrap gap-3">
                   {trip.location ? (
-                    <div className="inline-flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-sm sm:text-base">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>{trip.location}</span>
-                    </div>
+                    <TripMetaPill
+                      icon={MapPin}
+                      label={trip.location}
+                      className={DASHBOARD_META_PILL_CLASSNAME}
+                    />
                   ) : null}
 
                   {tripDateRange ? (
-                    <div className="inline-flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-sm sm:text-base">
-                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                      <span>{tripDateRange}</span>
-                    </div>
+                    <TripMetaPill
+                      icon={CalendarDays}
+                      label={tripDateRange}
+                      className={DASHBOARD_META_PILL_CLASSNAME}
+                    />
                   ) : null}
 
                   {trip.numberOfPeople ? (
-                    <div className="inline-flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm font-medium shadow-sm sm:text-base">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{trip.numberOfPeople} guests</span>
-                    </div>
+                    <TripMetaPill
+                      icon={Users}
+                      label={`${trip.numberOfPeople} guests`}
+                      className={DASHBOARD_META_PILL_CLASSNAME}
+                    />
                   ) : null}
                 </div>
               ) : null}

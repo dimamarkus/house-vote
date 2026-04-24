@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { PublishedTripShareRecord } from '@/features/trips/publishedDb';
 import { CardDescription, CardTitle } from '@/ui/shadcn/card';
 import { CalendarDays, MapPin, Users } from 'lucide-react';
+import { TripMetaPill } from './TripMetaPill';
 
 interface PublishedTripMastheadProps {
   share: PublishedTripShareRecord;
@@ -10,8 +11,6 @@ interface PublishedTripMastheadProps {
   contextSlot?: ReactNode;
   guestDetailsSlot?: ReactNode;
 }
-
-const detailPillClassName = 'inline-flex max-w-full items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm font-medium leading-snug';
 
 export function PublishedTripMasthead({
   share,
@@ -37,23 +36,14 @@ export function PublishedTripMasthead({
           <div className="w-full xl:max-w-xl xl:flex-none">
             <div className="flex flex-wrap gap-3 xl:justify-end">
               {share.trip.location ? (
-                <div className={detailPillClassName}>
-                  <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="wrap-break-word">{share.trip.location}</span>
-                </div>
+                <TripMetaPill icon={MapPin} label={share.trip.location} />
               ) : null}
               {tripDateRange ? (
-                <div className={detailPillClassName}>
-                  <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="wrap-break-word">{tripDateRange}</span>
-                </div>
+                <TripMetaPill icon={CalendarDays} label={tripDateRange} />
               ) : null}
               {guestDetailsSlot ?? (
                 share.trip.numberOfPeople ? (
-                  <div className={detailPillClassName}>
-                    <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <span className="wrap-break-word">{share.trip.numberOfPeople} guests</span>
-                  </div>
+                  <TripMetaPill icon={Users} label={`${share.trip.numberOfPeople} guests`} />
                 ) : null
               )}
             </div>
