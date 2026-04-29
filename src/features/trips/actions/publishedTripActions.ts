@@ -1,8 +1,14 @@
 'use server';
 
 import { ListingCommentKind } from 'db';
+import { cookies } from 'next/headers';
 import { createServerAction } from '@/core/server-actions';
 import type { BasicApiResponse } from '@/core/types';
+import {
+  encodePublishedGuestSessionCookieValue,
+  getPublishedGuestSessionKey,
+  PUBLISHED_GUEST_SESSION_COOKIE_MAX_AGE_SECONDS,
+} from '@/features/trips/constants/publishedGuestSession';
 import { getListingFeedbackConfig } from '../constants/listing-feedback';
 import { publishedTrips } from '../publishedDb';
 import type { TripShareState } from '../types';
@@ -189,11 +195,22 @@ export async function claimPublishedTripGuest(
     validationErrorMessage: 'Invalid guest session request.',
     handler: async ({ input: { token, guestId } }) => {
       const result = await publishedTrips.claimGuestSession(token, guestId);
+      const session = {
+        guestId: result.guest.id,
+        guestDisplayName: result.guest.guestDisplayName,
+      };
+      const cookieStore = await cookies();
+      cookieStore.set(getPublishedGuestSessionKey(result.share.tripId), encodePublishedGuestSessionCookieValue(session), {
+        httpOnly: false,
+        maxAge: PUBLISHED_GUEST_SESSION_COOKIE_MAX_AGE_SECONDS,
+        path: '/',
+        sameSite: 'lax',
+      });
+
       return {
         data: {
           tripId: result.share.tripId,
-          guestId: result.guest.id,
-          guestDisplayName: result.guest.guestDisplayName,
+          ...session,
         },
         revalidate: publishedTripRevalidationPaths(result.share.tripId, result.share.token),
       };

@@ -61,8 +61,7 @@ export function PublishedTripGuestPicker({
       guestId: result.data.guestId,
       guestDisplayName: result.data.guestDisplayName,
     });
-    router.push(votingHref);
-    router.refresh();
+    router.replace(votingHref);
   }
 
   return (
