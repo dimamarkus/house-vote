@@ -62,6 +62,8 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   roomBreakdown?: RoomBreakdown | null;
   showAllMetadata?: boolean;
   showDescription?: boolean;
+  contentClassName?: string;
+  footerClassName?: string;
   /**
    * Trip-level context used to compute per-guest / total prices when the
    * user toggles away from per-night display. Omit to keep the card showing
@@ -86,6 +88,8 @@ export function ListingCard({
   roomBreakdown,
   showAllMetadata = false,
   showDescription = true,
+  contentClassName,
+  footerClassName,
   tripContext,
   travelLinkContext,
   priceUnitLabel,
@@ -268,7 +272,7 @@ export function ListingCard({
         />
       </CardHeader>
 
-      <CardContent className="flex flex-1 flex-col text-sm">
+      <CardContent className={cn("flex flex-1 flex-col text-sm", contentClassName)}>
         <div className="space-y-4">
           {showingRooms && hasRooms && (
             <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
@@ -290,7 +294,7 @@ export function ListingCard({
       </CardContent>
 
       {footerContent && (
-        <CardFooter className="border-t border-border/50 pt-4">
+        <CardFooter className={cn("border-t border-border/50 pt-4", footerClassName)}>
           {footerContent}
         </CardFooter>
       )}

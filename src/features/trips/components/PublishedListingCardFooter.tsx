@@ -44,7 +44,7 @@ export function PublishedListingCardFooter({
   const commentCount = comments.filter((comment) => comment.kind === LISTING_FEEDBACK_KIND.COMMENT).length;
 
   return (
-    <div className="flex w-full flex-col gap-3">
+    <div className="flex min-h-full w-full flex-col gap-3">
       {cardView === 'votes' ? (
         <div className="space-y-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -125,7 +125,7 @@ export function PublishedListingCardFooter({
 
       <div className={cn(
         cardView === 'votes' || cardView === 'feedback'
-          ? 'border-t border-border/50 pt-3'
+          ? 'mt-auto border-t border-border/50 pt-3'
           : 'pt-0',
       )}>
         <PublishedListingCommentsSheet

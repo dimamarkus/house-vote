@@ -139,6 +139,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
             const isVoteEligible = isVoteEligibleListingStatus(listing.status);
             const isCurrentVote = currentVoteListingId === listing.id;
             const isCurrentWinner = currentWinnerListingId === listing.id;
+            const tabContentFillsCard = cardView === 'votes' || cardView === 'feedback';
             const voteButtonLabel = !share.votingOpen
               ? 'Voting closed'
               : !isVoteEligible
@@ -158,6 +159,8 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
                 roomBreakdown={cardView === 'beds' ? listing.roomBreakdown as ListingCardProps['roomBreakdown'] : null}
                 showAllMetadata={cardView === 'beds'}
                 showDescription={cardView === 'info'}
+                contentClassName={tabContentFillsCard ? 'flex-none' : undefined}
+                footerClassName={tabContentFillsCard ? 'flex-1 items-start' : undefined}
                 className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
                 imageOverlayContent={
                   isCurrentWinner ? (
