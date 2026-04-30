@@ -21,6 +21,7 @@ import { isVoteEligibleListingStatus } from '../constants/listing-status';
 import { extractBedCountFromRoomBreakdown, extractSleepsCount } from '../utils/extractSleepsCount';
 import {
   computeListingPriceDisplay,
+  type PriceBasis,
   type TripPriceContext,
 } from '../utils/priceBasis';
 import { usePriceBasis } from '@/features/trips/hooks/usePriceBasis';
@@ -62,6 +63,8 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
    * nightly prices (e.g. surfaces outside a trip page).
    */
   tripContext?: TripPriceContext;
+  /** Optional fixed basis for surfaces that should not follow the global toggle. */
+  priceBasis?: PriceBasis;
 }
 
 export function ListingCard({
@@ -75,15 +78,17 @@ export function ListingCard({
   roomBreakdown,
   showAllMetadata = false,
   tripContext,
+  priceBasis,
   ...props
 }: ListingCardProps) {
   const [face, setFace] = useState<'default' | 'rooms'>(
     roomBreakdown?.rooms?.length ? 'rooms' : 'default',
   );
-  const [priceBasis] = usePriceBasis();
+  const [storedPriceBasis] = usePriceBasis();
+  const effectivePriceBasis = priceBasis ?? storedPriceBasis;
   const priceDisplay = computeListingPriceDisplay(
     listing.price ?? null,
-    priceBasis,
+    effectivePriceBasis,
     tripContext,
   );
 
