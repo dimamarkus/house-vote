@@ -31,6 +31,11 @@ export function PublishedTripTopBar({
   const joinHref = `/share/${token}/join`;
   const boardHref = `/share/${token}`;
 
+  function handleSwitchGuest() {
+    clearSession();
+    router.push(joinHref);
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="mx-auto flex w-full max-w-none flex-col gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between 2xl:px-10">
@@ -67,24 +72,24 @@ export function PublishedTripTopBar({
             <span className="truncate">
               {activeGuest ? (
                 <>
-                  Voting as <strong className="text-foreground">{activeGuest.guestDisplayName}</strong>
+                  Voting as{' '}
+                  {mode === 'board' ? (
+                    <button
+                      type="button"
+                      className="rounded-sm font-semibold text-blue-600 underline underline-offset-4 transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      onClick={handleSwitchGuest}
+                    >
+                      {activeGuest.guestDisplayName}
+                    </button>
+                  ) : (
+                    <strong className="text-foreground">{activeGuest.guestDisplayName}</strong>
+                  )}
                 </>
               ) : (
                 'Choose your name'
               )}
             </span>
-            {mode === 'board' ? (
-              <Button
-                weight="ghost"
-                size="sm"
-                onClick={() => {
-                  clearSession();
-                  router.push(joinHref);
-                }}
-              >
-                Switch name
-              </Button>
-            ) : activeGuest ? (
+            {mode === 'join' && activeGuest ? (
               <Button weight="ghost" size="sm" asChild>
                 <Link href={boardHref}>Back to board</Link>
               </Button>
