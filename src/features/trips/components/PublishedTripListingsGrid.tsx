@@ -12,6 +12,7 @@ import {
 import { PublishedListingActionsMenu } from '@/features/trips/components/PublishedListingActionsMenu';
 import { PublishedListingCardFooter } from '@/features/trips/components/PublishedListingCardFooter';
 import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
+import { usePublishedListingCardView } from '@/features/trips/hooks/usePublishedListingCardView';
 import type { PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
 import { createTripTravelContext } from '@/features/trips/utils/tripTravelContext';
@@ -27,6 +28,7 @@ interface PublishedTripListingsGridProps {
 export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGridProps) {
   const { token, share, activeGuest } = usePublishedTripGuest();
   const router = useRouter();
+  const [cardView] = usePublishedListingCardView();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [hideRejectedListings, setHideRejectedListings] = useState(true);
 
@@ -153,8 +155,8 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
                 listing={listing}
                 priceUnitLabel="total"
                 travelLinkContext={travelLinkContext}
-                roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
-                showAllMetadata
+                roomBreakdown={cardView === 'beds' ? listing.roomBreakdown as ListingCardProps['roomBreakdown'] : null}
+                showAllMetadata={cardView === 'beds'}
                 className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
                 imageOverlayContent={
                   isCurrentWinner ? (

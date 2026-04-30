@@ -48,6 +48,9 @@ export function PublishedTripTopBar({
               }}
             >
               <TabsList aria-label="Listing card view" className="h-9 w-full sm:w-auto">
+                <TabsTrigger value="beds" className="flex-1 px-3 sm:flex-none">
+                  Beds
+                </TabsTrigger>
                 <TabsTrigger value="votes" className="flex-1 px-3 sm:flex-none">
                   Votes
                 </TabsTrigger>

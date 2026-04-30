@@ -86,7 +86,7 @@ export function PublishedListingCardFooter({
             {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
           </p>
         </div>
-      ) : (
+      ) : cardView === 'feedback' ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <section>
             <PublishedListingFeedbackSection
@@ -121,7 +121,7 @@ export function PublishedListingCardFooter({
             />
           </section>
         </div>
-      )}
+      ) : null}
 
       <div className="border-t border-border/50 pt-3">
         <PublishedListingCommentsSheet
