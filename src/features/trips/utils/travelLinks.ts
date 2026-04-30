@@ -13,6 +13,8 @@ interface TravelGuestParams {
   numberOfPeople?: number | null;
 }
 
+const DEFAULT_VRBO_CHILD_AGE = 9;
+
 function parseTravelDate(date: TravelDateValue): Date | null {
   if (!date) {
     return null;
@@ -91,7 +93,9 @@ export function generateAirbnbUrl(params: {
       queryParams.set('numberOfAdults', adultCount);
     }
 
-    queryParams.set('numberOfChildren', (guestBreakdown.childCount ?? 0).toString());
+    const childCount = (guestBreakdown.childCount ?? 0).toString();
+    queryParams.set('numberOfChildren', childCount);
+    queryParams.set('children', childCount);
   }
 
   // Add query string if we have parameters
@@ -142,6 +146,11 @@ export function generateVrboUrl(params: {
     queryParams.push(`adultsCount=${guestBreakdown.adultCount}`);
   }
 
+  const childrenParam = buildVrboChildrenParam(guestBreakdown.childCount);
+  if (childrenParam) {
+    queryParams.push(`children=${encodeURIComponent(childrenParam)}`);
+  }
+
   // Add query string if we have parameters
   if (queryParams.length > 0) {
     return `${baseUrl}?${queryParams.join('&')}`;
@@ -172,6 +181,17 @@ function extractAirbnbProductId(url: URL): string | null {
 
   const productMatch = url.pathname.match(/\/(?:rooms|book\/stays)\/([^/?]+)/i);
   return productMatch?.[1] ?? null;
+}
+
+function buildVrboChildrenParam(childCount: number | null): string | null {
+  if (!childCount || childCount <= 0) {
+    return null;
+  }
+
+  return Array.from(
+    { length: childCount },
+    () => `1_${DEFAULT_VRBO_CHILD_AGE}`,
+  ).join(',');
 }
 
 function addAirbnbListingParams(
@@ -211,7 +231,9 @@ function addAirbnbListingParams(
   }
 
   if (hasTripParams) {
-    url.searchParams.set('numberOfChildren', (guestBreakdown.childCount ?? 0).toString());
+    const childCount = (guestBreakdown.childCount ?? 0).toString();
+    url.searchParams.set('numberOfChildren', childCount);
+    url.searchParams.set('children', childCount);
     url.searchParams.set('numberOfInfants', '0');
     url.searchParams.set('numberOfPets', '0');
     url.searchParams.set('isWorkTrip', 'false');
@@ -242,6 +264,11 @@ function addVrboListingParams(
 
   if (guestBreakdown.adultCount !== null) {
     url.searchParams.set('adults', guestBreakdown.adultCount.toString());
+  }
+
+  const childrenParam = buildVrboChildrenParam(guestBreakdown.childCount);
+  if (childrenParam) {
+    url.searchParams.set('children', childrenParam);
   }
 }
 

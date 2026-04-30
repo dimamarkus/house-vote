@@ -19,9 +19,10 @@ describe('travel search URLs', () => {
     expect(parsedUrl.searchParams.get('numberOfAdults')).toBe('8');
     expect(parsedUrl.searchParams.get('guests')).toBe('12');
     expect(parsedUrl.searchParams.get('numberOfChildren')).toBe('4');
+    expect(parsedUrl.searchParams.get('children')).toBe('4');
   });
 
-  it('uses adult count for Vrbo search URLs without fake child ages', () => {
+  it('uses adult count and default child ages for Vrbo search URLs', () => {
     const url = generateVrboUrl({
       location: 'Poconos, PA',
       startDate: '2026-08-17',
@@ -35,7 +36,8 @@ describe('travel search URLs', () => {
     expect(parsedUrl.searchParams.get('arrival')).toBe('2026-08-17');
     expect(parsedUrl.searchParams.get('departure')).toBe('2026-08-21');
     expect(parsedUrl.searchParams.get('adultsCount')).toBe('8');
-    expect(parsedUrl.searchParams.has('children')).toBe(false);
+    expect(parsedUrl.searchParams.get('children')).toBe('1_9,1_9,1_9,1_9');
+    expect(url).toContain('children=1_9%2C1_9%2C1_9%2C1_9');
   });
 });
 
@@ -60,6 +62,7 @@ describe('generateTravelListingUrl', () => {
     expect(parsedUrl.searchParams.get('adults')).toBe('5');
     expect(parsedUrl.searchParams.get('guests')).toBe('5');
     expect(parsedUrl.searchParams.get('numberOfChildren')).toBe('0');
+    expect(parsedUrl.searchParams.get('children')).toBe('0');
     expect(parsedUrl.searchParams.get('numberOfInfants')).toBe('0');
     expect(parsedUrl.searchParams.get('numberOfPets')).toBe('0');
     expect(parsedUrl.searchParams.get('productId')).toBe('46898739');
@@ -81,6 +84,7 @@ describe('generateTravelListingUrl', () => {
     expect(parsedUrl.searchParams.get('adults')).toBe('3');
     expect(parsedUrl.searchParams.get('guests')).toBe('5');
     expect(parsedUrl.searchParams.get('numberOfChildren')).toBe('2');
+    expect(parsedUrl.searchParams.get('children')).toBe('2');
   });
 
   it('adds trip dates and guest count to Vrbo listing URLs', () => {
@@ -105,7 +109,7 @@ describe('generateTravelListingUrl', () => {
     expect(parsedUrl.searchParams.get('adults')).toBe('10');
   });
 
-  it('uses adult count without fake child ages for Vrbo listing URLs', () => {
+  it('uses adult count and default child ages for Vrbo listing URLs', () => {
     const url = generateTravelListingUrl({
       url: 'https://www.vrbo.com/2677958?selected=75860009',
       source: 'VRBO',
@@ -118,7 +122,8 @@ describe('generateTravelListingUrl', () => {
     const parsedUrl = new URL(url ?? '');
 
     expect(parsedUrl.searchParams.get('adults')).toBe('8');
-    expect(parsedUrl.searchParams.has('children')).toBe(false);
+    expect(parsedUrl.searchParams.get('children')).toBe('1_9,1_9,1_9,1_9');
+    expect(url).toContain('children=1_9%2C1_9%2C1_9%2C1_9');
   });
 
   it('keeps Airbnb listing URLs unchanged when no trip details are present', () => {
