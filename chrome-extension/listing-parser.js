@@ -1,5 +1,5 @@
 (function registerHouseVoteListingParser() {
-  const PARSER_VERSION = '2026-04-hardening-2-extension-booking';
+  const PARSER_VERSION = '2026-04-hardening-3-visible-images';
 
   function normalizeText(value) {
     if (typeof value !== 'string') {
@@ -243,6 +243,39 @@
 
   function normalizePhotoUrls(values) {
     return Array.from(new Set(values.map((value) => normalizeImageUrl(value)).filter(Boolean))).slice(0, 20);
+  }
+
+  function isVisibleListingImage(image) {
+    if (!image || !image.isConnected) {
+      return false;
+    }
+
+    const primaryContent = document.querySelector('main, [role="main"], article');
+    if (primaryContent && !primaryContent.contains(image)) {
+      return false;
+    }
+
+    const style = window.getComputedStyle(image);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+      return false;
+    }
+
+    const rect = image.getBoundingClientRect();
+    const renderedWidth = rect.width || image.clientWidth || image.naturalWidth;
+    const renderedHeight = rect.height || image.clientHeight || image.naturalHeight;
+    return renderedWidth >= 80 && renderedHeight >= 80;
+  }
+
+  function collectVisibleDomImageValues() {
+    return Array.from(document.images)
+      .filter(isVisibleListingImage)
+      .flatMap((image) => [
+        image.currentSrc || image.src,
+        image.getAttribute('data-src'),
+        image.getAttribute('data-original'),
+        ...parseSrcSetValues(image.getAttribute('srcset')),
+        ...parseSrcSetValues(image.getAttribute('data-srcset')),
+      ]);
   }
 
   function parseSrcSetValues(srcset) {
@@ -774,13 +807,7 @@
     ]);
     const structuredImages = parseStructuredImageValues(deepCollectByKey(jsonLdBlocks, ['image']));
     const nextDataImages = parseStructuredImageValues(deepCollectByKey(nextData, ['image', 'images', 'pictureUrls']));
-    const domImages = Array.from(document.images).flatMap((image) => [
-      image.currentSrc || image.src,
-      image.getAttribute('data-src'),
-      image.getAttribute('data-original'),
-      ...parseSrcSetValues(image.getAttribute('srcset')),
-      ...parseSrcSetValues(image.getAttribute('data-srcset')),
-    ]);
+    const domImages = collectVisibleDomImageValues();
     const photoUrls = normalizePhotoUrls([
       getMetaContent('meta[property="og:image"]'),
       ...structuredImages,

@@ -63,6 +63,28 @@ function buildImportedListingImportPayload(
   };
 }
 
+async function replaceListingPhotos(
+  tx: Prisma.TransactionClient,
+  listingId: string,
+  photoUrls: string[],
+) {
+  await tx.listingPhoto.deleteMany({
+    where: {
+      listingId,
+    },
+  });
+
+  if (photoUrls.length > 0) {
+    await tx.listingPhoto.createMany({
+      data: photoUrls.map((url, index) => ({
+        listingId,
+        url,
+        position: index,
+      })),
+    });
+  }
+}
+
 export async function applyNormalizedImportToListingId(
   listingId: string,
   listing: NormalizedImportedListing,
@@ -76,19 +98,7 @@ export async function applyNormalizedImportToListingId(
       data: listingData,
     });
 
-    if (listing.photoUrls.length > 0) {
-      await tx.listingPhoto.deleteMany({
-        where: { listingId },
-      });
-
-      await tx.listingPhoto.createMany({
-        data: listing.photoUrls.map((url, index) => ({
-          listingId,
-          url,
-          position: index,
-        })),
-      });
-    }
+    await replaceListingPhotos(tx, listingId, listing.photoUrls);
 
     return tx.listing.findUniqueOrThrow({
       where: { id: listingId },
@@ -155,21 +165,7 @@ export async function upsertImportedListing(
           },
         });
 
-    if (listing.photoUrls.length > 0) {
-      await tx.listingPhoto.deleteMany({
-        where: {
-          listingId: savedListing.id,
-        },
-      });
-
-      await tx.listingPhoto.createMany({
-        data: listing.photoUrls.map((url, index) => ({
-          listingId: savedListing.id,
-          url,
-          position: index,
-        })),
-      });
-    }
+    await replaceListingPhotos(tx, savedListing.id, listing.photoUrls);
 
     return tx.listing.findUniqueOrThrow({
       where: {

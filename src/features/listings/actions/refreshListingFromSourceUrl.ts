@@ -33,13 +33,8 @@ const REFRESH_LISTING_SELECT = {
   bedroomCount: true,
   bedCount: true,
   bathroomCount: true,
-  imageUrl: true,
   sourceDescription: true,
   roomBreakdown: true,
-  photos: {
-    select: { url: true },
-    orderBy: { position: 'asc' as const },
-  },
 } satisfies Prisma.ListingSelect;
 
 function stripTrailingEllipsis(value: string): string {
@@ -121,26 +116,14 @@ function keepExisting<T>(refreshed: T | null | undefined, existing: T | null | u
   return (refreshed ?? existing ?? null) as T | null;
 }
 
-/**
- * `determineImportStatus` only looks at `photoUrls[0]`, but we merge `imageUrl` separately and may
- * still have gallery rows in the DB when the scrape returns no URLs — include those for status.
- */
-function photoUrlsForImportStatus(
+function refreshedPhotoUrlsForImportStatus(
   normalized: { photoUrls: string[]; imageUrl: string | null },
-  existingImageUrl: string | null,
-  existingGalleryUrls: string[],
 ): string[] {
   if (normalized.photoUrls.length > 0) {
     return normalized.photoUrls;
   }
   if (normalized.imageUrl) {
     return [normalized.imageUrl];
-  }
-  if (existingGalleryUrls.length > 0) {
-    return existingGalleryUrls;
-  }
-  if (existingImageUrl) {
-    return [existingImageUrl];
   }
   return [];
 }
@@ -225,13 +208,9 @@ export async function refreshListingFromSourceUrl(input: unknown) {
     normalizedListing.bedCount = keepExisting(normalizedListing.bedCount, listing.bedCount);
     normalizedListing.bathroomCount = keepExisting(normalizedListing.bathroomCount, listing.bathroomCount);
     normalizedListing.address = keepExisting(normalizedListing.address, listing.address);
-    normalizedListing.imageUrl = keepExisting(normalizedListing.imageUrl, listing.imageUrl);
+    // Treat photos as authoritative on refresh: stale images are worse than no images.
 
-    const effectivePhotoUrls = photoUrlsForImportStatus(
-      normalizedListing,
-      listing.imageUrl,
-      listing.photos.map((p) => p.url),
-    );
+    const effectivePhotoUrls = refreshedPhotoUrlsForImportStatus(normalizedListing);
     normalizedListing.importStatus = recalculateImportStatus({
       title: normalizedListing.title,
       address: normalizedListing.address,
