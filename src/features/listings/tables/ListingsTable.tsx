@@ -39,6 +39,12 @@ type ListingWithRelations = Listing & {
   comments?: CountableListingFeedback[];
 };
 
+type ListingTableRow = ListingWithRelations & {
+  conCount: number;
+  likeCount: number;
+  proCount: number;
+};
+
 interface ListingsTableProps {
   listings: ListingWithRelations[];
   currentUserId?: string;
@@ -62,6 +68,17 @@ export function ListingsTable({
 }: ListingsTableProps) {
   const router = useRouter();
 
+  const rows: ListingTableRow[] = listings.map((listing) => {
+    const feedbackCounts = countListingFeedbackByKind(listing.comments ?? []);
+
+    return {
+      ...listing,
+      conCount: feedbackCounts[LISTING_FEEDBACK_KIND.CON],
+      likeCount: listing.likes?.length ?? 0,
+      proCount: feedbackCounts[LISTING_FEEDBACK_KIND.PRO],
+    };
+  });
+
   async function handleSetPrimaryPhoto(listingId: string, photoUrl: string) {
     const result = await setListingPrimaryPhoto({
       listingId,
@@ -78,7 +95,7 @@ export function ListingsTable({
   }
 
   // Columns expect cell function to receive the item directly
-  const columns: ColumnDef<ListingWithRelations>[] = [
+  const columns: ColumnDef<ListingTableRow>[] = [
     {
       header: "Image",
       cell: (listing) => {
@@ -249,44 +266,44 @@ export function ListingsTable({
       }
     },
     {
-      header: "Likes",
-      accessorKey: "likes",
-      cell: (listing) => {
-        const likeCount = listing.likes?.length ?? 0;
-        const hasLiked = currentUserLikes[listing.id] ?? false;
-
-        return (
-          <div className="flex items-center justify-center">
-            <LikeButton
-              listingId={listing.id}
-              initialCount={likeCount}
-              initialLiked={hasLiked}
-              size="sm"
-            />
-          </div>
-        );
-      }
-    },
-    {
       header: 'Pros',
+      accessorKey: 'proCount',
+      sortable: true,
       cell: (listing) => {
-        const feedbackCounts = countListingFeedbackByKind(listing.comments ?? []);
-
         return (
           <div className="text-center font-medium text-emerald-700">
-            {feedbackCounts[LISTING_FEEDBACK_KIND.PRO]}
+            {listing.proCount}
           </div>
         );
       }
     },
     {
       header: 'Cons',
+      accessorKey: 'conCount',
+      sortable: true,
       cell: (listing) => {
-        const feedbackCounts = countListingFeedbackByKind(listing.comments ?? []);
-
         return (
           <div className="text-center font-medium text-rose-700">
-            {feedbackCounts[LISTING_FEEDBACK_KIND.CON]}
+            {listing.conCount}
+          </div>
+        );
+      }
+    },
+    {
+      header: "Likes",
+      accessorKey: "likeCount",
+      sortable: true,
+      cell: (listing) => {
+        const hasLiked = currentUserLikes[listing.id] ?? false;
+
+        return (
+          <div className="flex items-center justify-center">
+            <LikeButton
+              listingId={listing.id}
+              initialCount={listing.likeCount}
+              initialLiked={hasLiked}
+              size="sm"
+            />
           </div>
         );
       }
@@ -326,8 +343,8 @@ export function ListingsTable({
   ];
 
   return (
-    <GenericTable<ListingWithRelations>
-      data={listings}
+    <GenericTable<ListingTableRow>
+      data={rows}
       columns={columns}
       rowKeyField="id"
       basePath={basePath}
