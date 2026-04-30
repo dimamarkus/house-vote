@@ -8,10 +8,10 @@ import {
 import { PublishedListingCommentsSheet } from '@/features/trips/components/PublishedListingCommentsSheet';
 import { PublishedListingFeedbackSection } from '@/features/trips/components/PublishedListingFeedbackSection';
 import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
+import { usePublishedListingCardView } from '@/features/trips/hooks/usePublishedListingCardView';
 import type { PublishedTripCommentRecord, PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 import { cn } from '@/ui/utils/cn';
 
 interface PublishedListingCardFooterProps {
@@ -23,11 +23,6 @@ interface PublishedListingCardFooterProps {
   onVote: () => void;
 }
 
-const TAB_VALUE = {
-  votes: 'votes',
-  feedback: 'feedback',
-} as const;
-
 export function PublishedListingCardFooter({
   listing,
   isVoteEligible,
@@ -37,13 +32,11 @@ export function PublishedListingCardFooter({
   onVote,
 }: PublishedListingCardFooterProps) {
   const { share } = usePublishedTripGuest();
+  const [cardView] = usePublishedListingCardView();
   const votingOpen = share.votingOpen;
   const comments = listing.comments as PublishedTripCommentRecord[];
   const pros = comments.filter((comment) => comment.kind === LISTING_FEEDBACK_KIND.PRO);
   const cons = comments.filter((comment) => comment.kind === LISTING_FEEDBACK_KIND.CON);
-  const votesConfig = {
-    pluralLabel: 'Votes',
-  };
   const prosConfig = getListingFeedbackConfig(LISTING_FEEDBACK_KIND.PRO);
   const consConfig = getListingFeedbackConfig(LISTING_FEEDBACK_KIND.CON);
   const voterNames = listing.votes.map((vote) => vote.guest.guestDisplayName);
@@ -52,98 +45,79 @@ export function PublishedListingCardFooter({
 
   return (
     <div className="flex w-full flex-col gap-3">
-      <Tabs defaultValue={TAB_VALUE.votes} className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-2">
-          <TabsTrigger value={TAB_VALUE.votes} className="gap-2 py-2">
-            <span>{votesConfig.pluralLabel}</span>
-            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-              {voteCount}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value={TAB_VALUE.feedback} className="gap-2 py-2">
-            <span>Pros & cons</span>
-            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
-              {pros.length}
-            </span>
-            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-100 px-2 py-0.5 text-xs text-rose-700">
-              {cons.length}
-            </span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={TAB_VALUE.votes}>
-          <div className="space-y-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="flex min-h-9 flex-1 flex-wrap gap-2">
-                {voterNames.length > 0 ? (
-                  voterNames.map((voterName) => (
-                    <Badge key={`${listing.id}-${voterName}`} variant="secondary">
-                      {voterName}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-sm text-muted-foreground">No votes yet.</p>
-                )}
-              </div>
-              <Button
-                onClick={onVote}
-                disabled={!votingOpen || !isVoteEligible || pendingVote}
-                size="sm"
-                aria-label={voteButtonLabel}
-                aria-pressed={isCurrentVote}
-                title={voteButtonLabel}
-                className={cn(
-                  'shrink-0 rounded-full px-4 shadow-sm',
-                  isCurrentVote
-                    ? 'bg-rose-500 text-white hover:bg-rose-600'
-                    : 'bg-foreground text-background hover:bg-foreground/90',
-                  (!votingOpen || !isVoteEligible) && 'border border-input bg-background text-muted-foreground shadow-none hover:bg-background',
-                )}
-              >
-                {pendingVote ? (
-                  <RefreshCcw className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
-                )}
-                <span>{voteButtonLabel}</span>
-              </Button>
+      {cardView === 'votes' ? (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex min-h-9 flex-1 flex-wrap gap-2">
+              {voterNames.length > 0 ? (
+                voterNames.map((voterName) => (
+                  <Badge key={`${listing.id}-${voterName}`} variant="secondary">
+                    {voterName}
+                  </Badge>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">No votes yet.</p>
+              )}
             </div>
+            <Button
+              onClick={onVote}
+              disabled={!votingOpen || !isVoteEligible || pendingVote}
+              size="sm"
+              aria-label={voteButtonLabel}
+              aria-pressed={isCurrentVote}
+              title={voteButtonLabel}
+              className={cn(
+                'shrink-0 rounded-full px-4 shadow-sm',
+                isCurrentVote
+                  ? 'bg-rose-500 text-white hover:bg-rose-600'
+                  : 'bg-foreground text-background hover:bg-foreground/90',
+                (!votingOpen || !isVoteEligible) && 'border border-input bg-background text-muted-foreground shadow-none hover:bg-background',
+              )}
+            >
+              {pendingVote ? (
+                <RefreshCcw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
+              )}
+              <span>{voteButtonLabel}</span>
+            </Button>
           </div>
-        </TabsContent>
-
-        <TabsContent value={TAB_VALUE.feedback}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <section className="space-y-1.5">
-              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-                {prosConfig.pluralLabel}
-              </h4>
-              <PublishedListingFeedbackSection
-                listingId={listing.id}
-                kind={LISTING_FEEDBACK_KIND.PRO}
-                entries={pros}
-                listClassName="space-y-1"
-                composerVariant="dialog"
-                showComposerIdentity={false}
-                entryVariant="slim"
-              />
-            </section>
-            <section className="space-y-1.5">
-              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">
-                {consConfig.pluralLabel}
-              </h4>
-              <PublishedListingFeedbackSection
-                listingId={listing.id}
-                kind={LISTING_FEEDBACK_KIND.CON}
-                entries={cons}
-                listClassName="space-y-1"
-                composerVariant="dialog"
-                showComposerIdentity={false}
-                entryVariant="slim"
-              />
-            </section>
-          </div>
-        </TabsContent>
-      </Tabs>
+          <p className="text-xs text-muted-foreground">
+            {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
+          </p>
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <section className="space-y-1.5">
+            <h4 className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+              {prosConfig.pluralLabel}
+            </h4>
+            <PublishedListingFeedbackSection
+              listingId={listing.id}
+              kind={LISTING_FEEDBACK_KIND.PRO}
+              entries={pros}
+              listClassName="space-y-1"
+              composerVariant="dialog"
+              showComposerIdentity={false}
+              entryVariant="slim"
+            />
+          </section>
+          <section className="space-y-1.5">
+            <h4 className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">
+              {consConfig.pluralLabel}
+            </h4>
+            <PublishedListingFeedbackSection
+              listingId={listing.id}
+              kind={LISTING_FEEDBACK_KIND.CON}
+              entries={cons}
+              listClassName="space-y-1"
+              composerVariant="dialog"
+              showComposerIdentity={false}
+              entryVariant="slim"
+            />
+          </section>
+        </div>
+      )}
 
       <div className="border-t border-border/50 pt-3">
         <PublishedListingCommentsSheet

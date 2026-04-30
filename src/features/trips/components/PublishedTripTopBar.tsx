@@ -3,9 +3,14 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import type { PublishedGuestSessionValue } from '@/features/trips/constants/publishedGuestSession';
+import {
+  isPublishedListingCardView,
+  usePublishedListingCardView,
+} from '@/features/trips/hooks/usePublishedListingCardView';
 import { usePublishedGuestSession } from '@/features/trips/hooks/usePublishedGuestSession';
 import type { PublishedTripShareRecord } from '@/features/trips/publishedDb';
 import { Button } from '@/ui/shadcn/button';
+import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
 
 interface PublishedTripTopBarProps {
   token: string;
@@ -22,6 +27,7 @@ export function PublishedTripTopBar({
 }: PublishedTripTopBarProps) {
   const router = useRouter();
   const { activeGuest, clearSession } = usePublishedGuestSession(share.trip.id, share.guests, initialSession);
+  const [cardView, setCardView] = usePublishedListingCardView();
   const joinHref = `/share/${token}/join`;
   const boardHref = `/share/${token}`;
 
@@ -31,32 +37,53 @@ export function PublishedTripTopBar({
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-foreground sm:text-base">{share.trip.name}</p>
         </div>
-        <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          <span className="truncate">
-            {activeGuest ? (
-              <>
-                Voting as <strong className="text-foreground">{activeGuest.guestDisplayName}</strong>
-              </>
-            ) : (
-              'Choose your name'
-            )}
-          </span>
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
           {mode === 'board' ? (
-            <Button
-              weight="ghost"
-              size="sm"
-              onClick={() => {
-                clearSession();
-                router.push(joinHref);
+            <Tabs
+              value={cardView}
+              onValueChange={(value) => {
+                if (isPublishedListingCardView(value)) {
+                  setCardView(value);
+                }
               }}
             >
-              Switch name
-            </Button>
-          ) : activeGuest ? (
-            <Button weight="ghost" size="sm" asChild>
-              <Link href={boardHref}>Back to board</Link>
-            </Button>
+              <TabsList aria-label="Listing card view" className="h-9 w-full sm:w-auto">
+                <TabsTrigger value="votes" className="flex-1 px-3 sm:flex-none">
+                  Votes
+                </TabsTrigger>
+                <TabsTrigger value="feedback" className="flex-1 px-3 sm:flex-none">
+                  Pros / cons
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           ) : null}
+          <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-muted-foreground sm:justify-end">
+            <span className="truncate">
+              {activeGuest ? (
+                <>
+                  Voting as <strong className="text-foreground">{activeGuest.guestDisplayName}</strong>
+                </>
+              ) : (
+                'Choose your name'
+              )}
+            </span>
+            {mode === 'board' ? (
+              <Button
+                weight="ghost"
+                size="sm"
+                onClick={() => {
+                  clearSession();
+                  router.push(joinHref);
+                }}
+              >
+                Switch name
+              </Button>
+            ) : activeGuest ? (
+              <Button weight="ghost" size="sm" asChild>
+                <Link href={boardHref}>Back to board</Link>
+              </Button>
+            ) : null}
+          </div>
         </div>
       </div>
     </header>
