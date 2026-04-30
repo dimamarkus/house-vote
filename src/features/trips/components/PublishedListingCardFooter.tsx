@@ -25,8 +25,7 @@ interface PublishedListingCardFooterProps {
 
 const TAB_VALUE = {
   votes: 'votes',
-  pros: 'pros',
-  cons: 'cons',
+  feedback: 'feedback',
 } as const;
 
 export function PublishedListingCardFooter({
@@ -54,22 +53,19 @@ export function PublishedListingCardFooter({
   return (
     <div className="flex w-full flex-col gap-3">
       <Tabs defaultValue={TAB_VALUE.votes} className="w-full">
-        <TabsList className="grid h-auto w-full grid-cols-3">
+        <TabsList className="grid h-auto w-full grid-cols-2">
           <TabsTrigger value={TAB_VALUE.votes} className="gap-2 py-2">
             <span>{votesConfig.pluralLabel}</span>
             <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
               {voteCount}
             </span>
           </TabsTrigger>
-          <TabsTrigger value={TAB_VALUE.pros} className="gap-2 py-2">
-            <span>{prosConfig.pluralLabel}</span>
-            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+          <TabsTrigger value={TAB_VALUE.feedback} className="gap-2 py-2">
+            <span>Pros & cons</span>
+            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-700">
               {pros.length}
             </span>
-          </TabsTrigger>
-          <TabsTrigger value={TAB_VALUE.cons} className="gap-2 py-2">
-            <span>{consConfig.pluralLabel}</span>
-            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-rose-100 px-2 py-0.5 text-xs text-rose-700">
               {cons.length}
             </span>
           </TabsTrigger>
@@ -115,28 +111,37 @@ export function PublishedListingCardFooter({
           </div>
         </TabsContent>
 
-        <TabsContent value={TAB_VALUE.pros}>
-          <PublishedListingFeedbackSection
-            listingId={listing.id}
-            kind={LISTING_FEEDBACK_KIND.PRO}
-            entries={pros}
-            listClassName="max-h-40 space-y-2 overflow-y-auto pr-1"
-            composerVariant="dialog"
-            showComposerIdentity={false}
-            entryVariant="slim"
-          />
-        </TabsContent>
-
-        <TabsContent value={TAB_VALUE.cons}>
-          <PublishedListingFeedbackSection
-            listingId={listing.id}
-            kind={LISTING_FEEDBACK_KIND.CON}
-            entries={cons}
-            listClassName="max-h-40 space-y-2 overflow-y-auto pr-1"
-            composerVariant="dialog"
-            showComposerIdentity={false}
-            entryVariant="slim"
-          />
+        <TabsContent value={TAB_VALUE.feedback}>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <section className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                {prosConfig.pluralLabel}
+              </h4>
+              <PublishedListingFeedbackSection
+                listingId={listing.id}
+                kind={LISTING_FEEDBACK_KIND.PRO}
+                entries={pros}
+                listClassName="max-h-40 space-y-2 overflow-y-auto pr-1"
+                composerVariant="dialog"
+                showComposerIdentity={false}
+                entryVariant="slim"
+              />
+            </section>
+            <section className="space-y-2">
+              <h4 className="text-xs font-semibold uppercase tracking-wide text-rose-700">
+                {consConfig.pluralLabel}
+              </h4>
+              <PublishedListingFeedbackSection
+                listingId={listing.id}
+                kind={LISTING_FEEDBACK_KIND.CON}
+                entries={cons}
+                listClassName="max-h-40 space-y-2 overflow-y-auto pr-1"
+                composerVariant="dialog"
+                showComposerIdentity={false}
+                entryVariant="slim"
+              />
+            </section>
+          </div>
         </TabsContent>
       </Tabs>
 
