@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { castPublishedTripVote } from '@/features/trips/actions/publishedTripActions';
 import {
+  LISTING_STATUS,
   formatListingStatusLabel,
   isVoteEligibleListingStatus,
 } from '@/features/listings/constants/listing-status';
@@ -14,6 +15,7 @@ import { usePublishedTripGuest } from '@/features/trips/components/PublishedTrip
 import type { PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
 import { Badge } from '@/ui/shadcn/badge';
+import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
 import { cn } from '@/ui/utils/cn';
 
@@ -25,6 +27,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
   const { token, share, activeGuest } = usePublishedTripGuest();
   const router = useRouter();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [hideRejectedListings, setHideRejectedListings] = useState(false);
 
   const sortedListings = useMemo(() => {
     return [...listings].sort((left, right) => {
@@ -42,6 +45,12 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
       return left.title.localeCompare(right.title);
     });
   }, [listings]);
+  const rejectedListingCount = sortedListings.filter((listing) => (
+    listing.status === LISTING_STATUS.REJECTED
+  )).length;
+  const visibleListings = hideRejectedListings
+    ? sortedListings.filter((listing) => listing.status !== LISTING_STATUS.REJECTED)
+    : sortedListings;
 
   const currentWinnerListingId = useMemo(() => {
     return sortedListings.find((listing) => (
@@ -80,49 +89,80 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
   }
 
   return (
-    <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {sortedListings.map((listing) => {
-        const isVoteEligible = isVoteEligibleListingStatus(listing.status);
-        const isCurrentVote = currentVoteListingId === listing.id;
-        const isCurrentWinner = currentWinnerListingId === listing.id;
-        const voteButtonLabel = !share.votingOpen
-          ? 'Voting closed'
-          : !isVoteEligible
-            ? (isCurrentVote ? 'Your vote' : formatListingStatusLabel(listing.status))
-            : isCurrentVote
-              ? 'Your vote'
-              : currentVoteListingId
-                ? 'Move my vote here'
-                : 'Vote for this house';
+    <div className="flex min-w-0 flex-col gap-4">
+      {rejectedListingCount > 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-sm">
+          <div>
+            <p className="text-sm font-medium">Board view</p>
+            <p className="text-xs text-muted-foreground">
+              {rejectedListingCount} rejected {rejectedListingCount === 1 ? 'home' : 'homes'} on this board
+            </p>
+          </div>
+          <Button
+            type="button"
+            weight={hideRejectedListings ? 'solid' : 'hollow'}
+            variant="neutral"
+            size="sm"
+            aria-pressed={hideRejectedListings}
+            onClick={() => setHideRejectedListings((current) => !current)}
+          >
+            {hideRejectedListings ? 'Show rejected homes' : 'Hide rejected homes'}
+          </Button>
+        </div>
+      ) : null}
 
-        return (
-          <ListingCard
-            key={listing.id}
-            listing={listing}
-            roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
-            showAllMetadata
-            className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
-            imageOverlayContent={
-              isCurrentWinner ? (
-                <Badge className="bg-emerald-600 text-white shadow-sm">
-                  Current winner
-                </Badge>
-              ) : undefined
-            }
-            actionsMenu={<PublishedListingActionsMenu listing={listing} />}
-            footerContent={
-              <PublishedListingCardFooter
+      {visibleListings.length === 0 ? (
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            Rejected homes are hidden. Show them to review the full board.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {visibleListings.map((listing) => {
+            const isVoteEligible = isVoteEligibleListingStatus(listing.status);
+            const isCurrentVote = currentVoteListingId === listing.id;
+            const isCurrentWinner = currentWinnerListingId === listing.id;
+            const voteButtonLabel = !share.votingOpen
+              ? 'Voting closed'
+              : !isVoteEligible
+                ? (isCurrentVote ? 'Your vote' : formatListingStatusLabel(listing.status))
+                : isCurrentVote
+                  ? 'Your vote'
+                  : currentVoteListingId
+                    ? 'Move my vote here'
+                    : 'Vote for this house';
+
+            return (
+              <ListingCard
+                key={listing.id}
                 listing={listing}
-                isVoteEligible={isVoteEligible}
-                isCurrentVote={isCurrentVote}
-                pendingVote={pendingAction === `vote-${listing.id}`}
-                voteButtonLabel={voteButtonLabel}
-                onVote={() => handleVote(listing.id)}
+                roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
+                showAllMetadata
+                className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
+                imageOverlayContent={
+                  isCurrentWinner ? (
+                    <Badge className="bg-emerald-600 text-white shadow-sm">
+                      Current winner
+                    </Badge>
+                  ) : undefined
+                }
+                actionsMenu={<PublishedListingActionsMenu listing={listing} />}
+                footerContent={
+                  <PublishedListingCardFooter
+                    listing={listing}
+                    isVoteEligible={isVoteEligible}
+                    isCurrentVote={isCurrentVote}
+                    pendingVote={pendingAction === `vote-${listing.id}`}
+                    voteButtonLabel={voteButtonLabel}
+                    onVote={() => handleVote(listing.id)}
+                  />
+                }
               />
-            }
-          />
-        );
-      })}
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
