@@ -16,6 +16,7 @@ import { setListingPrimaryPhoto } from '../actions/setListingPrimaryPhoto';
 import { isHotelLikeListingType } from '../listingTypeOptions';
 import { ListingPriceCell } from '../components/ListingPriceCell';
 import type { TripPriceContext } from '../utils/priceBasis';
+import { generateTravelListingUrl } from '@/features/trips/utils/travelLinks';
 
 type ListingWithRelations = Listing & {
   title: string;
@@ -123,10 +124,18 @@ export function ListingsTable({
       accessorKey: "title",
       sortable: true,
       cell: (listing) => {
+        const originalListingUrl = generateTravelListingUrl({
+          url: listing.url,
+          source: listing.source,
+          startDate: tripContext?.startDate,
+          endDate: tripContext?.endDate,
+          numberOfPeople: tripContext?.numberOfPeople,
+        });
+
         return (
           <div className="font-medium max-w-sm truncate" title={listing.title}>
-            {listing.url ? (
-              <a href={listing.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+            {originalListingUrl ? (
+              <a href={originalListingUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
                 {listing.title}
               </a>
             ) : (
@@ -140,11 +149,19 @@ export function ListingsTable({
       header: "Source",
       accessorKey: "source",
       cell: (listing) => {
+        const originalListingUrl = generateTravelListingUrl({
+          url: listing.url,
+          source: listing.source,
+          startDate: tripContext?.startDate,
+          endDate: tripContext?.endDate,
+          numberOfPeople: tripContext?.numberOfPeople,
+        });
+
         return (
           <div className="flex items-center gap-1.5">
             <ListingSourceBadge
               source={listing.source}
-              href={listing.url}
+              href={originalListingUrl}
             />
             <ListingTypeBadge type={listing.listingType} />
           </div>

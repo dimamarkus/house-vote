@@ -27,6 +27,7 @@ import {
   type TripPriceContext,
 } from '../utils/priceBasis';
 import { usePriceBasis } from '@/features/trips/hooks/usePriceBasis';
+import { generateTravelListingUrl } from '@/features/trips/utils/travelLinks';
 
 type Listing = PrismaListing & {
   imageUrl?: string | null;
@@ -65,6 +66,8 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
    * nightly prices (e.g. surfaces outside a trip page).
    */
   tripContext?: TripPriceContext;
+  /** Trip-level dates + guest count used to enrich outbound travel-site links. */
+  travelLinkContext?: TripPriceContext;
   /** Optional fixed unit label for surfaces whose stored price already matches that label. */
   priceUnitLabel?: string;
   allowPrimaryPhotoSelection?: boolean;
@@ -81,6 +84,7 @@ export function ListingCard({
   roomBreakdown,
   showAllMetadata = false,
   tripContext,
+  travelLinkContext,
   priceUnitLabel,
   allowPrimaryPhotoSelection = false,
   ...props
@@ -97,6 +101,14 @@ export function ListingCard({
   );
 
   const detailUrl = `${baseUrl}/${listing.id}`;
+  const effectiveTravelLinkContext = travelLinkContext ?? tripContext;
+  const originalListingUrl = generateTravelListingUrl({
+    url: listing.url,
+    source: listing.source,
+    startDate: effectiveTravelLinkContext?.startDate,
+    endDate: effectiveTravelLinkContext?.endDate,
+    numberOfPeople: effectiveTravelLinkContext?.numberOfPeople,
+  });
   const storedPhotos = [...(listing.photos ?? [])]
     .sort((left, right) => left.position - right.position)
     .map((photo) => photo.url);
@@ -117,7 +129,7 @@ export function ListingCard({
   const sourceBadge = (
     <ListingSourceBadge
       source={listing.source}
-      href={listing.url}
+      href={originalListingUrl}
       showManual={false}
       badgeClassName="border-background/60 bg-background/90 shadow-sm backdrop-blur"
     />
@@ -188,7 +200,17 @@ export function ListingCard({
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 flex-1 flex-col gap-1.5">
             <CardTitle className="line-clamp-2 text-lg leading-tight">
-              {showLink ? (
+              {originalListingUrl ? (
+                <a
+                  href={originalListingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:underline"
+                  title={listing.title}
+                >
+                  {listing.title}
+                </a>
+              ) : showLink ? (
                 <Link href={detailUrl} className="hover:underline" title={listing.title}>
                   {listing.title}
                 </Link>

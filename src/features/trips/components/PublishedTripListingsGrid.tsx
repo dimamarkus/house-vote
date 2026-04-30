@@ -59,6 +59,11 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
   }, [sortedListings]);
 
   const currentVoteListingId = activeGuest.votes[0]?.listingId ?? null;
+  const travelLinkContext = useMemo(() => ({
+    numberOfPeople: share.trip.numberOfPeople ?? null,
+    startDate: share.trip.startDate ? new Date(share.trip.startDate) : null,
+    endDate: share.trip.endDate ? new Date(share.trip.endDate) : null,
+  }), [share.trip.endDate, share.trip.numberOfPeople, share.trip.startDate]);
 
   async function handleVote(listingId: string) {
     setPendingAction(`vote-${listingId}`);
@@ -138,6 +143,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
                 key={listing.id}
                 listing={listing}
                 priceUnitLabel="total"
+                travelLinkContext={travelLinkContext}
                 roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
                 showAllMetadata
                 className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
