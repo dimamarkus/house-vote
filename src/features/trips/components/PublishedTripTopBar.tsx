@@ -51,6 +51,9 @@ export function PublishedTripTopBar({
                 <TabsTrigger value="beds" className="flex-1 px-3 sm:flex-none">
                   Beds
                 </TabsTrigger>
+                <TabsTrigger value="info" className="flex-1 px-3 sm:flex-none">
+                  Info
+                </TabsTrigger>
                 <TabsTrigger value="votes" className="flex-1 px-3 sm:flex-none">
                   Votes
                 </TabsTrigger>

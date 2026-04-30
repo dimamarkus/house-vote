@@ -61,6 +61,7 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   baseUrl?: string;
   roomBreakdown?: RoomBreakdown | null;
   showAllMetadata?: boolean;
+  showDescription?: boolean;
   /**
    * Trip-level context used to compute per-guest / total prices when the
    * user toggles away from per-night display. Omit to keep the card showing
@@ -84,6 +85,7 @@ export function ListingCard({
   baseUrl = '/listings',
   roomBreakdown,
   showAllMetadata = false,
+  showDescription = true,
   tripContext,
   travelLinkContext,
   priceUnitLabel,
@@ -271,11 +273,13 @@ export function ListingCard({
           {showingRooms && hasRooms && (
             <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
           )}
-          <ListingCardDescription
-            listingTitle={listing.title}
-            sourceDescription={listing.sourceDescription}
-            notes={listing.notes}
-          />
+          {showDescription ? (
+            <ListingCardDescription
+              listingTitle={listing.title}
+              sourceDescription={listing.sourceDescription}
+              notes={listing.notes}
+            />
+          ) : null}
         </div>
 
         <div className="mt-auto pt-6">

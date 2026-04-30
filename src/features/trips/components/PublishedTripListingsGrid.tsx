@@ -157,6 +157,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
                 travelLinkContext={travelLinkContext}
                 roomBreakdown={cardView === 'beds' ? listing.roomBreakdown as ListingCardProps['roomBreakdown'] : null}
                 showAllMetadata={cardView === 'beds'}
+                showDescription={cardView === 'info'}
                 className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
                 imageOverlayContent={
                   isCurrentWinner ? (

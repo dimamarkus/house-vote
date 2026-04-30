@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-export const PUBLISHED_LISTING_CARD_VIEW_VALUES = ['beds', 'votes', 'feedback'] as const;
+export const PUBLISHED_LISTING_CARD_VIEW_VALUES = ['beds', 'info', 'votes', 'feedback'] as const;
 export type PublishedListingCardView = (typeof PUBLISHED_LISTING_CARD_VIEW_VALUES)[number];
 
 export const DEFAULT_PUBLISHED_LISTING_CARD_VIEW: PublishedListingCardView = 'votes';

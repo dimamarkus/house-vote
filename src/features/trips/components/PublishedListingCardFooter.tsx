@@ -123,7 +123,11 @@ export function PublishedListingCardFooter({
         </div>
       ) : null}
 
-      <div className="border-t border-border/50 pt-3">
+      <div className={cn(
+        cardView === 'votes' || cardView === 'feedback'
+          ? 'border-t border-border/50 pt-3'
+          : 'pt-0',
+      )}>
         <PublishedListingCommentsSheet
           listing={listing}
           triggerLabel={commentCount === 0 ? 'Add a comment' : `View ${commentCount} comment${commentCount === 1 ? '' : 's'}`}
