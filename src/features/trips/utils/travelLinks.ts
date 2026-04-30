@@ -184,16 +184,19 @@ function addAirbnbListingParams(
 
   if (checkinDate) {
     url.searchParams.set('checkin', checkinDate);
+    url.searchParams.set('check_in', checkinDate);
   }
 
   if (checkoutDate) {
     url.searchParams.set('checkout', checkoutDate);
+    url.searchParams.set('check_out', checkoutDate);
   }
 
   if (guestCount) {
     const guestCountString = guestCount.toString();
     url.searchParams.set('numberOfAdults', guestCountString);
     url.searchParams.set('adults', guestCountString);
+    url.searchParams.set('guests', guestCountString);
   }
 
   if (productId && hasTripParams) {

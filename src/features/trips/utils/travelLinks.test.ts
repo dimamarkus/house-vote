@@ -15,9 +15,12 @@ describe('generateTravelListingUrl', () => {
 
     expect(parsedUrl.pathname).toBe('/rooms/46898739');
     expect(parsedUrl.searchParams.get('checkin')).toBe('2026-05-19');
+    expect(parsedUrl.searchParams.get('check_in')).toBe('2026-05-19');
     expect(parsedUrl.searchParams.get('checkout')).toBe('2026-05-21');
+    expect(parsedUrl.searchParams.get('check_out')).toBe('2026-05-21');
     expect(parsedUrl.searchParams.get('numberOfAdults')).toBe('5');
     expect(parsedUrl.searchParams.get('adults')).toBe('5');
+    expect(parsedUrl.searchParams.get('guests')).toBe('5');
     expect(parsedUrl.searchParams.get('numberOfChildren')).toBe('0');
     expect(parsedUrl.searchParams.get('numberOfInfants')).toBe('0');
     expect(parsedUrl.searchParams.get('numberOfPets')).toBe('0');
