@@ -21,7 +21,6 @@ import { isVoteEligibleListingStatus } from '../constants/listing-status';
 import { extractBedCountFromRoomBreakdown, extractSleepsCount } from '../utils/extractSleepsCount';
 import {
   computeListingPriceDisplay,
-  type PriceBasis,
   type TripPriceContext,
 } from '../utils/priceBasis';
 import { usePriceBasis } from '@/features/trips/hooks/usePriceBasis';
@@ -63,8 +62,8 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
    * nightly prices (e.g. surfaces outside a trip page).
    */
   tripContext?: TripPriceContext;
-  /** Optional fixed basis for surfaces that should not follow the global toggle. */
-  priceBasis?: PriceBasis;
+  /** Optional fixed unit label for surfaces whose stored price already matches that label. */
+  priceUnitLabel?: string;
 }
 
 export function ListingCard({
@@ -78,17 +77,16 @@ export function ListingCard({
   roomBreakdown,
   showAllMetadata = false,
   tripContext,
-  priceBasis,
+  priceUnitLabel,
   ...props
 }: ListingCardProps) {
   const [face, setFace] = useState<'default' | 'rooms'>(
     roomBreakdown?.rooms?.length ? 'rooms' : 'default',
   );
-  const [storedPriceBasis] = usePriceBasis();
-  const effectivePriceBasis = priceBasis ?? storedPriceBasis;
+  const [priceBasis] = usePriceBasis();
   const priceDisplay = computeListingPriceDisplay(
     listing.price ?? null,
-    effectivePriceBasis,
+    priceBasis,
     tripContext,
   );
 
@@ -187,7 +185,7 @@ export function ListingCard({
                   ${priceDisplay.amount}
                 </div>
                 <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {priceDisplay.unitLabel}
+                  {priceUnitLabel ?? priceDisplay.unitLabel}
                 </span>
               </div>
             ) : null}
