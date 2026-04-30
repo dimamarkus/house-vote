@@ -27,7 +27,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
   const { token, share, activeGuest } = usePublishedTripGuest();
   const router = useRouter();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
-  const [hideRejectedListings, setHideRejectedListings] = useState(false);
+  const [hideRejectedListings, setHideRejectedListings] = useState(true);
 
   const sortedListings = useMemo(() => {
     return [...listings].sort((left, right) => {
