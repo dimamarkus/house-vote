@@ -68,6 +68,8 @@ export const publishedTripShareSelect = Prisma.validator<Prisma.TripShareSelect>
       startDate: true,
       endDate: true,
       numberOfPeople: true,
+      adultCount: true,
+      childCount: true,
       guests: {
         include: {
           votes: {

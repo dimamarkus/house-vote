@@ -14,6 +14,7 @@ import { PublishedListingCardFooter } from '@/features/trips/components/Publishe
 import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
 import type { PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
+import { createTripTravelContext } from '@/features/trips/utils/tripTravelContext';
 import { Badge } from '@/ui/shadcn/badge';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
@@ -59,11 +60,19 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
   }, [sortedListings]);
 
   const currentVoteListingId = activeGuest.votes[0]?.listingId ?? null;
-  const travelLinkContext = useMemo(() => ({
+  const travelLinkContext = useMemo(() => createTripTravelContext({
     numberOfPeople: share.trip.numberOfPeople ?? null,
-    startDate: share.trip.startDate ? new Date(share.trip.startDate) : null,
-    endDate: share.trip.endDate ? new Date(share.trip.endDate) : null,
-  }), [share.trip.endDate, share.trip.numberOfPeople, share.trip.startDate]);
+    adultCount: share.trip.adultCount ?? null,
+    childCount: share.trip.childCount ?? null,
+    startDate: share.trip.startDate,
+    endDate: share.trip.endDate,
+  }), [
+    share.trip.adultCount,
+    share.trip.childCount,
+    share.trip.endDate,
+    share.trip.numberOfPeople,
+    share.trip.startDate,
+  ]);
 
   async function handleVote(listingId: string) {
     setPendingAction(`vote-${listingId}`);

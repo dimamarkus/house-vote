@@ -3,6 +3,7 @@ import type { PublishedTripShareRecord } from '@/features/trips/publishedDb';
 import { CardDescription, CardTitle } from '@/ui/shadcn/card';
 import { CalendarDays, MapPin, Users } from 'lucide-react';
 import { TripMetaPill } from './TripMetaPill';
+import { formatTripGuestBreakdownLabel } from '../utils/tripTravelContext';
 
 interface PublishedTripMastheadProps {
   share: PublishedTripShareRecord;
@@ -19,6 +20,12 @@ export function PublishedTripMasthead({
   contextSlot,
   guestDetailsSlot,
 }: PublishedTripMastheadProps) {
+  const tripGuestLabel = formatTripGuestBreakdownLabel({
+    numberOfPeople: share.trip.numberOfPeople ?? null,
+    adultCount: share.trip.adultCount ?? null,
+    childCount: share.trip.childCount ?? null,
+  });
+
   return (
     <section className="w-full rounded-3xl border border-border/60 bg-card shadow-sm">
       <div className="flex flex-col gap-6 p-6 sm:p-8">
@@ -42,8 +49,8 @@ export function PublishedTripMasthead({
                 <TripMetaPill icon={CalendarDays} label={tripDateRange} />
               ) : null}
               {guestDetailsSlot ?? (
-                share.trip.numberOfPeople ? (
-                  <TripMetaPill icon={Users} label={`${share.trip.numberOfPeople} guests`} />
+                tripGuestLabel ? (
+                  <TripMetaPill icon={Users} label={tripGuestLabel} />
                 ) : null
               )}
             </div>

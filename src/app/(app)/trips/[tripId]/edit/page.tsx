@@ -37,6 +37,8 @@ export default function EditTripPage() {
             startDate: res.data.startDate,
             endDate: res.data.endDate,
             numberOfPeople: res.data.numberOfPeople ?? null,
+            adultCount: res.data.adultCount ?? null,
+            childCount: res.data.childCount ?? null,
           };
           setTripData(initialFormData);
         } else {

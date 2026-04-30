@@ -5,7 +5,7 @@ import { VotingAccessCard } from '@/features/trips/components/VotingAccessCard';
 import type { OwnerTripShareSummary } from '@/features/trips/types';
 
 interface TripSidebarProps {
-  trip: Pick<Trip, 'id' | 'userId' | 'location' | 'startDate' | 'endDate' | 'numberOfPeople' | 'name' | 'description'> & {
+  trip: Pick<Trip, 'id' | 'userId' | 'location' | 'startDate' | 'endDate' | 'numberOfPeople' | 'adultCount' | 'childCount' | 'name' | 'description'> & {
     collaborators?: User[]; // Make collaborators optional as they might not always be included
   };
   guestNames: string[];

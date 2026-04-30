@@ -38,6 +38,8 @@ export interface TripPriceContext {
   numberOfPeople: number | null;
   startDate: Date | null;
   endDate: Date | null;
+  adultCount?: number | null;
+  childCount?: number | null;
 }
 
 /**

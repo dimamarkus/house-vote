@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Form } from '@/ui/form/Form';
 import { FormSection } from '@/ui/form/FormSection';
@@ -12,6 +13,7 @@ import type { TripFormData } from '../schemas';
 import { toast } from 'sonner';
 import type { Trip } from 'db';
 import type { BasicApiResponse } from '@/core/types';
+import { normalizeTripGuestBreakdown } from '../utils/tripTravelContext';
 
 interface TripFormProps {
   initialData?: Partial<TripFormData>;
@@ -30,15 +32,32 @@ export function TripForm({
   const isEditing = !!tripId;
 
   const actionToUse = isEditing ? boundUpdateAction : createTrip;
+  const initialGuestBreakdown = normalizeTripGuestBreakdown({
+    adultCount: initialData?.adultCount,
+    childCount: initialData?.childCount,
+    numberOfPeople: initialData?.numberOfPeople,
+  });
 
-  const formattedInitialData: Partial<Omit<TripFormData, 'startDate' | 'endDate' | 'numberOfPeople'>> & { startDate?: Date; endDate?: Date; numberOfPeople?: string } = {
+  const formattedInitialData: Partial<Omit<TripFormData, 'startDate' | 'endDate' | 'numberOfPeople' | 'adultCount' | 'childCount'>> & {
+    startDate?: Date;
+    endDate?: Date;
+    adultCount?: string;
+    childCount?: string;
+  } = {
     name: initialData?.name ?? '',
     description: initialData?.description ?? undefined,
     location: initialData?.location ?? undefined,
     startDate: initialData?.startDate ? new Date(initialData.startDate) : undefined,
     endDate: initialData?.endDate ? new Date(initialData.endDate) : undefined,
-    numberOfPeople: initialData?.numberOfPeople?.toString() ?? '',
+    adultCount: initialGuestBreakdown.adultCount?.toString() ?? '',
+    childCount: initialGuestBreakdown.childCount?.toString() ?? '',
   };
+  const [adultCountValue, setAdultCountValue] = useState(formattedInitialData.adultCount ?? '');
+  const [childCountValue, setChildCountValue] = useState(formattedInitialData.childCount ?? '');
+  const previewGuestBreakdown = normalizeTripGuestBreakdown({
+    adultCount: adultCountValue === '' ? null : Number(adultCountValue),
+    childCount: childCountValue === '' ? null : Number(childCountValue),
+  });
 
   if (!actionToUse && isEditing) {
     console.error("boundUpdateAction is required when editing a trip.");
@@ -106,16 +125,37 @@ export function TripForm({
                 error={formState.fieldErrors?.endDate?.[0]}
                 defaultValue={formattedInitialData.endDate}
               />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputField
-                name="numberOfPeople"
-                label="Number of People (Optional)"
+                name="adultCount"
+                label="Adults (Optional)"
                 type="number"
-                min="1"
+                min="0"
+                inputMode="numeric"
                 placeholder="e.g., 8"
-                error={formState.fieldErrors?.numberOfPeople?.[0]}
-                defaultValue={formattedInitialData.numberOfPeople ?? ''}
+                error={formState.fieldErrors?.adultCount?.[0]}
+                helperText="Used for Airbnb, Vrbo, and hotel search links."
+                defaultValue={formattedInitialData.adultCount ?? ''}
+                onChange={(event) => setAdultCountValue(event.currentTarget.value)}
+              />
+              <InputField
+                name="childCount"
+                label="Children (Optional)"
+                type="number"
+                min="0"
+                inputMode="numeric"
+                placeholder="e.g., 4"
+                error={formState.fieldErrors?.childCount?.[0]}
+                defaultValue={formattedInitialData.childCount ?? ''}
+                onChange={(event) => setChildCountValue(event.currentTarget.value)}
               />
             </div>
+            {previewGuestBreakdown.numberOfPeople ? (
+              <p className="text-sm text-muted-foreground">
+                Total guests: {previewGuestBreakdown.numberOfPeople}
+              </p>
+            ) : null}
             {formState.fieldErrors?.endDate && !formState.fieldErrors.startDate && formState.fieldErrors.endDate[0]?.includes('End date must be on or after start date') && (
                 <p className="text-sm text-destructive">{formState.fieldErrors.endDate[0]}</p>
             )}

@@ -28,6 +28,7 @@ import {
 } from '../utils/priceBasis';
 import { usePriceBasis } from '@/features/trips/hooks/usePriceBasis';
 import { generateTravelListingUrl } from '@/features/trips/utils/travelLinks';
+import type { TripTravelContext } from '@/features/trips/utils/tripTravelContext';
 
 type Listing = PrismaListing & {
   imageUrl?: string | null;
@@ -67,7 +68,7 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
    */
   tripContext?: TripPriceContext;
   /** Trip-level dates + guest count used to enrich outbound travel-site links. */
-  travelLinkContext?: TripPriceContext;
+  travelLinkContext?: TripTravelContext;
   /** Optional fixed unit label for surfaces whose stored price already matches that label. */
   priceUnitLabel?: string;
   allowPrimaryPhotoSelection?: boolean;
@@ -108,6 +109,8 @@ export function ListingCard({
     startDate: effectiveTravelLinkContext?.startDate,
     endDate: effectiveTravelLinkContext?.endDate,
     numberOfPeople: effectiveTravelLinkContext?.numberOfPeople,
+    adultCount: effectiveTravelLinkContext?.adultCount,
+    childCount: effectiveTravelLinkContext?.childCount,
   });
   const storedPhotos = [...(listing.photos ?? [])]
     .sort((left, right) => left.position - right.position)

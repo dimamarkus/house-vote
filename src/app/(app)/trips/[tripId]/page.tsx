@@ -7,6 +7,7 @@ import { publishedTrips } from '@/features/trips/publishedDb';
 import { TripContentArea } from '@/features/trips/components/TripContentArea';
 import { TripSidebar } from '@/features/trips/components/TripSidebar';
 import { TripHeader } from '@/features/trips/components/TripHeader';
+import { createTripTravelContext } from '@/features/trips/utils/tripTravelContext';
 import type { OwnerTripShareSummary } from '@/features/trips/types';
 import { auth } from '@clerk/nextjs/server';
 import { Prisma } from 'db';
@@ -157,6 +158,13 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
 
   const isOwner = userId === trip.userId;
   const currentGuestName = null;
+  const tripTravelContext = createTripTravelContext({
+    numberOfPeople: trip.numberOfPeople ?? null,
+    adultCount: trip.adultCount ?? null,
+    childCount: trip.childCount ?? null,
+    startDate: trip.startDate,
+    endDate: trip.endDate,
+  });
 
   return (
     <div className="p-6">
@@ -180,11 +188,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
             isOwner={isOwner}
             userLikes={userLikes}
             userId={userId}
-            tripContext={{
-              numberOfPeople: trip.numberOfPeople ?? null,
-              startDate: trip.startDate ? new Date(trip.startDate) : null,
-              endDate: trip.endDate ? new Date(trip.endDate) : null,
-            }}
+            tripContext={tripTravelContext}
           />
         </div>
       </div>

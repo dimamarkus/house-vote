@@ -35,6 +35,10 @@ model Trip {
   location       String?
   /// @zod.int().positive().optional().nullable()
   numberOfPeople Int?
+  /// @zod.int().nonnegative().optional().nullable()
+  adultCount     Int?
+  /// @zod.int().nonnegative().optional().nullable()
+  childCount     Int?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
   userId         String

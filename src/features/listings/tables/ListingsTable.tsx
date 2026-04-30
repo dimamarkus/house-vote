@@ -130,6 +130,8 @@ export function ListingsTable({
           startDate: tripContext?.startDate,
           endDate: tripContext?.endDate,
           numberOfPeople: tripContext?.numberOfPeople,
+          adultCount: tripContext?.adultCount,
+          childCount: tripContext?.childCount,
         });
 
         return (
@@ -155,6 +157,8 @@ export function ListingsTable({
           startDate: tripContext?.startDate,
           endDate: tripContext?.endDate,
           numberOfPeople: tripContext?.numberOfPeople,
+          adultCount: tripContext?.adultCount,
+          childCount: tripContext?.childCount,
         });
 
         return (

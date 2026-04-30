@@ -1,10 +1,17 @@
 import type { ListingSource } from 'db';
+import { normalizeTripGuestBreakdown } from './tripTravelContext';
 
 /**
  * Generates travel site URLs with parameters from trip data.
  */
 
 export type TravelDateValue = Date | string | null | undefined;
+
+interface TravelGuestParams {
+  adultCount?: number | null;
+  childCount?: number | null;
+  numberOfPeople?: number | null;
+}
 
 function parseTravelDate(date: TravelDateValue): Date | null {
   if (!date) {
@@ -41,9 +48,9 @@ export function generateAirbnbUrl(params: {
   location?: string | null;
   startDate?: TravelDateValue;
   endDate?: TravelDateValue;
-  numberOfPeople?: number | null;
-}): string {
-  const { location, startDate, endDate, numberOfPeople } = params;
+} & TravelGuestParams): string {
+  const { location, startDate, endDate } = params;
+  const guestBreakdown = normalizeTripGuestBreakdown(params);
 
   // Base URL for Airbnb search
   let baseUrl = 'https://www.airbnb.com/s/homes';
@@ -75,10 +82,16 @@ export function generateAirbnbUrl(params: {
   }
 
   // Add guests if available
-  if (typeof numberOfPeople === 'number' && numberOfPeople > 0) {
-    const guestCount = numberOfPeople.toString();
-    queryParams.set('adults', guestCount);
-    queryParams.set('guests', guestCount);
+  if (guestBreakdown.numberOfPeople) {
+    queryParams.set('guests', guestBreakdown.numberOfPeople.toString());
+
+    if (guestBreakdown.adultCount !== null) {
+      const adultCount = guestBreakdown.adultCount.toString();
+      queryParams.set('adults', adultCount);
+      queryParams.set('numberOfAdults', adultCount);
+    }
+
+    queryParams.set('numberOfChildren', (guestBreakdown.childCount ?? 0).toString());
   }
 
   // Add query string if we have parameters
@@ -97,9 +110,9 @@ export function generateVrboUrl(params: {
   location?: string | null;
   startDate?: TravelDateValue;
   endDate?: TravelDateValue;
-  numberOfPeople?: number | null;
-}): string {
-  const { location, startDate, endDate, numberOfPeople } = params;
+} & TravelGuestParams): string {
+  const { location, startDate, endDate } = params;
+  const guestBreakdown = normalizeTripGuestBreakdown(params);
 
   // Base URL for Vrbo search
   let baseUrl = 'https://www.vrbo.com/search';
@@ -125,8 +138,8 @@ export function generateVrboUrl(params: {
   }
 
   // Add guests if available
-  if (typeof numberOfPeople === 'number' && numberOfPeople > 0) {
-    queryParams.push(`adultsCount=${numberOfPeople}`);
+  if (guestBreakdown.adultCount !== null) {
+    queryParams.push(`adultsCount=${guestBreakdown.adultCount}`);
   }
 
   // Add query string if we have parameters
@@ -151,15 +164,6 @@ function inferListingSourceFromUrl(url: URL): 'AIRBNB' | 'VRBO' | null {
   return null;
 }
 
-function getPositiveGuestCount(numberOfPeople: number | null | undefined): number | null {
-  if (typeof numberOfPeople !== 'number' || !Number.isFinite(numberOfPeople)) {
-    return null;
-  }
-
-  const guestCount = Math.trunc(numberOfPeople);
-  return guestCount > 0 ? guestCount : null;
-}
-
 function extractAirbnbProductId(url: URL): string | null {
   const existingProductId = url.searchParams.get('productId');
   if (existingProductId) {
@@ -174,13 +178,13 @@ function addAirbnbListingParams(
   url: URL,
   startDate: TravelDateValue,
   endDate: TravelDateValue,
-  numberOfPeople: number | null | undefined,
+  guestParams: TravelGuestParams,
 ) {
   const checkinDate = formatTravelDate(startDate);
   const checkoutDate = formatTravelDate(endDate);
-  const guestCount = getPositiveGuestCount(numberOfPeople);
+  const guestBreakdown = normalizeTripGuestBreakdown(guestParams);
   const productId = extractAirbnbProductId(url);
-  const hasTripParams = Boolean(checkinDate || checkoutDate || guestCount);
+  const hasTripParams = Boolean(checkinDate || checkoutDate || guestBreakdown.numberOfPeople);
 
   if (checkinDate) {
     url.searchParams.set('checkin', checkinDate);
@@ -192,11 +196,14 @@ function addAirbnbListingParams(
     url.searchParams.set('check_out', checkoutDate);
   }
 
-  if (guestCount) {
-    const guestCountString = guestCount.toString();
-    url.searchParams.set('numberOfAdults', guestCountString);
-    url.searchParams.set('adults', guestCountString);
-    url.searchParams.set('guests', guestCountString);
+  if (guestBreakdown.numberOfPeople) {
+    url.searchParams.set('guests', guestBreakdown.numberOfPeople.toString());
+
+    if (guestBreakdown.adultCount !== null) {
+      const adultCount = guestBreakdown.adultCount.toString();
+      url.searchParams.set('numberOfAdults', adultCount);
+      url.searchParams.set('adults', adultCount);
+    }
   }
 
   if (productId && hasTripParams) {
@@ -204,7 +211,7 @@ function addAirbnbListingParams(
   }
 
   if (hasTripParams) {
-    url.searchParams.set('numberOfChildren', '0');
+    url.searchParams.set('numberOfChildren', (guestBreakdown.childCount ?? 0).toString());
     url.searchParams.set('numberOfInfants', '0');
     url.searchParams.set('numberOfPets', '0');
     url.searchParams.set('isWorkTrip', 'false');
@@ -215,11 +222,11 @@ function addVrboListingParams(
   url: URL,
   startDate: TravelDateValue,
   endDate: TravelDateValue,
-  numberOfPeople: number | null | undefined,
+  guestParams: TravelGuestParams,
 ) {
   const checkinDate = formatTravelDate(startDate);
   const checkoutDate = formatTravelDate(endDate);
-  const guestCount = getPositiveGuestCount(numberOfPeople);
+  const guestBreakdown = normalizeTripGuestBreakdown(guestParams);
 
   if (checkinDate) {
     url.searchParams.set('chkin', checkinDate);
@@ -233,8 +240,8 @@ function addVrboListingParams(
     url.searchParams.set('endDate', checkoutDate);
   }
 
-  if (guestCount) {
-    url.searchParams.set('adults', guestCount.toString());
+  if (guestBreakdown.adultCount !== null) {
+    url.searchParams.set('adults', guestBreakdown.adultCount.toString());
   }
 }
 
@@ -243,8 +250,7 @@ export function generateTravelListingUrl(params: {
   source?: ListingSource | null;
   startDate?: TravelDateValue;
   endDate?: TravelDateValue;
-  numberOfPeople?: number | null;
-}): string | null {
+} & TravelGuestParams): string | null {
   const originalUrl = params.url?.trim();
 
   if (!originalUrl) {
@@ -268,7 +274,7 @@ export function generateTravelListingUrl(params: {
       parsedUrl,
       params.startDate,
       params.endDate,
-      params.numberOfPeople,
+      params,
     );
   }
 
@@ -277,7 +283,7 @@ export function generateTravelListingUrl(params: {
       parsedUrl,
       params.startDate,
       params.endDate,
-      params.numberOfPeople,
+      params,
     );
   }
 

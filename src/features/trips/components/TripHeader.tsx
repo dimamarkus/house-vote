@@ -7,29 +7,34 @@ import type { TripFormData } from '../schemas';
 import { TripFormSheet } from '../forms/TripFormSheet';
 import { formatTripDateRange } from '../utils/formatTripDateRange';
 import { generateAirbnbUrl, generateVrboUrl } from '../utils/travelLinks';
+import { createTripTravelContext, formatTripGuestBreakdownLabel } from '../utils/tripTravelContext';
 import { TripMetaPill } from './TripMetaPill';
 import { TripPriceBasisToggle } from './TripPriceBasisToggle';
 
 const DASHBOARD_META_PILL_CLASSNAME = 'shadow-sm sm:text-base';
 
 interface TripHeaderProps {
-  trip: Partial<Trip> & Pick<Trip, 'id' | 'name' | 'userId' | 'startDate' | 'endDate' | 'location' | 'numberOfPeople' | 'description'>;
+  trip: Partial<Trip> & Pick<Trip, 'id' | 'name' | 'userId' | 'startDate' | 'endDate' | 'location' | 'numberOfPeople' | 'adultCount' | 'childCount' | 'description'>;
 }
 
 export function TripHeader({ trip }: TripHeaderProps) {
   const tripDateRange = formatTripDateRange(trip.startDate, trip.endDate);
   const canSearchTravelSites = Boolean(trip.location);
-  const airbnbUrl = generateAirbnbUrl({
-    location: trip.location,
+  const tripTravelContext = createTripTravelContext({
+    numberOfPeople: trip.numberOfPeople ?? null,
+    adultCount: trip.adultCount ?? null,
+    childCount: trip.childCount ?? null,
     startDate: trip.startDate,
     endDate: trip.endDate,
-    numberOfPeople: trip.numberOfPeople,
+  });
+  const tripGuestLabel = formatTripGuestBreakdownLabel(tripTravelContext);
+  const airbnbUrl = generateAirbnbUrl({
+    location: trip.location,
+    ...tripTravelContext,
   });
   const vrboUrl = generateVrboUrl({
     location: trip.location,
-    startDate: trip.startDate,
-    endDate: trip.endDate,
-    numberOfPeople: trip.numberOfPeople,
+    ...tripTravelContext,
   });
   const tripInitialData: TripFormData = {
     name: trip.name,
@@ -38,6 +43,8 @@ export function TripHeader({ trip }: TripHeaderProps) {
     startDate: trip.startDate ? new Date(trip.startDate) : null,
     endDate: trip.endDate ? new Date(trip.endDate) : null,
     numberOfPeople: trip.numberOfPeople ?? null,
+    adultCount: trip.adultCount ?? null,
+    childCount: trip.childCount ?? null,
   };
 
   return (
@@ -47,7 +54,7 @@ export function TripHeader({ trip }: TripHeaderProps) {
           <div className="space-y-5">
             <div className="space-y-3">
               <CardTitle className="text-3xl tracking-tight sm:text-4xl">{trip.name}</CardTitle>
-              {(trip.location || tripDateRange || trip.numberOfPeople) ? (
+              {(trip.location || tripDateRange || tripGuestLabel) ? (
                 <div className="flex flex-wrap gap-3">
                   {trip.location ? (
                     <TripMetaPill
@@ -65,10 +72,10 @@ export function TripHeader({ trip }: TripHeaderProps) {
                     />
                   ) : null}
 
-                  {trip.numberOfPeople ? (
+                  {tripGuestLabel ? (
                     <TripMetaPill
                       icon={Users}
-                      label={`${trip.numberOfPeople} guests`}
+                      label={tripGuestLabel}
                       className={DASHBOARD_META_PILL_CLASSNAME}
                     />
                   ) : null}
@@ -84,11 +91,7 @@ export function TripHeader({ trip }: TripHeaderProps) {
 
           <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-end">
             <TripPriceBasisToggle
-              tripContext={{
-                numberOfPeople: trip.numberOfPeople ?? null,
-                startDate: trip.startDate ? new Date(trip.startDate) : null,
-                endDate: trip.endDate ? new Date(trip.endDate) : null,
-              }}
+              tripContext={tripTravelContext}
             />
             {canSearchTravelSites ? (
               <>
