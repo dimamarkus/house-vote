@@ -39,7 +39,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
   const resolvedParams = await params;
   const currentTripId = resolvedParams.tripId;
 
-  const { query, page, limit, sortBy, sortOrder, view } = await processSearchParams<
+  const { query, sortBy, sortOrder, view } = await processSearchParams<
     Prisma.ListingScalarFieldEnum,
     CustomProcessedParams,
     SearchParams<Prisma.ListingScalarFieldEnum>
@@ -103,9 +103,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
     }
 
     const listingsResponse = await getListingsByTrip(currentTripId, {
-        page,
         search: query,
-        limit,
         sortBy: validatedSortBy,
         sortOrder,
     });
