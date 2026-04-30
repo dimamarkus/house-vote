@@ -88,10 +88,7 @@ export function PublishedListingCardFooter({
         </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          <section className="space-y-1.5">
-            <h4 className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
-              {prosConfig.pluralLabel}
-            </h4>
+          <section>
             <PublishedListingFeedbackSection
               listingId={listing.id}
               kind={LISTING_FEEDBACK_KIND.PRO}
@@ -100,12 +97,14 @@ export function PublishedListingCardFooter({
               composerVariant="dialog"
               showComposerIdentity={false}
               entryVariant="slim"
+              headerContent={
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
+                  {prosConfig.pluralLabel}
+                </h4>
+              }
             />
           </section>
-          <section className="space-y-1.5">
-            <h4 className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">
-              {consConfig.pluralLabel}
-            </h4>
+          <section>
             <PublishedListingFeedbackSection
               listingId={listing.id}
               kind={LISTING_FEEDBACK_KIND.CON}
@@ -114,6 +113,11 @@ export function PublishedListingCardFooter({
               composerVariant="dialog"
               showComposerIdentity={false}
               entryVariant="slim"
+              headerContent={
+                <h4 className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">
+                  {consConfig.pluralLabel}
+                </h4>
+              }
             />
           </section>
         </div>

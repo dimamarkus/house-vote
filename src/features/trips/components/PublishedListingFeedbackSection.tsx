@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { Check, Plus, RefreshCcw, X } from 'lucide-react';
@@ -44,6 +44,7 @@ interface PublishedListingFeedbackSectionProps {
   composerVariant?: 'inline' | 'dialog';
   showComposerIdentity?: boolean;
   entryVariant?: 'card' | 'slim';
+  headerContent?: ReactNode;
 }
 
 export function PublishedListingFeedbackSection({
@@ -56,6 +57,7 @@ export function PublishedListingFeedbackSection({
   composerVariant = 'inline',
   showComposerIdentity = true,
   entryVariant = 'card',
+  headerContent,
 }: PublishedListingFeedbackSectionProps) {
   const { token, share, activeGuest } = usePublishedTripGuest();
   const commentsOpen = share.commentsOpen;
@@ -158,8 +160,41 @@ export function PublishedListingFeedbackSection({
     );
   }
 
-  return (
-    <div className={cn('space-y-4', className)}>
+  function renderDialogTrigger(compact = false) {
+    return (
+      <DialogTrigger asChild>
+        <Button
+          weight="hollow"
+          size="sm"
+          disabled={!commentsOpen}
+          aria-label={config.submitLabel}
+          className={cn(
+            compact
+              ? 'h-6 rounded-full border-sky-200 bg-sky-50 px-2 text-[11px] text-sky-700 hover:bg-sky-100 hover:text-sky-800'
+              : 'h-8 w-full rounded-lg border-sky-200 bg-sky-50 text-xs text-sky-700 hover:bg-sky-100 hover:text-sky-800',
+          )}
+        >
+          <Plus className={compact ? 'size-3' : 'size-3.5'} />
+          Add
+        </Button>
+      </DialogTrigger>
+    );
+  }
+
+  function renderDialogContent() {
+    return (
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{config.submitLabel}</DialogTitle>
+          <DialogDescription>{config.placeholder}</DialogDescription>
+        </DialogHeader>
+        {renderComposerForm()}
+      </DialogContent>
+    );
+  }
+
+  function renderEntries() {
+    return (
       <div className={cn(entryVariant === 'slim' ? '' : 'space-y-3', listClassName)}>
         {entries.length > 0 ? (
           entryVariant === 'slim' ? (
@@ -191,35 +226,35 @@ export function PublishedListingFeedbackSection({
           </div>
         )}
       </div>
+    );
+  }
 
+  return (
+    <div className={cn(headerContent && composerVariant === 'dialog' ? 'space-y-1.5' : 'space-y-4', className)}>
       {composerVariant === 'dialog' ? (
-        <div className="flex flex-col gap-2">
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button
-                weight="hollow"
-                size="sm"
-                disabled={!commentsOpen}
-                className="h-8 w-full rounded-lg border-sky-200 bg-sky-50 text-xs text-sky-700 hover:bg-sky-100 hover:text-sky-800"
-              >
-                <Plus className="size-3.5" />
-                {config.submitLabel}
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>{config.submitLabel}</DialogTitle>
-                <DialogDescription>{config.placeholder}</DialogDescription>
-              </DialogHeader>
-              {renderComposerForm()}
-            </DialogContent>
-          </Dialog>
-          {!commentsOpen ? (
-            <p className="text-xs text-muted-foreground">Guest feedback is closed.</p>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          {headerContent ? (
+            <div className="flex items-center justify-between gap-2">
+              {headerContent}
+              {renderDialogTrigger(true)}
+            </div>
           ) : null}
-        </div>
+          {renderEntries()}
+          {!headerContent ? (
+            <div className="flex flex-col gap-2">
+              {renderDialogTrigger()}
+              {!commentsOpen ? (
+                <p className="text-xs text-muted-foreground">Guest feedback is closed.</p>
+              ) : null}
+            </div>
+          ) : null}
+          {renderDialogContent()}
+        </Dialog>
       ) : (
-        renderComposerForm()
+        <>
+          {renderEntries()}
+          {renderComposerForm()}
+        </>
       )}
     </div>
   );
