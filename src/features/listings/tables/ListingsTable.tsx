@@ -17,6 +17,11 @@ import { isHotelLikeListingType } from '../listingTypeOptions';
 import { ListingPriceCell } from '../components/ListingPriceCell';
 import type { TripPriceContext } from '../utils/priceBasis';
 import { generateTravelListingUrl } from '@/features/trips/utils/travelLinks';
+import { LISTING_FEEDBACK_KIND } from '@/features/trips/constants/listing-feedback';
+import {
+  countListingFeedbackByKind,
+  type CountableListingFeedback,
+} from '@/features/trips/utils/countListingFeedbackByKind';
 
 type ListingWithRelations = Listing & {
   title: string;
@@ -31,6 +36,7 @@ type ListingWithRelations = Listing & {
   photos?: ListingPhoto[];
   source?: ListingSource;
   importStatus?: 'NOT_IMPORTED' | 'PARTIAL' | 'COMPLETE' | 'FAILED';
+  comments?: CountableListingFeedback[];
 };
 
 interface ListingsTableProps {
@@ -257,6 +263,30 @@ export function ListingsTable({
               initialLiked={hasLiked}
               size="sm"
             />
+          </div>
+        );
+      }
+    },
+    {
+      header: 'Pros',
+      cell: (listing) => {
+        const feedbackCounts = countListingFeedbackByKind(listing.comments ?? []);
+
+        return (
+          <div className="text-center font-medium text-emerald-700">
+            {feedbackCounts[LISTING_FEEDBACK_KIND.PRO]}
+          </div>
+        );
+      }
+    },
+    {
+      header: 'Cons',
+      cell: (listing) => {
+        const feedbackCounts = countListingFeedbackByKind(listing.comments ?? []);
+
+        return (
+          <div className="text-center font-medium text-rose-700">
+            {feedbackCounts[LISTING_FEEDBACK_KIND.CON]}
           </div>
         );
       }

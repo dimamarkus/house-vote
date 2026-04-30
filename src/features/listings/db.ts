@@ -155,6 +155,16 @@ export const listings = {
         },
       },
       likes: true,
+      comments: {
+        where: {
+          hiddenAt: null,
+        },
+        select: {
+          id: true,
+          kind: true,
+          hiddenAt: true,
+        },
+      },
       ...options?.include,
     };
 

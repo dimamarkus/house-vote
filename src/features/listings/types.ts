@@ -29,6 +29,13 @@ export type ListingWithMedia = Prisma.ListingGetPayload<{
   include: {
     photos: true;
     likes: true;
+    comments: {
+      select: {
+        id: true;
+        kind: true;
+        hiddenAt: true;
+      };
+    };
   };
 }>;
 
