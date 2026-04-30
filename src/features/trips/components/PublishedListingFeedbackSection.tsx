@@ -142,18 +142,18 @@ export function PublishedListingFeedbackSection({
       : 'bg-rose-100 text-rose-700';
 
     return (
-      <li key={entry.id} className="flex items-start gap-2 py-1">
+      <li key={entry.id} className="flex items-start gap-1.5 py-0.5">
         <span
           title={metadataLabel}
           aria-label={`Added by ${metadataLabel}`}
           className={cn(
-            'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
+            'mt-0.5 inline-flex size-4 shrink-0 items-center justify-center rounded-full',
             bulletClassName,
           )}
         >
-          <BulletIcon className="h-3.5 w-3.5" />
+          <BulletIcon className="size-3" />
         </span>
-        <p className="min-w-0 flex-1 whitespace-pre-wrap text-sm text-foreground">{entry.body}</p>
+        <p className="min-w-0 flex-1 whitespace-pre-wrap text-xs leading-snug text-foreground">{entry.body}</p>
       </li>
     );
   }
@@ -163,7 +163,7 @@ export function PublishedListingFeedbackSection({
       <div className={cn(entryVariant === 'slim' ? '' : 'space-y-3', listClassName)}>
         {entries.length > 0 ? (
           entryVariant === 'slim' ? (
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {entries.map(renderSlimEntry)}
             </ul>
           ) : (
@@ -184,8 +184,8 @@ export function PublishedListingFeedbackSection({
           )
         ) : (
           <div className={cn(
-            'text-sm text-muted-foreground',
-            entryVariant === 'card' ? 'rounded-xl border border-dashed p-4' : 'py-1',
+            'text-muted-foreground',
+            entryVariant === 'card' ? 'rounded-xl border border-dashed p-4 text-sm' : 'py-0.5 text-xs',
           )}>
             {config.emptyMessage}
           </div>
@@ -200,9 +200,9 @@ export function PublishedListingFeedbackSection({
                 weight="hollow"
                 size="sm"
                 disabled={!commentsOpen}
-                className="h-10 w-full rounded-xl border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 hover:text-sky-800"
+                className="h-8 w-full rounded-lg border-sky-200 bg-sky-50 text-xs text-sky-700 hover:bg-sky-100 hover:text-sky-800"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="size-3.5" />
                 {config.submitLabel}
               </Button>
             </DialogTrigger>

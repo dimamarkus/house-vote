@@ -112,30 +112,30 @@ export function PublishedListingCardFooter({
         </TabsContent>
 
         <TabsContent value={TAB_VALUE.feedback}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <section className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <section className="space-y-1.5">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
                 {prosConfig.pluralLabel}
               </h4>
               <PublishedListingFeedbackSection
                 listingId={listing.id}
                 kind={LISTING_FEEDBACK_KIND.PRO}
                 entries={pros}
-                listClassName="max-h-40 space-y-2 overflow-y-auto pr-1"
+                listClassName="space-y-1"
                 composerVariant="dialog"
                 showComposerIdentity={false}
                 entryVariant="slim"
               />
             </section>
-            <section className="space-y-2">
-              <h4 className="text-xs font-semibold uppercase tracking-wide text-rose-700">
+            <section className="space-y-1.5">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-rose-700">
                 {consConfig.pluralLabel}
               </h4>
               <PublishedListingFeedbackSection
                 listingId={listing.id}
                 kind={LISTING_FEEDBACK_KIND.CON}
                 entries={cons}
-                listClassName="max-h-40 space-y-2 overflow-y-auto pr-1"
+                listClassName="space-y-1"
                 composerVariant="dialog"
                 showComposerIdentity={false}
                 entryVariant="slim"
