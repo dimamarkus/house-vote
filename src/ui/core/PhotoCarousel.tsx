@@ -15,6 +15,8 @@ interface PhotoCarouselProps {
   overlayTopLeft?: React.ReactNode;
   /** Content rendered over the top-right corner (e.g. photo count). */
   overlayTopRight?: React.ReactNode;
+  primaryPhotoUrl?: string | null;
+  onSetPrimaryPhoto?: (photoUrl: string) => Promise<void> | void;
 }
 
 export function PhotoCarousel({
@@ -23,6 +25,8 @@ export function PhotoCarousel({
   className,
   overlayTopLeft,
   overlayTopRight,
+  primaryPhotoUrl,
+  onSetPrimaryPhoto,
 }: PhotoCarouselProps) {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, dragFree: false });
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -157,6 +161,8 @@ export function PhotoCarousel({
         open={lightboxOpen}
         onOpenChange={setLightboxOpen}
         startIndex={selectedIndex}
+        primaryPhotoUrl={primaryPhotoUrl}
+        onSetPrimaryPhoto={onSetPrimaryPhoto}
       />
     </>
   );

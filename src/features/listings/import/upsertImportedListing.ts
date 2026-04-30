@@ -103,7 +103,11 @@ export async function applyNormalizedImportToListingId(
     return tx.listing.findUniqueOrThrow({
       where: { id: listingId },
       include: {
-        photos: true,
+        photos: {
+          orderBy: {
+            position: 'asc',
+          },
+        },
       },
     });
   });
@@ -147,8 +151,8 @@ export async function upsertImportedListing(
             ...(options?.addedByGuestId && !existingListing.addedByGuestId ? { addedByGuestId: options.addedByGuestId } : {}),
             ...(options?.addedByGuestName ? { addedByGuestName: options.addedByGuestName } : {}),
           },
-          include: {
-            photos: true,
+          select: {
+            id: true,
           },
         })
       : await tx.listing.create({
@@ -160,8 +164,8 @@ export async function upsertImportedListing(
             ...(options?.addedByGuestName ? { addedByGuestName: options.addedByGuestName } : {}),
             // Prisma uses distinct Create vs Update input types; scalar payload is the same at runtime.
           } as Prisma.ListingUncheckedCreateInput,
-          include: {
-            photos: true,
+          select: {
+            id: true,
           },
         });
 
@@ -172,7 +176,11 @@ export async function upsertImportedListing(
         id: savedListing.id,
       },
       include: {
-        photos: true,
+        photos: {
+          orderBy: {
+            position: 'asc',
+          },
+        },
       },
     });
   });

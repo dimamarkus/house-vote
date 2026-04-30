@@ -149,7 +149,11 @@ export const listings = {
   ): Promise<ListingsResponse> => {
     const dbClient = options?.tx || db;
     const include = {
-      photos: true,
+      photos: {
+        orderBy: {
+          position: 'asc' as const,
+        },
+      },
       likes: true,
       ...options?.include,
     };

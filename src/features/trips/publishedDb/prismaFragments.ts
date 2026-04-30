@@ -28,7 +28,11 @@ export const publishedCommentInclude = Prisma.validator<Prisma.ListingCommentInc
 });
 
 export const publishedListingInclude = Prisma.validator<Prisma.ListingInclude>()({
-  photos: true,
+  photos: {
+    orderBy: {
+      position: 'asc',
+    },
+  },
   votes: {
     include: publishedVoteInclude,
     orderBy: {

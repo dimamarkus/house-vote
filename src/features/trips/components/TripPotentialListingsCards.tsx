@@ -42,6 +42,7 @@ export function TripPotentialListingsCards({
             listing={listing}
             tripContext={tripContext}
             roomBreakdown={listing.roomBreakdown as ListingCardProps['roomBreakdown']}
+            allowPrimaryPhotoSelection={Boolean(userId)}
             actionsMenu={
               <ListingActionsMenu
                 canDelete={canDelete}

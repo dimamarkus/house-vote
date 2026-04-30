@@ -3,6 +3,8 @@
 import { useState, type HTMLAttributes } from 'react';
 import { format } from 'date-fns';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import {
   Image as ImageIcon,
   LayoutGrid,
@@ -17,6 +19,7 @@ import { ListingTypeBadge } from './ListingTypeBadge';
 import { ListingStatusBadge } from './ListingStatusBadge';
 import { ListingCardDescription } from './ListingCardDescription';
 import { ListingCardMetrics } from './ListingCardMetrics';
+import { setListingPrimaryPhoto } from '../actions/setListingPrimaryPhoto';
 import { isVoteEligibleListingStatus } from '../constants/listing-status';
 import { extractBedCountFromRoomBreakdown, extractSleepsCount } from '../utils/extractSleepsCount';
 import {
@@ -64,6 +67,7 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   tripContext?: TripPriceContext;
   /** Optional fixed unit label for surfaces whose stored price already matches that label. */
   priceUnitLabel?: string;
+  allowPrimaryPhotoSelection?: boolean;
 }
 
 export function ListingCard({
@@ -78,8 +82,10 @@ export function ListingCard({
   showAllMetadata = false,
   tripContext,
   priceUnitLabel,
+  allowPrimaryPhotoSelection = false,
   ...props
 }: ListingCardProps) {
+  const router = useRouter();
   const [face, setFace] = useState<'default' | 'rooms'>(
     roomBreakdown?.rooms?.length ? 'rooms' : 'default',
   );
@@ -91,7 +97,9 @@ export function ListingCard({
   );
 
   const detailUrl = `${baseUrl}/${listing.id}`;
-  const storedPhotos = listing.photos?.map((photo) => photo.url) ?? [];
+  const storedPhotos = [...(listing.photos ?? [])]
+    .sort((left, right) => left.position - right.position)
+    .map((photo) => photo.url);
   const allPhotos = storedPhotos.length > 0 ? storedPhotos : listing.imageUrl ? [listing.imageUrl] : [];
   const hasPhotos = allPhotos.length > 0;
   const hasDefaultStatus = isVoteEligibleListingStatus(listing.status);
@@ -130,12 +138,29 @@ export function ListingCard({
     </div>
   ) : undefined;
 
+  async function handleSetPrimaryPhoto(photoUrl: string) {
+    const result = await setListingPrimaryPhoto({
+      listingId: listing.id,
+      photoUrl,
+    });
+
+    if (!result.success) {
+      toast.error(typeof result.error === 'string' ? result.error : 'Unable to set key photo.');
+      return;
+    }
+
+    router.refresh();
+    toast.success('Key photo updated.');
+  }
+
   return (
     <Card className={cn("flex flex-col", className)} {...props}>
       {hasPhotos ? (
         <PhotoCarousel
           photos={allPhotos}
           alt={listing.title || 'Listing photos'}
+          primaryPhotoUrl={storedPhotos[0] ?? listing.imageUrl ?? null}
+          onSetPrimaryPhoto={allowPrimaryPhotoSelection && storedPhotos.length > 1 ? handleSetPrimaryPhoto : undefined}
           overlayTopLeft={
             imageOverlayContent || imageStatusBadge ? (
               <div className="flex flex-col items-start gap-2">

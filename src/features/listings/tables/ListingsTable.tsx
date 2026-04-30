@@ -2,6 +2,8 @@
 
 import { format } from 'date-fns';
 import { BedDouble, Bath, DoorOpen, Image as ImageIcon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import type { Listing, ListingSource, User as PrismaUser, Trip, Like, ListingPhoto } from 'db';
 import { GenericTable, ColumnDef } from '@/ui/core/GenericTable';
 import { LikeButton } from '../../likes/components/LikeButton';
@@ -10,6 +12,7 @@ import { PhotoLightbox } from '@/ui/core/PhotoLightbox';
 import { ListingSourceBadge } from '../components/ListingSourceBadge';
 import { ListingTypeBadge } from '../components/ListingTypeBadge';
 import { ListingActionsMenu } from '../components/ListingActionsMenu';
+import { setListingPrimaryPhoto } from '../actions/setListingPrimaryPhoto';
 import { isHotelLikeListingType } from '../listingTypeOptions';
 import { ListingPriceCell } from '../components/ListingPriceCell';
 import type { TripPriceContext } from '../utils/priceBasis';
@@ -50,13 +53,31 @@ export function ListingsTable({
   basePath,
   tripContext,
 }: ListingsTableProps) {
+  const router = useRouter();
+
+  async function handleSetPrimaryPhoto(listingId: string, photoUrl: string) {
+    const result = await setListingPrimaryPhoto({
+      listingId,
+      photoUrl,
+    });
+
+    if (!result.success) {
+      toast.error(typeof result.error === 'string' ? result.error : 'Unable to set key photo.');
+      return;
+    }
+
+    router.refresh();
+    toast.success('Key photo updated.');
+  }
 
   // Columns expect cell function to receive the item directly
   const columns: ColumnDef<ListingWithRelations>[] = [
     {
       header: "Image",
       cell: (listing) => {
-        const photoUrls = listing.photos?.map((p) => p.url) ?? [];
+        const photoUrls = [...(listing.photos ?? [])]
+          .sort((left, right) => left.position - right.position)
+          .map((p) => p.url);
         const photoCount = photoUrls.length;
         const heroImageUrl = photoUrls[0] ?? listing.imageUrl ?? null;
 
@@ -81,7 +102,14 @@ export function ListingsTable({
 
         if (photoUrls.length > 0) {
           return (
-            <PhotoLightbox photos={photoUrls} alt={listing.title || 'Listing photos'}>
+            <PhotoLightbox
+              photos={photoUrls}
+              alt={listing.title || 'Listing photos'}
+              primaryPhotoUrl={photoUrls[0] ?? listing.imageUrl ?? null}
+              onSetPrimaryPhoto={currentUserId && photoUrls.length > 1
+                ? (photoUrl) => handleSetPrimaryPhoto(listing.id, photoUrl)
+                : undefined}
+            >
               <div className="cursor-pointer">{thumb}</div>
             </PhotoLightbox>
           );

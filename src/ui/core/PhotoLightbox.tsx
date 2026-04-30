@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCcw, Star, X } from "lucide-react";
 import { DialogPortal, DialogOverlay, DialogClose } from "@/ui/shadcn/dialog";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { cn } from "../utils/cn";
@@ -13,6 +13,8 @@ interface PhotoLightboxDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   startIndex?: number;
+  primaryPhotoUrl?: string | null;
+  onSetPrimaryPhoto?: (photoUrl: string) => Promise<void> | void;
 }
 
 export function PhotoLightboxDialog({
@@ -21,10 +23,16 @@ export function PhotoLightboxDialog({
   open,
   onOpenChange,
   startIndex = 0,
+  primaryPhotoUrl,
+  onSetPrimaryPhoto,
 }: PhotoLightboxDialogProps) {
   const [index, setIndex] = useState(startIndex);
+  const [settingPrimaryPhotoUrl, setSettingPrimaryPhotoUrl] = useState<string | null>(null);
   const count = photos.length;
   const hasMultiple = count > 1;
+  const currentPhotoUrl = photos[index];
+  const isCurrentPrimaryPhoto = currentPhotoUrl === primaryPhotoUrl;
+  const isSettingCurrentPrimaryPhoto = settingPrimaryPhotoUrl === currentPhotoUrl;
 
   const goPrev = useCallback(() => {
     setIndex((i) => (i - 1 + count) % count);
@@ -44,6 +52,25 @@ export function PhotoLightboxDialog({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, hasMultiple, goPrev, goNext]);
+
+  useEffect(() => {
+    if (open) {
+      setIndex(startIndex);
+    }
+  }, [open, startIndex]);
+
+  async function handleSetPrimaryPhoto() {
+    if (!onSetPrimaryPhoto || isCurrentPrimaryPhoto) {
+      return;
+    }
+
+    setSettingPrimaryPhotoUrl(currentPhotoUrl);
+    try {
+      await onSetPrimaryPhoto(currentPhotoUrl);
+    } finally {
+      setSettingPrimaryPhotoUrl(null);
+    }
+  }
 
   if (!open || count === 0) return null;
 
@@ -66,6 +93,27 @@ export function PhotoLightboxDialog({
             <X className="h-5 w-5" />
             <span className="sr-only">Close</span>
           </DialogClose>
+
+          {onSetPrimaryPhoto ? (
+            <button
+              type="button"
+              onClick={handleSetPrimaryPhoto}
+              disabled={isCurrentPrimaryPhoto || isSettingCurrentPrimaryPhoto}
+              className={cn(
+                "absolute left-0 top-0 z-10 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-white backdrop-blur focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-default",
+                isCurrentPrimaryPhoto
+                  ? "bg-emerald-600/90"
+                  : "bg-black/50 hover:bg-black/70 disabled:bg-black/50",
+              )}
+            >
+              {isSettingCurrentPrimaryPhoto ? (
+                <RefreshCcw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Star className={cn("h-4 w-4", isCurrentPrimaryPhoto ? "fill-current" : "fill-none")} />
+              )}
+              {isCurrentPrimaryPhoto ? "Key photo" : "Set as key photo"}
+            </button>
+          ) : null}
 
           <div className="relative flex h-full w-full items-center justify-center">
             <Image
@@ -111,6 +159,8 @@ interface PhotoLightboxProps {
   photos: string[];
   alt?: string;
   initialIndex?: number;
+  primaryPhotoUrl?: string | null;
+  onSetPrimaryPhoto?: (photoUrl: string) => Promise<void> | void;
   children: React.ReactNode;
 }
 
@@ -118,6 +168,8 @@ export function PhotoLightbox({
   photos,
   alt = "Photo",
   initialIndex = 0,
+  primaryPhotoUrl,
+  onSetPrimaryPhoto,
   children,
 }: PhotoLightboxProps) {
   const [open, setOpen] = useState(false);
@@ -143,6 +195,8 @@ export function PhotoLightbox({
         open={open}
         onOpenChange={setOpen}
         startIndex={initialIndex}
+        primaryPhotoUrl={primaryPhotoUrl}
+        onSetPrimaryPhoto={onSetPrimaryPhoto}
       />
     </>
   );
