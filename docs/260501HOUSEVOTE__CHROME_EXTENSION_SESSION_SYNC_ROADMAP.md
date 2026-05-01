@@ -421,16 +421,16 @@ Response example:
 
 Checklist:
 
-- [ ] Add route handler for `GET /api/extension/trips`.
-- [ ] Add schema or DTO type for extension trip options.
-- [ ] Authenticate with Clerk server auth.
-- [ ] Return 401 for unauthenticated requests.
-- [ ] Return only owner/collaborator trips.
-- [ ] Avoid exposing import tokens or private relation data.
+- [x] Add route handler for `GET /api/extension/trips`.
+- [x] Add schema or DTO type for extension trip options.
+- [x] Authenticate with Clerk server auth.
+- [x] Return 401 for unauthenticated requests.
+- [x] Return only owner/collaborator trips.
+- [x] Avoid exposing import tokens or private relation data.
 - [ ] Add unit tests or route-level tests if the repo has a practical pattern for route handlers.
-- [ ] Run `pnpm lint`.
-- [ ] Run `pnpm check-types`.
-- [ ] Run `pnpm test`.
+- [x] Run `pnpm lint`.
+- [x] Run `pnpm check-types`.
+- [x] Run `pnpm test`.
 
 Checkpoint commit:
 
