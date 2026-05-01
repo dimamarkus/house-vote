@@ -79,7 +79,7 @@ export function PublishedTripTopBar({
                   {mode === 'board' ? (
                     <button
                       type="button"
-                      className="rounded-sm font-semibold text-blue-600 underline underline-offset-4 transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      className="cursor-pointer rounded-sm font-semibold text-blue-600 underline underline-offset-4 transition-colors hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                       onClick={handleSwitchGuest}
                     >
                       {activeGuest.guestDisplayName}
