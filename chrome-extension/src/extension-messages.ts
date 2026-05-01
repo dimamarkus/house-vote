@@ -15,6 +15,7 @@ export interface ExtensionAuthStatus {
   userId: string | null;
   emailAddress: string | null;
   token: string | null;
+  appUrl: string | null;
   signInUrl: string | null;
   error: string | null;
 }

@@ -4,19 +4,23 @@ const storageKeys = {
   appUrl: 'houseVoteAppUrl',
   tripId: 'houseVoteTripId',
   importToken: 'houseVoteImportToken',
+  selectedTripId: 'houseVoteSelectedTripId',
   debugMode: 'houseVoteDebugMode',
 };
 
 const appUrlInput = document.getElementById('app-url');
 const tripIdInput = document.getElementById('trip-id');
 const importTokenInput = document.getElementById('import-token');
+const tripSelect = document.getElementById('trip-select');
 const debugModeInput = document.getElementById('debug-mode');
 const detectTripButton = document.getElementById('detect-trip');
 const saveListingButton = document.getElementById('save-listing');
 const openSavedTripLink = document.getElementById('open-saved-trip');
+const openSelectedTripLink = document.getElementById('open-selected-trip');
 const authStatusElement = document.getElementById('auth-status');
 const openSignInLink = document.getElementById('open-sign-in');
 const refreshAuthButton = document.getElementById('refresh-auth');
+const tripPickerStatusElement = document.getElementById('trip-picker-status');
 const statusElement = document.getElementById('status');
 const previewElement = document.getElementById('capture-preview');
 
@@ -34,6 +38,22 @@ function setOpenTripLink(url) {
 
   openSavedTripLink.classList.remove('hidden');
   openSavedTripLink.setAttribute('href', url);
+}
+
+function setOpenSelectedTripLink(appUrl, tripId) {
+  if (!appUrl || !tripId) {
+    openSelectedTripLink.classList.add('hidden');
+    openSelectedTripLink.setAttribute('href', '#');
+    return;
+  }
+
+  openSelectedTripLink.classList.remove('hidden');
+  openSelectedTripLink.setAttribute('href', new URL(`/trips/${tripId}`, `${appUrl}/`).toString());
+}
+
+function setTripPickerStatus(message, tone = 'muted') {
+  tripPickerStatusElement.textContent = message;
+  tripPickerStatusElement.className = `status ${tone}`;
 }
 
 function sendRuntimeMessage(message) {
@@ -77,6 +97,84 @@ function renderAuthStatus(authStatus) {
   authStatusElement.className = 'status success';
 }
 
+function resetTripPicker(message, tone = 'muted') {
+  tripSelect.disabled = true;
+  tripSelect.replaceChildren(new Option(message, ''));
+  setOpenSelectedTripLink(null, null);
+  setTripPickerStatus(message, tone);
+}
+
+function formatTripOptionLabel(trip) {
+  const detailParts = [
+    trip.location,
+    trip.listingCount === 1 ? '1 listing' : `${trip.listingCount} listings`,
+    trip.role === 'owner' ? 'Owner' : 'Collaborator',
+  ].filter(Boolean);
+
+  return detailParts.length > 0 ? `${trip.name} (${detailParts.join(' · ')})` : trip.name;
+}
+
+function renderTripOptions(tripsList) {
+  tripSelect.replaceChildren(
+    ...tripsList.map((trip) => new Option(formatTripOptionLabel(trip), trip.id)),
+  );
+  tripSelect.disabled = tripsList.length === 0;
+}
+
+function selectTrip(tripId, appUrl) {
+  const selectedTrip = tripId || '';
+  tripSelect.value = selectedTrip;
+  tripIdInput.value = selectedTrip;
+
+  if (appUrl) {
+    appUrlInput.value = appUrl;
+  }
+
+  setOpenSelectedTripLink(appUrl, selectedTrip);
+  saveSettings();
+  chrome.storage.local.set({ [storageKeys.selectedTripId]: selectedTrip });
+}
+
+async function fetchTripOptions(authStatus) {
+  if (!authStatus || !authStatus.isSignedIn || !authStatus.token || !authStatus.appUrl) {
+    resetTripPicker('Sign in to load trips');
+    return;
+  }
+
+  tripSelect.disabled = true;
+  setTripPickerStatus('Loading your trips...');
+
+  const response = await fetch(`${authStatus.appUrl}/api/extension/trips`, {
+    headers: {
+      Authorization: `Bearer ${authStatus.token}`,
+    },
+  });
+  const responseBody = await response.json();
+
+  if (!response.ok || !responseBody.success) {
+    throw new Error(responseBody.error || 'Failed to load trips.');
+  }
+
+  const tripsList = Array.isArray(responseBody.data) ? responseBody.data : [];
+  if (tripsList.length === 0) {
+    resetTripPicker('No trips found. Create a trip in House Vote first.');
+    return;
+  }
+
+  renderTripOptions(tripsList);
+
+  const stored = await chrome.storage.local.get(storageKeys.selectedTripId);
+  const storedTripId = stored[storageKeys.selectedTripId];
+  const detectedTripContext = await detectTripContext(authStatus.appUrl);
+  const selectedTrip =
+    tripsList.find((trip) => trip.id === storedTripId) ||
+    tripsList.find((trip) => trip.id === detectedTripContext?.tripId) ||
+    tripsList[0];
+
+  selectTrip(selectedTrip.id, authStatus.appUrl);
+  setTripPickerStatus(`Ready to save to "${selectedTrip.name}".`);
+}
+
 async function refreshAuthStatus() {
   authStatusElement.textContent = 'Checking House Vote sign-in...';
   authStatusElement.className = 'status muted';
@@ -84,9 +182,15 @@ async function refreshAuthStatus() {
   try {
     const authStatus = await sendRuntimeMessage({ type: extensionMessageTypes.authStatus });
     renderAuthStatus(authStatus);
+    try {
+      await fetchTripOptions(authStatus);
+    } catch (error) {
+      resetTripPicker(error instanceof Error ? error.message : 'Failed to load trips.', 'error');
+    }
   } catch (error) {
     authStatusElement.textContent = error instanceof Error ? error.message : 'Failed to check House Vote sign-in.';
     authStatusElement.className = 'status error';
+    resetTripPicker('Unable to load trips.', 'error');
   }
 }
 
@@ -130,8 +234,8 @@ function parseTripContextFromUrl(urlString) {
   }
 }
 
-async function detectTripContext() {
-  const preferredAppUrl = appUrlInput.value.trim().replace(/\/+$/, '');
+async function detectTripContext(preferredAppUrlOverride) {
+  const preferredAppUrl = (preferredAppUrlOverride || appUrlInput.value).trim().replace(/\/+$/, '');
   const tabs = await chrome.tabs.query({});
   const tripTabs = tabs
     .map((tab) => parseTripContextFromUrl(tab.url))
@@ -301,6 +405,10 @@ appUrlInput.addEventListener('change', async () => {
 });
 tripIdInput.addEventListener('change', saveSettings);
 importTokenInput.addEventListener('change', saveSettings);
+tripSelect.addEventListener('change', () => {
+  selectTrip(tripSelect.value, appUrlInput.value.trim().replace(/\/+$/, ''));
+  setTripPickerStatus('Selected trip saved.');
+});
 debugModeInput.addEventListener('change', () => {
   saveSettings();
   const currentPreview = previewElement.textContent;

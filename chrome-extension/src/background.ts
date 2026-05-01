@@ -37,6 +37,7 @@ async function getAuthStatus(): Promise<ExtensionAuthStatus> {
       userId: clerk.user?.id ?? null,
       emailAddress: clerk.user?.primaryEmailAddress?.emailAddress ?? null,
       token: token ?? null,
+      appUrl: config.syncHost,
       signInUrl: buildSignInUrl(config.syncHost),
       error: null,
     };
@@ -47,6 +48,7 @@ async function getAuthStatus(): Promise<ExtensionAuthStatus> {
       userId: null,
       emailAddress: null,
       token: null,
+      appUrl: null,
       signInUrl: null,
       error: error instanceof Error ? error.message : 'Failed to load extension auth.',
     };
@@ -73,6 +75,7 @@ chrome.runtime.onMessage.addListener((request: unknown, _sender, sendResponse) =
           userId: null,
           emailAddress: null,
           token: null,
+          appUrl: null,
           signInUrl: null,
           error: error instanceof Error ? error.message : 'Failed to load extension auth.',
         } satisfies ExtensionAuthStatus);

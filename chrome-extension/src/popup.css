@@ -58,6 +58,7 @@ label {
 }
 
 input,
+select,
 textarea,
 button,
 pre,
@@ -95,6 +96,21 @@ button {
 button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.manual-setup {
+  border-top: 1px solid #334155;
+  padding-top: 12px;
+}
+
+.manual-setup > .section {
+  margin-top: 12px;
 }
 
 .secondary-button,

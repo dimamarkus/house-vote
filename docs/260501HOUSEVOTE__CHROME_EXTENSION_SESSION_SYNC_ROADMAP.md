@@ -477,16 +477,16 @@ Likely files:
 
 Checklist:
 
-- [ ] Add trip dropdown markup.
-- [ ] Add API client helper that attaches the Clerk token.
-- [ ] Fetch trips on popup open.
-- [ ] Persist selected trip id.
-- [ ] Preselect the current open trip tab when possible.
-- [ ] Add signed-out UI.
-- [ ] Add no-trips UI.
-- [ ] Move manual trip id/token fields behind an advanced disclosure.
-- [ ] Update status messages to mention Airbnb, Vrbo, and Booking.com.
-- [ ] Run `pnpm extension:build`.
+- [x] Add trip dropdown markup.
+- [x] Add API client helper that attaches the Clerk token.
+- [x] Fetch trips on popup open.
+- [x] Persist selected trip id.
+- [x] Preselect the current open trip tab when possible.
+- [x] Add signed-out UI.
+- [x] Add no-trips UI.
+- [x] Move manual trip id/token fields behind an advanced disclosure.
+- [x] Update status messages to mention Airbnb, Vrbo, and Booking.com.
+- [x] Run `pnpm extension:build`.
 - [ ] Manually load the extension and verify popup states.
 
 Checkpoint commit:

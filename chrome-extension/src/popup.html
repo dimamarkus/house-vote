@@ -23,25 +23,38 @@
       </section>
 
       <section class="section">
-        <label for="app-url">House Vote URL</label>
-        <input id="app-url" name="app-url" placeholder="http://localhost:3000" type="url" />
+        <label for="trip-select">Save to Trip</label>
+        <select id="trip-select" name="trip-select" disabled>
+          <option value="">Sign in to load trips</option>
+        </select>
+        <a id="open-selected-trip" class="link-button hidden" href="#" target="_blank" rel="noopener noreferrer">Open Selected Trip</a>
+        <div id="trip-picker-status" class="status muted">Trips will load after sign-in.</div>
       </section>
 
-      <section class="section">
-        <label for="trip-id">Trip ID</label>
-        <input id="trip-id" name="trip-id" placeholder="cuid trip id" type="text" />
-        <button id="detect-trip" class="secondary-button" type="button">Use Open Trip Tab</button>
-      </section>
+      <details class="section manual-setup">
+        <summary>Advanced manual setup</summary>
 
-      <section class="section">
-        <label for="import-token">Import Token</label>
-        <textarea
-          id="import-token"
-          name="import-token"
-          placeholder="Paste the token from House Vote"
-          rows="3"
-        ></textarea>
-      </section>
+        <section class="section">
+          <label for="app-url">House Vote URL</label>
+          <input id="app-url" name="app-url" placeholder="http://localhost:3000" type="url" />
+        </section>
+
+        <section class="section">
+          <label for="trip-id">Trip ID</label>
+          <input id="trip-id" name="trip-id" placeholder="cuid trip id" type="text" />
+          <button id="detect-trip" class="secondary-button" type="button">Use Open Trip Tab</button>
+        </section>
+
+        <section class="section">
+          <label for="import-token">Import Token</label>
+          <textarea
+            id="import-token"
+            name="import-token"
+            placeholder="Paste the token from House Vote"
+            rows="3"
+          ></textarea>
+        </section>
+      </details>
 
       <section class="section compact-row">
         <label class="checkbox-row" for="debug-mode">
