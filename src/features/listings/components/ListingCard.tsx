@@ -291,32 +291,34 @@ export function ListingCard({
         />
       </CardHeader>
 
-      <CardContent
-        className={cn(
-          "flex flex-1 flex-col text-sm",
-          separateBodyFromHeader && hasCardContentBody ? "border-t border-border/50 pt-4" : undefined,
-          contentClassName,
-        )}
-      >
-        <div className="space-y-4">
-          {showingRooms && hasRooms && (
-            <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
+      {hasCardContentBody ? (
+        <CardContent
+          className={cn(
+            "flex flex-1 flex-col text-sm",
+            separateBodyFromHeader ? "border-t border-border/50 pt-4" : undefined,
+            contentClassName,
           )}
-          {showDescription ? (
-            <ListingCardDescription
-              listingTitle={listing.title}
-              sourceDescription={listing.sourceDescription}
-              notes={listing.notes}
-            />
-          ) : null}
-        </div>
-
-        {addedTimestampPlacement === 'content' ? (
-          <div className="mt-auto pt-6">
-            {addedTimestamp}
+        >
+          <div className="space-y-4">
+            {showingRooms && hasRooms && (
+              <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
+            )}
+            {showDescription ? (
+              <ListingCardDescription
+                listingTitle={listing.title}
+                sourceDescription={listing.sourceDescription}
+                notes={listing.notes}
+              />
+            ) : null}
           </div>
-        ) : null}
-      </CardContent>
+
+          {addedTimestampPlacement === 'content' ? (
+            <div className="mt-auto pt-6">
+              {addedTimestamp}
+            </div>
+          ) : null}
+        </CardContent>
+      ) : null}
 
       {(footerContent || shouldRenderFooterMeta) && (
         <CardFooter className={cn(
