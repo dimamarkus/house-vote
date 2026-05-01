@@ -51,7 +51,6 @@ export function PublishedListingCardFooter({
   const consConfig = getListingFeedbackConfig(LISTING_FEEDBACK_KIND.CON);
   const commentsConfig = getListingFeedbackConfig(LISTING_FEEDBACK_KIND.COMMENT);
   const voterNames = listing.votes.map((vote) => vote.guest.guestDisplayName);
-  const voteCount = listing.votes.length;
   const previewComments = [...listingComments]
     .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
     .slice(0, COMMENT_PREVIEW_LIMIT);
@@ -136,9 +135,6 @@ export function PublishedListingCardFooter({
               <span>{voteButtonLabel}</span>
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            {voteCount} {voteCount === 1 ? 'vote' : 'votes'}
-          </p>
         </div>
       ) : cardView === 'feedback' ? (
         <div className="grid gap-3 sm:grid-cols-2">
