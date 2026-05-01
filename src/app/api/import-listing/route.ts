@@ -3,6 +3,12 @@ import { ListingImportRequestSchema } from '@/features/listings/import/schemas';
 import { importListingCapture } from '@/features/listings/import/importListingCapture';
 import { trips } from '@/features/trips/db';
 
+/**
+ * Legacy extension import endpoint. The preferred Chrome extension path is now
+ * `/api/extension/import-listing`, which authenticates the signed-in Clerk user
+ * and saves listings as that user. Keep this token route for manual fallback
+ * while the synced-session extension rolls out.
+ */
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',

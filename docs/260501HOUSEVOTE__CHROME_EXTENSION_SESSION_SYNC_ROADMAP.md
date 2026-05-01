@@ -611,11 +611,11 @@ Important: do not delete the old path in the same PR that introduces the new pat
 
 Checklist:
 
-- [ ] Confirm authenticated extension import works for owner.
+- [x] Confirm authenticated extension import works for owner.
 - [ ] Confirm authenticated extension import works for collaborator.
 - [ ] Confirm manual token fallback still works, if kept.
-- [ ] Decide whether `/api/import-listing` remains public.
-- [ ] Add deprecation copy to browser import token UI.
+- [x] Decide whether `/api/import-listing` remains public.
+- [x] Add deprecation copy to browser import token UI.
 - [ ] Create a follow-up ticket/PR for removing token fallback.
 - [ ] Run `pnpm lint`.
 - [ ] Run `pnpm check-types`.

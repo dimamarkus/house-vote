@@ -49,9 +49,9 @@ export function TripImportTokenCard({ tripId }: TripImportTokenCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Browser Import</CardTitle>
+        <CardTitle>Legacy Browser Import Token</CardTitle>
         <CardDescription>
-          Use this trip id and token in the Chrome extension. Generating a new token invalidates the previous one.
+          The Chrome extension now signs in with your House Vote account and shows a trip dropdown. Use this manual token only as a fallback. Generating a new token invalidates the previous one.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
