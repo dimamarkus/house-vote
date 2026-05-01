@@ -1,8 +1,8 @@
 import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
 import { ErrorCode } from '@/core/errors';
 import { trips } from '@/features/trips/db';
 import type { TripWithCounts } from '@/features/trips/types';
+import { extensionJson, extensionOptionsResponse } from '../cors';
 
 interface ExtensionTripOption {
   id: string;
@@ -26,11 +26,15 @@ function toExtensionTripOption(trip: TripWithCounts, userId: string): ExtensionT
   };
 }
 
+export function OPTIONS() {
+  return extensionOptionsResponse();
+}
+
 export async function GET() {
   const { userId } = await auth();
 
   if (!userId) {
-    return NextResponse.json(
+    return extensionJson(
       {
         success: false,
         error: 'You must be signed in to load extension trips.',
@@ -47,10 +51,10 @@ export async function GET() {
   });
 
   if (!tripsResult.success) {
-    return NextResponse.json(tripsResult, { status: 500 });
+    return extensionJson(tripsResult, { status: 500 });
   }
 
-  return NextResponse.json({
+  return extensionJson({
     success: true,
     data: tripsResult.data.map((trip) => toExtensionTripOption(trip, userId)),
   });

@@ -1,13 +1,14 @@
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ErrorCode } from '@/core/errors';
 import { importListingCapture } from '@/features/listings/import/importListingCapture';
 import { ExtensionListingImportRequestSchema } from '@/features/listings/import/schemas';
 import { assertTripMemberId } from '@/features/trips/guards';
+import { extensionJson, extensionOptionsResponse } from '../cors';
 
 function errorJson(error: string, status: number, code: string) {
-  return NextResponse.json(
+  return extensionJson(
     {
       success: false,
       error,
@@ -15,6 +16,10 @@ function errorJson(error: string, status: number, code: string) {
     },
     { status },
   );
+}
+
+export function OPTIONS() {
+  return extensionOptionsResponse();
 }
 
 export async function POST(request: NextRequest) {
@@ -58,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     revalidatePath(`/trips/${tripId}`);
 
-    return NextResponse.json({
+    return extensionJson({
       success: true,
       data: importResult,
     });
