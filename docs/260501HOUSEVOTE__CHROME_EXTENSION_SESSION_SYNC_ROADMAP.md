@@ -574,19 +574,19 @@ Technical plan:
 
 Checklist:
 
-- [ ] Replace default save flow with authenticated route.
-- [ ] Keep advanced legacy save flow separate.
-- [ ] Ensure selected trip id is required.
-- [ ] Ensure auth token is required.
-- [ ] Preserve parser debug preview.
-- [ ] Preserve success message and "Open Saved Trip" link.
+- [x] Replace default save flow with authenticated route.
+- [x] Keep advanced legacy save flow separate.
+- [x] Ensure selected trip id is required.
+- [x] Ensure auth token is required.
+- [x] Preserve parser debug preview.
+- [x] Preserve success message and "Open Saved Trip" link.
 - [ ] Test Airbnb import.
 - [ ] Test Vrbo import.
 - [ ] Test Booking.com import.
 - [ ] Test collaborator import shows correct `addedById`.
-- [ ] Run `pnpm extension:build`.
-- [ ] Run `pnpm lint`.
-- [ ] Run `pnpm check-types`.
+- [x] Run `pnpm extension:build`.
+- [x] Run `pnpm lint`.
+- [x] Run `pnpm check-types`.
 
 Checkpoint commit:
 

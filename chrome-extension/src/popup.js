@@ -24,6 +24,8 @@ const tripPickerStatusElement = document.getElementById('trip-picker-status');
 const statusElement = document.getElementById('status');
 const previewElement = document.getElementById('capture-preview');
 
+let currentAuthStatus = null;
+
 function setStatus(message, tone = 'muted') {
   statusElement.textContent = message;
   statusElement.className = `status ${tone}`;
@@ -71,6 +73,7 @@ function sendRuntimeMessage(message) {
 }
 
 function renderAuthStatus(authStatus) {
+  currentAuthStatus = authStatus || null;
   openSignInLink.classList.add('hidden');
   openSignInLink.setAttribute('href', '#');
 
@@ -337,10 +340,18 @@ async function saveCurrentListing() {
   const appUrl = appUrlInput.value.trim().replace(/\/+$/, '');
   const tripId = tripIdInput.value.trim();
   const importToken = importTokenInput.value.trim();
+  const selectedTripId = tripSelect.value.trim();
   const debugMode = Boolean(debugModeInput.checked);
+  const canUseAuthenticatedImport = Boolean(
+    currentAuthStatus &&
+      currentAuthStatus.isSignedIn &&
+      currentAuthStatus.token &&
+      currentAuthStatus.appUrl &&
+      selectedTripId,
+  );
 
-  if (!appUrl || !tripId || !importToken) {
-    setStatus('House Vote URL, trip id, and import token are required.', 'error');
+  if (!canUseAuthenticatedImport && (!appUrl || !tripId || !importToken)) {
+    setStatus('Sign in and choose a trip, or use advanced manual setup with trip id and import token.', 'error');
     return;
   }
 
@@ -368,17 +379,31 @@ async function saveCurrentListing() {
     previewElement.textContent = formatCapturePreview(capture, debugMode);
     setStatus('Saving listing into House Vote...');
 
-    const response = await fetch(`${appUrl}/api/import-listing`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        tripId,
-        importToken,
-        capture,
-      }),
-    });
+    const importAppUrl = canUseAuthenticatedImport ? currentAuthStatus.appUrl : appUrl;
+    const importTripId = canUseAuthenticatedImport ? selectedTripId : tripId;
+    const response = canUseAuthenticatedImport
+      ? await fetch(`${importAppUrl}/api/extension/import-listing`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${currentAuthStatus.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            tripId: importTripId,
+            capture,
+          }),
+        })
+      : await fetch(`${importAppUrl}/api/import-listing`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            tripId: importTripId,
+            importToken,
+            capture,
+          }),
+        });
 
     const responseBody = await response.json();
 
@@ -389,7 +414,7 @@ async function saveCurrentListing() {
     setStatus(formatImportSuccessMessage(responseBody.data), 'success');
 
     if (responseBody.data && responseBody.data.tripPath) {
-      const tripUrl = new URL(responseBody.data.tripPath, `${appUrl}/`).toString();
+      const tripUrl = new URL(responseBody.data.tripPath, `${importAppUrl}/`).toString();
       setOpenTripLink(tripUrl);
     }
   } catch (error) {
