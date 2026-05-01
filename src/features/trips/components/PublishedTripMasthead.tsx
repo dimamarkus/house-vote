@@ -40,7 +40,7 @@ export function PublishedTripMasthead({
               ) : null}
             </div>
           </div>
-          <div className="w-full xl:max-w-xl xl:flex-none">
+          <div className="w-full xl:w-max xl:max-w-full xl:flex-none">
             <div className="flex flex-wrap gap-3 xl:justify-end">
               {share.trip.location ? (
                 <TripMetaPill icon={MapPin} label={share.trip.location} />
