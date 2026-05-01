@@ -535,17 +535,17 @@ Request example:
 
 Checklist:
 
-- [ ] Add extension import request schema without `importToken`.
-- [ ] Add authenticated import route handler.
-- [ ] Return 401 when missing auth.
-- [ ] Return 403 when the user cannot access the trip.
-- [ ] Save `addedById` as the signed-in user.
-- [ ] Preserve missing-field warnings in the response.
-- [ ] Preserve `tripPath` in the response so the extension can show "Open Saved Trip."
+- [x] Add extension import request schema without `importToken`.
+- [x] Add authenticated import route handler.
+- [x] Return 401 when missing auth.
+- [x] Return 403 when the user cannot access the trip.
+- [x] Save `addedById` as the signed-in user.
+- [x] Preserve missing-field warnings in the response.
+- [x] Preserve `tripPath` in the response so the extension can show "Open Saved Trip."
 - [ ] Add tests for unauthorized, forbidden, and successful import if practical.
-- [ ] Run `pnpm lint`.
-- [ ] Run `pnpm check-types`.
-- [ ] Run `pnpm test`.
+- [x] Run `pnpm lint`.
+- [x] Run `pnpm check-types`.
+- [x] Run `pnpm test`.
 
 Checkpoint commit:
 

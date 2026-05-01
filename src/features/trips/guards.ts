@@ -36,3 +36,38 @@ export async function assertTripOwnerId(
     throw new Error(`Only the trip owner can ${action}.`);
   }
 }
+
+/**
+ * Ensure `userId` can access the trip as either owner or collaborator. This is
+ * the right guard for member-level workflows like extension imports where
+ * collaborators should be able to contribute listings.
+ */
+export async function assertTripMemberId(
+  tripId: string,
+  userId: string,
+  action: string,
+  dbClient: DbClient = db,
+): Promise<void> {
+  const trip = await dbClient.trip.findUnique({
+    where: { id: tripId },
+    select: {
+      userId: true,
+      collaborators: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (!trip) {
+    throw new Error('Trip not found.');
+  }
+
+  const isOwner = trip.userId === userId;
+  const isCollaborator = trip.collaborators.some((collaborator) => collaborator.id === userId);
+
+  if (!isOwner && !isCollaborator) {
+    throw new Error(`You do not have permission to ${action} on this trip.`);
+  }
+}
