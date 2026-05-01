@@ -299,15 +299,15 @@ Likely files:
 
 Checklist:
 
-- [ ] Add extension build dependencies with `pnpm`.
-- [ ] Move popup source into an extension source directory.
-- [ ] Preserve current popup behavior after build.
-- [ ] Ensure `listing-parser.js` is available to `chrome.scripting.executeScript`.
-- [ ] Add a background service worker entry, even if it only handles a health-check message at first.
-- [ ] Document how to load the built extension locally.
-- [ ] Run `pnpm extension:build`.
-- [ ] Run `pnpm lint`.
-- [ ] Run `pnpm check-types`.
+- [x] Add extension build dependencies with `pnpm`.
+- [x] Move popup source into an extension source directory.
+- [x] Preserve current popup behavior after build.
+- [x] Ensure `listing-parser.js` is available to `chrome.scripting.executeScript`.
+- [x] Add a background service worker entry, even if it only handles a health-check message at first.
+- [x] Document how to load the built extension locally.
+- [x] Run `pnpm extension:build`.
+- [x] Run `pnpm lint`.
+- [x] Run `pnpm check-types`.
 
 Checkpoint commit:
 

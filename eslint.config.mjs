@@ -7,6 +7,7 @@ const config = [
   {
     ignores: [
       ".next/**",
+      "chrome-extension/dist/**",
       "generated/**",
       "next-env.d.ts",
       "node_modules/**",

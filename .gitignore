@@ -19,6 +19,7 @@
 
 # generated
 /generated/
+/chrome-extension/dist/
 
 # production
 /build
