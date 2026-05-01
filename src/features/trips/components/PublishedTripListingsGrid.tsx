@@ -169,7 +169,14 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
                     </Badge>
                   ) : undefined
                 }
-                actionsMenu={<PublishedListingActionsMenu listing={listing} />}
+                actionsMenu={
+                  <PublishedListingActionsMenu
+                    listing={listing}
+                    isCurrentVote={isCurrentVote}
+                    pendingVote={pendingAction === `vote-${listing.id}`}
+                    onVote={() => handleVote(listing.id)}
+                  />
+                }
                 footerContent={
                   <PublishedListingCardFooter
                     listing={listing}

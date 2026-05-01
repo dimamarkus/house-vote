@@ -47,24 +47,26 @@ interface PublishedListingFeedbackSectionProps {
   headerContent?: ReactNode;
 }
 
-export function PublishedListingFeedbackSection({
+interface PublishedListingFeedbackComposerFormProps {
+  listingId: string;
+  kind: ListingFeedbackKind;
+  formClassName?: string;
+  onSubmitted?: () => void;
+  showComposerIdentity?: boolean;
+}
+
+function PublishedListingFeedbackComposerForm({
   listingId,
   kind,
-  entries,
-  className,
   formClassName,
-  listClassName,
-  composerVariant = 'inline',
+  onSubmitted,
   showComposerIdentity = true,
-  entryVariant = 'card',
-  headerContent,
-}: PublishedListingFeedbackSectionProps) {
+}: PublishedListingFeedbackComposerFormProps) {
   const { token, share, activeGuest } = usePublishedTripGuest();
   const commentsOpen = share.commentsOpen;
   const router = useRouter();
   const [draft, setDraft] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const trimmedDraft = draft.trim();
   const isComposerDisabled = !commentsOpen || isSubmitting;
   const config = getListingFeedbackConfig(kind);
@@ -93,48 +95,99 @@ export function PublishedListingFeedbackSection({
     }
 
     setDraft('');
-    setIsDialogOpen(false);
+    onSubmitted?.();
     router.refresh();
     toast.success(config.successMessage);
   }
 
-  function renderComposerForm() {
-    return (
-      <form onSubmit={handleSubmit} className={cn('space-y-3', formClassName)}>
-        {showComposerIdentity ? (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-medium">
-              {`${config.singularLabel} as ${activeGuest.guestDisplayName}`}
-            </p>
-            {!commentsOpen ? (
-              <p className="text-xs text-muted-foreground">Guest feedback is closed.</p>
-            ) : null}
-          </div>
-        ) : null}
-        <Textarea
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder={config.placeholder}
-          disabled={isComposerDisabled}
-          maxLength={1000}
-          className="min-h-20"
-        />
+  return (
+    <form onSubmit={handleSubmit} className={cn('space-y-3', formClassName)}>
+      {showComposerIdentity ? (
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">{composerHelperText}</p>
-          <Button type="submit" disabled={isComposerDisabled || trimmedDraft.length === 0}>
-            {isSubmitting ? (
-              <>
-                <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
-                Posting
-              </>
-            ) : (
-              config.submitLabel
-            )}
-          </Button>
+          <p className="text-sm font-medium">
+            {`${config.singularLabel} as ${activeGuest.guestDisplayName}`}
+          </p>
+          {!commentsOpen ? (
+            <p className="text-xs text-muted-foreground">Guest feedback is closed.</p>
+          ) : null}
         </div>
-      </form>
-    );
-  }
+      ) : null}
+      <Textarea
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        placeholder={config.placeholder}
+        disabled={isComposerDisabled}
+        maxLength={1000}
+        className="min-h-20"
+      />
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">{composerHelperText}</p>
+        <Button type="submit" disabled={isComposerDisabled || trimmedDraft.length === 0}>
+          {isSubmitting ? (
+            <>
+              <RefreshCcw className="mr-2 h-4 w-4 animate-spin" />
+              Posting
+            </>
+          ) : (
+            config.submitLabel
+          )}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+interface PublishedListingFeedbackDialogProps {
+  listingId: string;
+  kind: ListingFeedbackKind;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  showComposerIdentity?: boolean;
+}
+
+export function PublishedListingFeedbackDialog({
+  listingId,
+  kind,
+  onOpenChange,
+  open,
+  showComposerIdentity = true,
+}: PublishedListingFeedbackDialogProps) {
+  const config = getListingFeedbackConfig(kind);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{config.submitLabel}</DialogTitle>
+          <DialogDescription>{config.placeholder}</DialogDescription>
+        </DialogHeader>
+        <PublishedListingFeedbackComposerForm
+          listingId={listingId}
+          kind={kind}
+          onSubmitted={() => onOpenChange(false)}
+          showComposerIdentity={showComposerIdentity}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export function PublishedListingFeedbackSection({
+  listingId,
+  kind,
+  entries,
+  className,
+  formClassName,
+  listClassName,
+  composerVariant = 'inline',
+  showComposerIdentity = true,
+  entryVariant = 'card',
+  headerContent,
+}: PublishedListingFeedbackSectionProps) {
+  const { share } = usePublishedTripGuest();
+  const commentsOpen = share.commentsOpen;
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const config = getListingFeedbackConfig(kind);
 
   function renderSlimEntry(entry: PublishedListingFeedbackEntry) {
     const metadataLabel = `${entry.guest.guestDisplayName} • ${formatDistanceToNow(new Date(entry.createdAt), { addSuffix: true })}`;
@@ -168,14 +221,14 @@ export function PublishedListingFeedbackSection({
           size="sm"
           disabled={!commentsOpen}
           aria-label={config.submitLabel}
+          title={config.submitLabel}
           className={cn(
             compact
-              ? 'h-6 rounded-full border-sky-200 bg-sky-50 px-2 text-[11px] text-sky-700 hover:bg-sky-100 hover:text-sky-800'
-              : 'h-8 w-full rounded-lg border-sky-200 bg-sky-50 text-xs text-sky-700 hover:bg-sky-100 hover:text-sky-800',
+              ? 'size-6 rounded-full border-sky-200 bg-transparent p-0 text-sky-700 hover:bg-sky-50 hover:text-sky-800'
+              : 'h-8 w-full rounded-lg border-sky-200 bg-transparent text-sky-700 hover:bg-sky-50 hover:text-sky-800',
           )}
         >
           <Plus className={compact ? 'size-3' : 'size-3.5'} />
-          Add
         </Button>
       </DialogTrigger>
     );
@@ -188,7 +241,13 @@ export function PublishedListingFeedbackSection({
           <DialogTitle>{config.submitLabel}</DialogTitle>
           <DialogDescription>{config.placeholder}</DialogDescription>
         </DialogHeader>
-        {renderComposerForm()}
+        <PublishedListingFeedbackComposerForm
+          listingId={listingId}
+          kind={kind}
+          formClassName={formClassName}
+          onSubmitted={() => setIsDialogOpen(false)}
+          showComposerIdentity={showComposerIdentity}
+        />
       </DialogContent>
     );
   }
@@ -253,7 +312,12 @@ export function PublishedListingFeedbackSection({
       ) : (
         <>
           {renderEntries()}
-          {renderComposerForm()}
+          <PublishedListingFeedbackComposerForm
+            listingId={listingId}
+            kind={kind}
+            formClassName={formClassName}
+            showComposerIdentity={showComposerIdentity}
+          />
         </>
       )}
     </div>
