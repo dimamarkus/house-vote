@@ -46,6 +46,8 @@ interface RoomBreakdown {
   rooms: RoomEntry[];
 }
 
+type AddedTimestampPlacement = 'content' | 'footer';
+
 export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   listing: Listing;
   className?: string;
@@ -75,6 +77,7 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   /** Optional fixed unit label for surfaces whose stored price already matches that label. */
   priceUnitLabel?: string;
   allowPrimaryPhotoSelection?: boolean;
+  addedTimestampPlacement?: AddedTimestampPlacement;
 }
 
 export function ListingCard({
@@ -94,6 +97,7 @@ export function ListingCard({
   travelLinkContext,
   priceUnitLabel,
   allowPrimaryPhotoSelection = false,
+  addedTimestampPlacement = 'content',
   ...props
 }: ListingCardProps) {
   const router = useRouter();
@@ -158,6 +162,11 @@ export function ListingCard({
       {actionsMenu}
     </div>
   ) : undefined;
+  const addedTimestamp = (
+    <p className="text-[11px] text-muted-foreground/50">
+      Added {format(listing.createdAt, 'MMM d, yyyy')}
+    </p>
+  );
 
   async function handleSetPrimaryPhoto(photoUrl: string) {
     const result = await setListingPrimaryPhoto({
@@ -286,16 +295,25 @@ export function ListingCard({
           ) : null}
         </div>
 
-        <div className="mt-auto pt-6">
-          <p className="text-[11px] text-muted-foreground/50">
-            Added {format(listing.createdAt, 'MMM d, yyyy')}
-          </p>
-        </div>
+        {addedTimestampPlacement === 'content' ? (
+          <div className="mt-auto pt-6">
+            {addedTimestamp}
+          </div>
+        ) : null}
       </CardContent>
 
-      {footerContent && (
-        <CardFooter className={cn("border-t border-border/50 pt-4", footerClassName)}>
-          {footerContent}
+      {(footerContent || addedTimestampPlacement === 'footer') && (
+        <CardFooter className={cn(
+          "border-t border-border/50 pt-4",
+          addedTimestampPlacement === 'footer' ? 'flex-col items-start gap-3' : undefined,
+          footerClassName,
+        )}>
+          {footerContent ? (
+            <div className={cn("w-full", addedTimestampPlacement === 'footer' ? 'flex-1' : undefined)}>
+              {footerContent}
+            </div>
+          ) : null}
+          {addedTimestampPlacement === 'footer' ? addedTimestamp : null}
         </CardFooter>
       )}
     </Card>

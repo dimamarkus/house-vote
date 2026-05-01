@@ -139,7 +139,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
             const isVoteEligible = isVoteEligibleListingStatus(listing.status);
             const isCurrentVote = currentVoteListingId === listing.id;
             const isCurrentWinner = currentWinnerListingId === listing.id;
-            const tabContentFillsCard = cardView === 'votes' || cardView === 'feedback';
+            const tabContentFillsCard = cardView === 'votes' || cardView === 'feedback' || cardView === 'comments';
             const voteButtonLabel = !share.votingOpen
               ? 'Voting closed'
               : !isVoteEligible
@@ -161,6 +161,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
                 showDescription={cardView === 'info'}
                 contentClassName={tabContentFillsCard ? 'flex-none' : undefined}
                 footerClassName={tabContentFillsCard ? 'flex-1 items-start' : undefined}
+                addedTimestampPlacement="footer"
                 className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
                 imageOverlayContent={
                   isCurrentWinner ? (
@@ -177,7 +178,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
                     onVote={() => handleVote(listing.id)}
                   />
                 }
-                footerContent={
+                footerContent={tabContentFillsCard ? (
                   <PublishedListingCardFooter
                     listing={listing}
                     isVoteEligible={isVoteEligible}
@@ -186,7 +187,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
                     voteButtonLabel={voteButtonLabel}
                     onVote={() => handleVote(listing.id)}
                   />
-                }
+                ) : null}
               />
             );
           })}

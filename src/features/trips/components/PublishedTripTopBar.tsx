@@ -65,6 +65,9 @@ export function PublishedTripTopBar({
                 <TabsTrigger value="feedback" className="flex-1 px-3 sm:flex-none">
                   Pros / cons
                 </TabsTrigger>
+                <TabsTrigger value="comments" className="flex-1 px-3 sm:flex-none">
+                  Comments
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           ) : null}
