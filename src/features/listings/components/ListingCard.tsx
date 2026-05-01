@@ -47,6 +47,7 @@ interface RoomBreakdown {
 }
 
 type AddedTimestampPlacement = 'content' | 'footer';
+type ActionsMenuPlacement = 'overlay' | 'footer';
 
 export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   listing: Listing;
@@ -55,15 +56,17 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   imageOverlayContent?: React.ReactNode;
   /**
    * Slot for an overflow / actions menu (e.g. a kebab dropdown).
-   * Renders in the card's top-right corner. Stacks below the source badge
-   * when the card has photos; otherwise sits inline with the header badges.
+   * Defaults to the card's top-right corner. Can also render in the footer
+   * meta row when a surface wants image overlays kept lighter.
    */
   actionsMenu?: React.ReactNode;
+  actionsMenuPlacement?: ActionsMenuPlacement;
   showLink?: boolean;
   baseUrl?: string;
   roomBreakdown?: RoomBreakdown | null;
   showAllMetadata?: boolean;
   showDescription?: boolean;
+  separateBodyFromHeader?: boolean;
   contentClassName?: string;
   footerClassName?: string;
   /**
@@ -86,11 +89,13 @@ export function ListingCard({
   footerContent,
   imageOverlayContent,
   actionsMenu,
+  actionsMenuPlacement = 'overlay',
   showLink = false,
   baseUrl = '/listings',
   roomBreakdown,
   showAllMetadata = false,
   showDescription = true,
+  separateBodyFromHeader = false,
   contentClassName,
   footerClassName,
   tripContext,
@@ -130,6 +135,8 @@ export function ListingCard({
   const hasDefaultStatus = isVoteEligibleListingStatus(listing.status);
   const hasRooms = roomBreakdown && roomBreakdown.rooms.length > 0;
   const showingRooms = hasRooms && (showAllMetadata || face === 'rooms');
+  const hasDescription = Boolean(listing.sourceDescription?.trim() || listing.notes?.trim());
+  const hasCardContentBody = Boolean(showingRooms || (showDescription && hasDescription) || addedTimestampPlacement === 'content');
   const sleepsCount = extractSleepsCount({ title: listing.title, roomBreakdown });
   const bedCount = listing.bedCount ?? extractBedCountFromRoomBreakdown(roomBreakdown);
 
@@ -155,13 +162,16 @@ export function ListingCard({
   );
   const imageSourceBadge = hasPhotos ? sourceBadge : null;
   const inlineSourceBadge = hasPhotos ? null : sourceBadge;
-  const overlayTopRight = hasPhotos && (imageSourceBadge || typeBadge || actionsMenu) ? (
+  const overlayActionsMenu = actionsMenuPlacement === 'overlay' ? actionsMenu : null;
+  const footerActionsMenu = actionsMenuPlacement === 'footer' ? actionsMenu : null;
+  const overlayTopRight = hasPhotos && (imageSourceBadge || typeBadge || overlayActionsMenu) ? (
     <div className="flex flex-col items-end gap-2">
       {imageSourceBadge}
       {typeBadge}
-      {actionsMenu}
+      {overlayActionsMenu}
     </div>
   ) : undefined;
+  const shouldRenderFooterMeta = addedTimestampPlacement === 'footer' || Boolean(footerActionsMenu);
   const addedTimestamp = (
     <p className="text-[11px] text-muted-foreground/50">
       Added {format(listing.createdAt, 'MMM d, yyyy')}
@@ -204,13 +214,13 @@ export function ListingCard({
       ) : null}
 
       <CardHeader className={cn(hasPhotos ? 'gap-4 pt-4' : 'gap-4 pt-6', 'pb-4')}>
-        {(inlineStatusBadge || inlineSourceBadge || (!hasPhotos && typeBadge) || (!hasPhotos && actionsMenu)) ? (
+        {(inlineStatusBadge || inlineSourceBadge || (!hasPhotos && typeBadge) || (!hasPhotos && overlayActionsMenu)) ? (
           <div className="flex flex-wrap items-center gap-2">
             {inlineStatusBadge}
             {inlineSourceBadge}
             {!hasPhotos ? typeBadge : null}
-            {!hasPhotos && actionsMenu ? (
-              <div className="ml-auto">{actionsMenu}</div>
+            {!hasPhotos && overlayActionsMenu ? (
+              <div className="ml-auto">{overlayActionsMenu}</div>
             ) : null}
           </div>
         ) : null}
@@ -281,7 +291,13 @@ export function ListingCard({
         />
       </CardHeader>
 
-      <CardContent className={cn("flex flex-1 flex-col text-sm", contentClassName)}>
+      <CardContent
+        className={cn(
+          "flex flex-1 flex-col text-sm",
+          separateBodyFromHeader && hasCardContentBody ? "border-t border-border/50 pt-4" : undefined,
+          contentClassName,
+        )}
+      >
         <div className="space-y-4">
           {showingRooms && hasRooms && (
             <RoomBreakdownGrid rooms={roomBreakdown.rooms} />
@@ -302,18 +318,37 @@ export function ListingCard({
         ) : null}
       </CardContent>
 
-      {(footerContent || addedTimestampPlacement === 'footer') && (
+      {(footerContent || shouldRenderFooterMeta) && (
         <CardFooter className={cn(
-          "border-t border-border/50 pt-4",
-          addedTimestampPlacement === 'footer' ? 'flex-col items-start gap-3' : undefined,
+          shouldRenderFooterMeta
+            ? 'flex-col items-stretch gap-0 border-t border-border/50 p-0'
+            : 'border-t border-border/50 pt-4',
           footerClassName,
         )}>
           {footerContent ? (
-            <div className={cn("w-full", addedTimestampPlacement === 'footer' ? 'flex-1' : undefined)}>
+            <div className={cn(
+              "w-full",
+              shouldRenderFooterMeta ? "p-6 pt-4" : undefined,
+              addedTimestampPlacement === 'footer' ? 'flex-1' : undefined,
+            )}>
               {footerContent}
             </div>
           ) : null}
-          {addedTimestampPlacement === 'footer' ? addedTimestamp : null}
+          {shouldRenderFooterMeta ? (
+            <div
+              className={cn(
+                "flex w-full items-center justify-between gap-3 px-6 py-4",
+                footerContent ? "border-t border-border/50" : undefined,
+              )}
+            >
+              {addedTimestampPlacement === 'footer' ? addedTimestamp : <span aria-hidden="true" />}
+              {footerActionsMenu ? (
+                <div className="ml-auto shrink-0">
+                  {footerActionsMenu}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </CardFooter>
       )}
     </Card>

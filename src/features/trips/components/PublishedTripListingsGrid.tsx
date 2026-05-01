@@ -135,6 +135,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
             roomBreakdown={cardView === 'beds' ? listing.roomBreakdown as ListingCardProps['roomBreakdown'] : null}
             showAllMetadata={cardView === 'beds'}
             showDescription={cardView === 'info'}
+            separateBodyFromHeader
             contentClassName={tabContentFillsCard ? 'flex-none' : undefined}
             footerClassName={tabContentFillsCard ? 'flex-1 items-start' : undefined}
             addedTimestampPlacement="footer"
@@ -154,6 +155,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
                 onVote={() => handleVote(listing.id)}
               />
             }
+            actionsMenuPlacement="footer"
             footerContent={tabContentFillsCard ? (
               <PublishedListingCardFooter
                 listing={listing}
