@@ -15,9 +15,9 @@ import { usePublishedTripGuest } from '@/features/trips/components/PublishedTrip
 import { usePublishedListingCardView } from '@/features/trips/hooks/usePublishedListingCardView';
 import type { PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { ListingCard, type ListingCardProps } from '@/features/listings/components/ListingCard';
+import { ListingVisibilityToggleCard } from '@/features/listings/components/ListingVisibilityToggleCard';
 import { createTripTravelContext } from '@/features/trips/utils/tripTravelContext';
 import { Badge } from '@/ui/shadcn/badge';
-import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent } from '@/ui/shadcn/card';
 import { cn } from '@/ui/utils/cn';
 
@@ -48,12 +48,17 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
       return left.title.localeCompare(right.title);
     });
   }, [listings]);
-  const rejectedListingCount = sortedListings.filter((listing) => (
+  const rejectedListings = sortedListings.filter((listing) => (
     listing.status === LISTING_STATUS.REJECTED
-  )).length;
+  ));
+  const rejectedListingCount = rejectedListings.length;
   const visibleListings = hideRejectedListings
     ? sortedListings.filter((listing) => listing.status !== LISTING_STATUS.REJECTED)
     : sortedListings;
+  const rejectedPreviewImageUrls = rejectedListings
+    .map((listing) => listing.photos[0]?.url ?? listing.imageUrl)
+    .filter((imageUrl): imageUrl is string => Boolean(imageUrl))
+    .slice(0, 3);
 
   const currentWinnerListingId = useMemo(() => {
     return sortedListings.find((listing) => (
@@ -105,94 +110,78 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
   }
 
   return (
-    <div className="flex min-w-0 flex-col gap-4">
-      {rejectedListingCount > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-sm">
-          <div>
-            <p className="text-sm font-medium">Board view</p>
-            <p className="text-xs text-muted-foreground">
-              {rejectedListingCount} rejected {rejectedListingCount === 1 ? 'home' : 'homes'} on this board
-            </p>
-          </div>
-          <Button
-            type="button"
-            weight={hideRejectedListings ? 'solid' : 'hollow'}
-            variant="neutral"
-            size="sm"
-            aria-pressed={hideRejectedListings}
-            onClick={() => setHideRejectedListings((current) => !current)}
-          >
-            {hideRejectedListings ? 'Show rejected homes' : 'Hide rejected homes'}
-          </Button>
-        </div>
-      ) : null}
+    <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {visibleListings.map((listing) => {
+        const isVoteEligible = isVoteEligibleListingStatus(listing.status);
+        const isCurrentVote = currentVoteListingId === listing.id;
+        const isCurrentWinner = currentWinnerListingId === listing.id;
+        const tabContentFillsCard = cardView === 'votes' || cardView === 'feedback' || cardView === 'comments';
+        const voteButtonLabel = !share.votingOpen
+          ? 'Voting closed'
+          : !isVoteEligible
+            ? (isCurrentVote ? 'Your vote' : formatListingStatusLabel(listing.status))
+            : isCurrentVote
+              ? 'Your vote'
+              : currentVoteListingId
+                ? 'Move my vote here'
+                : 'Vote for this house';
 
-      {visibleListings.length === 0 ? (
-        <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            Rejected homes are hidden. Show them to review the full board.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {visibleListings.map((listing) => {
-            const isVoteEligible = isVoteEligibleListingStatus(listing.status);
-            const isCurrentVote = currentVoteListingId === listing.id;
-            const isCurrentWinner = currentWinnerListingId === listing.id;
-            const tabContentFillsCard = cardView === 'votes' || cardView === 'feedback' || cardView === 'comments';
-            const voteButtonLabel = !share.votingOpen
-              ? 'Voting closed'
-              : !isVoteEligible
-                ? (isCurrentVote ? 'Your vote' : formatListingStatusLabel(listing.status))
-                : isCurrentVote
-                  ? 'Your vote'
-                  : currentVoteListingId
-                    ? 'Move my vote here'
-                    : 'Vote for this house';
-
-            return (
-              <ListingCard
-                key={listing.id}
+        return (
+          <ListingCard
+            key={listing.id}
+            listing={listing}
+            priceUnitLabel="total"
+            travelLinkContext={travelLinkContext}
+            roomBreakdown={cardView === 'beds' ? listing.roomBreakdown as ListingCardProps['roomBreakdown'] : null}
+            showAllMetadata={cardView === 'beds'}
+            showDescription={cardView === 'info'}
+            contentClassName={tabContentFillsCard ? 'flex-none' : undefined}
+            footerClassName={tabContentFillsCard ? 'flex-1 items-start' : undefined}
+            addedTimestampPlacement="footer"
+            className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
+            imageOverlayContent={
+              isCurrentWinner ? (
+                <Badge className="bg-emerald-600 text-white shadow-sm">
+                  Current winner
+                </Badge>
+              ) : undefined
+            }
+            actionsMenu={
+              <PublishedListingActionsMenu
                 listing={listing}
-                priceUnitLabel="total"
-                travelLinkContext={travelLinkContext}
-                roomBreakdown={cardView === 'beds' ? listing.roomBreakdown as ListingCardProps['roomBreakdown'] : null}
-                showAllMetadata={cardView === 'beds'}
-                showDescription={cardView === 'info'}
-                contentClassName={tabContentFillsCard ? 'flex-none' : undefined}
-                footerClassName={tabContentFillsCard ? 'flex-1 items-start' : undefined}
-                addedTimestampPlacement="footer"
-                className={cn('min-w-0 w-full', isCurrentWinner ? 'border-emerald-200 shadow-sm' : undefined)}
-                imageOverlayContent={
-                  isCurrentWinner ? (
-                    <Badge className="bg-emerald-600 text-white shadow-sm">
-                      Current winner
-                    </Badge>
-                  ) : undefined
-                }
-                actionsMenu={
-                  <PublishedListingActionsMenu
-                    listing={listing}
-                    isCurrentVote={isCurrentVote}
-                    pendingVote={pendingAction === `vote-${listing.id}`}
-                    onVote={() => handleVote(listing.id)}
-                  />
-                }
-                footerContent={tabContentFillsCard ? (
-                  <PublishedListingCardFooter
-                    listing={listing}
-                    isVoteEligible={isVoteEligible}
-                    isCurrentVote={isCurrentVote}
-                    pendingVote={pendingAction === `vote-${listing.id}`}
-                    voteButtonLabel={voteButtonLabel}
-                    onVote={() => handleVote(listing.id)}
-                  />
-                ) : null}
+                isCurrentVote={isCurrentVote}
+                pendingVote={pendingAction === `vote-${listing.id}`}
+                onVote={() => handleVote(listing.id)}
               />
-            );
-          })}
-        </div>
-      )}
+            }
+            footerContent={tabContentFillsCard ? (
+              <PublishedListingCardFooter
+                listing={listing}
+                isVoteEligible={isVoteEligible}
+                isCurrentVote={isCurrentVote}
+                pendingVote={pendingAction === `vote-${listing.id}`}
+                voteButtonLabel={voteButtonLabel}
+                onVote={() => handleVote(listing.id)}
+              />
+            ) : null}
+          />
+        );
+      })}
+
+      {rejectedListingCount > 0 ? (
+        <ListingVisibilityToggleCard
+          count={rejectedListingCount}
+          expanded={!hideRejectedListings}
+          hiddenTitle={`Show ${rejectedListingCount} rejected ${rejectedListingCount === 1 ? 'home' : 'homes'}`}
+          hiddenActionLabel="Review rejected homes"
+          hiddenDescription="Keep the main board focused on contenders, or open the rejected homes to review what was ruled out."
+          expandedTitle="Hide rejected homes"
+          expandedActionLabel="Hide rejected homes"
+          expandedDescription="Rejected homes are visible at the end of the board. Hide them to get back to the shortlist."
+          previewImageUrls={rejectedPreviewImageUrls}
+          onToggle={() => setHideRejectedListings((current) => !current)}
+        />
+      ) : null}
     </div>
   );
 }
