@@ -21,6 +21,23 @@ body {
   margin-top: 4px;
 }
 
+.auth-card {
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 12px;
+  background: #111827;
+}
+
+.auth-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.auth-actions .link-button,
+.auth-actions .secondary-button {
+  flex: 1;
+}
+
 h1,
 h2,
 p {

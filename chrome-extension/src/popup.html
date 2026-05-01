@@ -13,6 +13,15 @@
         <p class="muted">Use the import token from House Vote, then save from an Airbnb or VRBO property page. If a House Vote trip tab is already open, the trip id can auto-fill.</p>
       </section>
 
+      <section class="section auth-card">
+        <h2>House Vote Account</h2>
+        <div id="auth-status" class="status muted">Checking House Vote sign-in...</div>
+        <div class="auth-actions">
+          <a id="open-sign-in" class="link-button hidden" href="#" target="_blank" rel="noopener noreferrer">Sign in to House Vote</a>
+          <button id="refresh-auth" class="secondary-button" type="button">Refresh Session</button>
+        </div>
+      </section>
+
       <section class="section">
         <label for="app-url">House Vote URL</label>
         <input id="app-url" name="app-url" placeholder="http://localhost:3000" type="url" />

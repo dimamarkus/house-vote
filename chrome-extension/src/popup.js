@@ -1,3 +1,5 @@
+import { extensionMessageTypes } from './extension-messages';
+
 const storageKeys = {
   appUrl: 'houseVoteAppUrl',
   tripId: 'houseVoteTripId',
@@ -12,6 +14,9 @@ const debugModeInput = document.getElementById('debug-mode');
 const detectTripButton = document.getElementById('detect-trip');
 const saveListingButton = document.getElementById('save-listing');
 const openSavedTripLink = document.getElementById('open-saved-trip');
+const authStatusElement = document.getElementById('auth-status');
+const openSignInLink = document.getElementById('open-sign-in');
+const refreshAuthButton = document.getElementById('refresh-auth');
 const statusElement = document.getElementById('status');
 const previewElement = document.getElementById('capture-preview');
 
@@ -29,6 +34,60 @@ function setOpenTripLink(url) {
 
   openSavedTripLink.classList.remove('hidden');
   openSavedTripLink.setAttribute('href', url);
+}
+
+function sendRuntimeMessage(message) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(message, (response) => {
+      const error = chrome.runtime.lastError;
+      if (error) {
+        reject(new Error(error.message));
+        return;
+      }
+
+      resolve(response);
+    });
+  });
+}
+
+function renderAuthStatus(authStatus) {
+  openSignInLink.classList.add('hidden');
+  openSignInLink.setAttribute('href', '#');
+
+  if (!authStatus || !authStatus.isConfigured) {
+    authStatusElement.textContent = authStatus && authStatus.error
+      ? authStatus.error
+      : 'Extension auth is not configured yet.';
+    authStatusElement.className = 'status error';
+    return;
+  }
+
+  if (!authStatus.isSignedIn) {
+    authStatusElement.textContent = 'Not signed in. Sign in to House Vote in this browser, then refresh.';
+    authStatusElement.className = 'status muted';
+
+    if (authStatus.signInUrl) {
+      openSignInLink.classList.remove('hidden');
+      openSignInLink.setAttribute('href', authStatus.signInUrl);
+    }
+    return;
+  }
+
+  authStatusElement.textContent = `Signed in as ${authStatus.emailAddress || authStatus.userId || 'House Vote user'}.`;
+  authStatusElement.className = 'status success';
+}
+
+async function refreshAuthStatus() {
+  authStatusElement.textContent = 'Checking House Vote sign-in...';
+  authStatusElement.className = 'status muted';
+
+  try {
+    const authStatus = await sendRuntimeMessage({ type: extensionMessageTypes.authStatus });
+    renderAuthStatus(authStatus);
+  } catch (error) {
+    authStatusElement.textContent = error instanceof Error ? error.message : 'Failed to check House Vote sign-in.';
+    authStatusElement.className = 'status error';
+  }
 }
 
 function saveSettings() {
@@ -256,10 +315,16 @@ detectTripButton.addEventListener('click', async () => {
     setStatus('Failed to inspect open tabs for a House Vote trip.', 'error');
   }
 });
+refreshAuthButton.addEventListener('click', refreshAuthStatus);
 saveListingButton.addEventListener('click', saveCurrentListing);
 
 loadSettings()
-  .then(() => applyDetectedTripContext())
+  .then(async () => {
+    await Promise.all([
+      applyDetectedTripContext(),
+      refreshAuthStatus(),
+    ]);
+  })
   .catch(() => {
     setStatus('Failed to load saved settings.', 'error');
   });

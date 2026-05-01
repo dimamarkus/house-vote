@@ -3,7 +3,7 @@
   "name": "House Vote Importer",
   "version": "0.2.1",
   "description": "Capture Airbnb, VRBO, and Booking.com listings into House Vote.",
-  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "permissions": ["activeTab", "cookies", "scripting", "storage", "tabs"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js",

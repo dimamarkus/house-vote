@@ -354,18 +354,18 @@ sequenceDiagram
 
 Checklist:
 
-- [ ] Add Clerk extension dependency.
-- [ ] Add extension env/config for Clerk publishable key.
-- [ ] Add `syncHost` config for local and production origins.
-- [ ] Configure manifest permissions required by Clerk.
-- [ ] Add background token helper.
-- [ ] Add popup signed-out state.
-- [ ] Add popup signed-in state showing the Clerk user/session status.
+- [x] Add Clerk extension dependency.
+- [x] Add extension env/config for Clerk publishable key.
+- [x] Add `syncHost` config for local and production origins.
+- [x] Configure manifest permissions required by Clerk.
+- [x] Add background token helper.
+- [x] Add popup signed-out state.
+- [x] Add popup signed-in state showing the Clerk user/session status.
 - [ ] Test signed-in web app -> extension recognizes session.
 - [ ] Test signed-out web app -> extension prompts sign-in.
-- [ ] Run `pnpm extension:build`.
-- [ ] Run `pnpm lint`.
-- [ ] Run `pnpm check-types`.
+- [x] Run `pnpm extension:build`.
+- [x] Run `pnpm lint`.
+- [x] Run `pnpm check-types`.
 
 Checkpoint commit:
 
