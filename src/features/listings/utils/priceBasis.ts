@@ -69,6 +69,26 @@ export function availablePriceBases(
   return available;
 }
 
+/**
+ * Cycle to the next available price basis. Falls back to the first available
+ * option (usually TOTAL) when the current basis isn't renderable.
+ */
+export function nextPriceBasis(
+  current: PriceBasis,
+  available: ReadonlyArray<PriceBasis>,
+): PriceBasis {
+  if (available.length === 0) {
+    return DEFAULT_PRICE_BASIS;
+  }
+
+  const currentIndex = available.indexOf(current);
+  if (currentIndex === -1) {
+    return available[0] ?? DEFAULT_PRICE_BASIS;
+  }
+
+  return available[(currentIndex + 1) % available.length] ?? DEFAULT_PRICE_BASIS;
+}
+
 export interface ComputedListingPrice {
   /** Formatted amount (whole dollars, comma-grouped), or null if no price. */
   amount: string | null;

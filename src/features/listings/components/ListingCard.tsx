@@ -23,7 +23,9 @@ import { setListingPrimaryPhoto } from '../actions/setListingPrimaryPhoto';
 import { isVoteEligibleListingStatus } from '../constants/listing-status';
 import { extractBedCountFromRoomBreakdown, extractSleepsCount } from '../utils/extractSleepsCount';
 import {
+  availablePriceBases,
   computeListingPriceDisplay,
+  nextPriceBasis,
   type TripPriceContext,
 } from '../utils/priceBasis';
 import { usePriceBasis } from '@/features/trips/hooks/usePriceBasis';
@@ -79,6 +81,11 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   travelLinkContext?: TripTravelContext;
   /** Optional fixed unit label for surfaces whose stored price already matches that label. */
   priceUnitLabel?: string;
+  /**
+   * When true, clicking the price cycles total ↔ per-guest (when guest count
+   * is available). Uses the shared price-basis store so every card stays in sync.
+   */
+  priceBasisToggleable?: boolean;
   allowPrimaryPhotoSelection?: boolean;
   addedTimestampPlacement?: AddedTimestampPlacement;
 }
@@ -101,6 +108,7 @@ export function ListingCard({
   tripContext,
   travelLinkContext,
   priceUnitLabel,
+  priceBasisToggleable = false,
   allowPrimaryPhotoSelection = false,
   addedTimestampPlacement = 'content',
   ...props
@@ -109,12 +117,14 @@ export function ListingCard({
   const [face, setFace] = useState<'default' | 'rooms'>(
     roomBreakdown?.rooms?.length ? 'rooms' : 'default',
   );
-  const [priceBasis] = usePriceBasis();
+  const [priceBasis, setPriceBasis] = usePriceBasis();
   const priceDisplay = computeListingPriceDisplay(
     listing.price ?? null,
     priceBasis,
     tripContext,
   );
+  const toggleablePriceBases = availablePriceBases(tripContext);
+  const canTogglePriceBasis = priceBasisToggleable && toggleablePriceBases.length > 1;
 
   const detailUrl = `${baseUrl}/${listing.id}`;
   const effectiveTravelLinkContext = travelLinkContext ?? tripContext;
@@ -255,14 +265,42 @@ export function ListingCard({
 
           <div className="flex shrink-0 flex-col items-end gap-2">
             {priceDisplay.amount ? (
-              <div className="flex flex-col items-end">
-                <div className="rounded-md bg-primary/10 px-2.5 py-1 text-lg font-bold tracking-tight text-primary">
-                  ${priceDisplay.amount}
+              canTogglePriceBasis ? (
+                <button
+                  type="button"
+                  onClick={() => setPriceBasis(nextPriceBasis(priceBasis, toggleablePriceBases))}
+                  className={cn(
+                    'flex flex-col items-end rounded-md text-right',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                  )}
+                  aria-label={
+                    priceBasis === 'TOTAL'
+                      ? 'Show price per guest'
+                      : 'Show total stay price'
+                  }
+                  title={
+                    priceBasis === 'TOTAL'
+                      ? 'Click to show per guest'
+                      : 'Click to show total'
+                  }
+                >
+                  <span className="rounded-md bg-primary/10 px-2.5 py-1 text-lg font-bold tracking-tight text-primary transition-colors hover:bg-primary/15">
+                    ${priceDisplay.amount}
+                  </span>
+                  <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {priceUnitLabel ?? priceDisplay.unitLabel}
+                  </span>
+                </button>
+              ) : (
+                <div className="flex flex-col items-end">
+                  <div className="rounded-md bg-primary/10 px-2.5 py-1 text-lg font-bold tracking-tight text-primary">
+                    ${priceDisplay.amount}
+                  </div>
+                  <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {priceUnitLabel ?? priceDisplay.unitLabel}
+                  </span>
                 </div>
-                <span className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {priceUnitLabel ?? priceDisplay.unitLabel}
-                </span>
-              </div>
+              )
             ) : null}
             {hasRooms && !showAllMetadata && (
               <button
