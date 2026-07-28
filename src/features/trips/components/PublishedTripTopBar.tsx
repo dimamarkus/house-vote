@@ -1,7 +1,9 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { CalendarDays, MapPin } from 'lucide-react';
 import type { PublishedGuestSessionValue } from '@/features/trips/constants/publishedGuestSession';
 import {
   isPublishedListingCardView,
@@ -11,10 +13,16 @@ import { usePublishedGuestSession } from '@/features/trips/hooks/usePublishedGue
 import type { PublishedTripShareRecord } from '@/features/trips/publishedDb';
 import { Button } from '@/ui/shadcn/button';
 import { Tabs, TabsList, TabsTrigger } from '@/ui/shadcn/tabs';
+import { TripMetaPill } from './TripMetaPill';
+
+const listingCardViewTriggerClassName =
+  'flex-1 px-3 text-blue-800/75 hover:bg-blue-100/80 hover:text-blue-950 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-sm sm:flex-none dark:text-blue-100/80 dark:hover:bg-blue-900/60 dark:hover:text-white dark:data-[state=active]:bg-blue-500 dark:data-[state=active]:text-white';
 
 interface PublishedTripTopBarProps {
   token: string;
   share: PublishedTripShareRecord;
+  tripDateRange?: string | null;
+  guestDetailsSlot?: ReactNode;
   initialSession?: PublishedGuestSessionValue | null;
   mode: 'board' | 'join';
 }
@@ -22,6 +30,8 @@ interface PublishedTripTopBarProps {
 export function PublishedTripTopBar({
   token,
   share,
+  tripDateRange = null,
+  guestDetailsSlot,
   initialSession = null,
   mode,
 }: PublishedTripTopBarProps) {
@@ -30,6 +40,7 @@ export function PublishedTripTopBar({
   const [cardView, setCardView] = usePublishedListingCardView();
   const joinHref = `/share/${token}/join`;
   const boardHref = `/share/${token}`;
+  const hasMetaBadges = Boolean(share.trip.location || tripDateRange || guestDetailsSlot);
 
   function handleSwitchGuest() {
     clearSession();
@@ -39,8 +50,27 @@ export function PublishedTripTopBar({
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="mx-auto flex w-full max-w-none flex-col gap-3 px-6 py-3 sm:flex-row sm:items-center sm:justify-between 2xl:px-10">
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
           <p className="truncate text-sm font-semibold text-foreground sm:text-base">{share.trip.name}</p>
+          {hasMetaBadges ? (
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              {share.trip.location ? (
+                <TripMetaPill
+                  icon={MapPin}
+                  label={share.trip.location}
+                  className="px-3 py-1.5 text-xs sm:text-sm"
+                />
+              ) : null}
+              {tripDateRange ? (
+                <TripMetaPill
+                  icon={CalendarDays}
+                  label={tripDateRange}
+                  className="px-3 py-1.5 text-xs sm:text-sm"
+                />
+              ) : null}
+              {guestDetailsSlot}
+            </div>
+          ) : null}
         </div>
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
           {mode === 'board' ? (
@@ -52,20 +82,23 @@ export function PublishedTripTopBar({
                 }
               }}
             >
-              <TabsList aria-label="Listing card view" className="h-9 w-full sm:w-auto">
-                <TabsTrigger value="beds" className="flex-1 px-3 sm:flex-none">
+              <TabsList
+                aria-label="Listing card view"
+                className="h-9 w-full border border-blue-200 bg-blue-50 p-1 text-blue-800 sm:w-auto dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-100"
+              >
+                <TabsTrigger value="beds" className={listingCardViewTriggerClassName}>
                   Beds
                 </TabsTrigger>
-                <TabsTrigger value="info" className="flex-1 px-3 sm:flex-none">
+                <TabsTrigger value="info" className={listingCardViewTriggerClassName}>
                   Info
                 </TabsTrigger>
-                <TabsTrigger value="votes" className="flex-1 px-3 sm:flex-none">
+                <TabsTrigger value="votes" className={listingCardViewTriggerClassName}>
                   Votes
                 </TabsTrigger>
-                <TabsTrigger value="feedback" className="flex-1 px-3 sm:flex-none">
+                <TabsTrigger value="feedback" className={listingCardViewTriggerClassName}>
                   Pros / cons
                 </TabsTrigger>
-                <TabsTrigger value="comments" className="flex-1 px-3 sm:flex-none">
+                <TabsTrigger value="comments" className={listingCardViewTriggerClassName}>
                   Comments
                 </TabsTrigger>
               </TabsList>

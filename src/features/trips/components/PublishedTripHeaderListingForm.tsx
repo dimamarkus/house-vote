@@ -82,7 +82,7 @@ export function PublishedTripHeaderListingForm({
           />
           <Button type="submit" disabled={isSubmitting} className="w-full shrink-0 sm:w-auto">
             <Plus className="mr-2 h-4 w-4" />
-            Add listing
+            Import listing
           </Button>
         </form>
 

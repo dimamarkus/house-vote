@@ -12,7 +12,7 @@ interface TripMetaPillProps {
 
 /**
  * Shared rounded "meta" pill (icon + label) used by the trip dashboard
- * header and the public share page masthead. The base styling is
+ * header and the public share page sticky top bar. The base styling is
  * intentionally conservative (wrap-safe, breakpoint-light) so callers
  * can layer visual variants via `className` — e.g. `shadow-sm sm:text-base`
  * on the dashboard for a slightly more emphatic look.

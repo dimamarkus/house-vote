@@ -270,7 +270,7 @@ export function ListingCard({
                   type="button"
                   onClick={() => setPriceBasis(nextPriceBasis(priceBasis, toggleablePriceBases))}
                   className={cn(
-                    'flex flex-col items-end rounded-md text-right',
+                    'flex cursor-pointer flex-col items-end rounded-md text-right',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                   )}
                   aria-label={

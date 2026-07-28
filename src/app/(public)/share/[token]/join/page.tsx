@@ -6,7 +6,6 @@ import {
 } from '@/features/trips/constants/publishedGuestSession';
 import { PublishedTripGuestPicker } from '@/features/trips/components/PublishedTripGuestPicker';
 import { PublishedTripGuestsSheet } from '@/features/trips/components/PublishedTripGuestsSheet';
-import { PublishedTripMasthead } from '@/features/trips/components/PublishedTripMasthead';
 import { PublishedTripTopBar } from '@/features/trips/components/PublishedTripTopBar';
 import { formatTripDateRange } from '@/features/trips/utils/formatTripDateRange';
 import { publishedTrips } from '@/features/trips/publishedDb';
@@ -54,21 +53,19 @@ export default async function PublishedTripJoinPage({ params }: PublishedTripJoi
       <PublishedTripTopBar
         token={token}
         share={share}
+        tripDateRange={tripDateRange}
+        guestDetailsSlot={(
+          <PublishedTripGuestsSheet
+            share={share}
+            listings={listings}
+            initialSession={initialSession}
+            triggerClassName="px-3 py-1.5 text-xs sm:text-sm"
+          />
+        )}
         initialSession={initialSession}
         mode="join"
       />
       <div className="mx-auto flex w-full max-w-none flex-col gap-6 px-6 py-8 2xl:px-10">
-        <PublishedTripMasthead
-          share={share}
-          tripDateRange={tripDateRange}
-          guestDetailsSlot={(
-            <PublishedTripGuestsSheet
-              share={share}
-              listings={listings}
-              initialSession={initialSession}
-            />
-          )}
-        />
         <PublishedTripGuestPicker
           token={token}
           share={share}

@@ -54,34 +54,38 @@ export default async function PublishedTripPage({ params }: PublishedTripPagePro
     redirect(`/share/${token}/join`);
   }
 
+  const guestDetailsSlot = (
+    <PublishedTripGuestsSheet
+      share={share}
+      listings={listings}
+      initialSession={initialSession}
+      triggerClassName="px-3 py-1.5 text-xs sm:text-sm"
+    />
+  );
+
   return (
     <div className="flex flex-col gap-6">
       <PublishedTripTopBar
         token={token}
         share={share}
+        tripDateRange={tripDateRange}
+        guestDetailsSlot={guestDetailsSlot}
         initialSession={initialSession}
         mode="board"
       />
       <div className="mx-auto flex w-full max-w-none flex-col gap-6 px-6 py-8 2xl:px-10">
-        <PublishedTripMasthead
-          share={share}
-          tripDateRange={tripDateRange}
-          guestDetailsSlot={(
-            <PublishedTripGuestsSheet
-              share={share}
-              listings={listings}
-              initialSession={initialSession}
-            />
-          )}
-          actionSlot={(
-            <PublishedTripHeaderListingForm
-              token={token}
-              share={share}
-              className="w-full"
-              initialSession={initialSession}
-            />
-          )}
-        />
+        {share.allowGuestSuggestions ? (
+          <PublishedTripMasthead
+            actionSlot={(
+              <PublishedTripHeaderListingForm
+                token={token}
+                share={share}
+                className="w-full"
+                initialSession={initialSession}
+              />
+            )}
+          />
+        ) : null}
         <PublishedTripPageClient
           token={token}
           share={share}

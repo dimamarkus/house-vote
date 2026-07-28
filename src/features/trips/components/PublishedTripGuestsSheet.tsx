@@ -21,6 +21,8 @@ interface PublishedTripGuestsSheetProps {
   share: PublishedTripShareRecord;
   listings: PublishedTripListingRecord[];
   initialSession?: PublishedGuestSessionValue | null;
+  /** Extra classes for the trigger pill (e.g. compact sizing in the sticky top bar). */
+  triggerClassName?: string;
 }
 
 const detailPillClassName = 'inline-flex max-w-full items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm font-medium leading-snug';
@@ -29,6 +31,7 @@ export function PublishedTripGuestsSheet({
   share,
   listings,
   initialSession = null,
+  triggerClassName,
 }: PublishedTripGuestsSheetProps) {
   const { activeGuest } = usePublishedGuestSession(share.trip.id, share.guests, initialSession);
   const listingPreviewById = useMemo(() => {
@@ -53,6 +56,7 @@ export function PublishedTripGuestsSheet({
           className={cn(
             detailPillClassName,
             'cursor-pointer transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            triggerClassName,
           )}
           aria-label={`Open guest list for ${share.trip.name}`}
         >
