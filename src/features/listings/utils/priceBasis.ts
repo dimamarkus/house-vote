@@ -1,20 +1,19 @@
 /**
- * Price-basis (per-night / per-guest / total) display math.
+ * Price-basis (total / per-guest) display math.
  *
- * All storage is in whole dollars on a per-night basis (see PR 6). This
- * module only handles presentation: given a nightly price plus trip context
- * (nights + guests), produce the number to display for a given basis.
+ * Storage is in whole dollars for the full stay total. This module only
+ * handles presentation: given a stored total plus trip guest count, produce
+ * the number to display for a given basis.
  */
 
-export const PRICE_BASIS_VALUES = ['NIGHTLY', 'PER_GUEST', 'TOTAL'] as const;
+export const PRICE_BASIS_VALUES = ['TOTAL', 'PER_GUEST'] as const;
 export type PriceBasis = (typeof PRICE_BASIS_VALUES)[number];
 
-export const DEFAULT_PRICE_BASIS: PriceBasis = 'NIGHTLY';
+export const DEFAULT_PRICE_BASIS: PriceBasis = 'TOTAL';
 
 export const PRICE_BASIS_LABELS: Record<PriceBasis, string> = {
-  NIGHTLY: 'Per night',
-  PER_GUEST: 'Per guest',
   TOTAL: 'Total',
+  PER_GUEST: 'Per guest',
 };
 
 /**
@@ -22,9 +21,8 @@ export const PRICE_BASIS_LABELS: Record<PriceBasis, string> = {
  * Intentionally short so it doesn't dominate the dollar figure.
  */
 export const PRICE_BASIS_UNIT_LABELS: Record<PriceBasis, string> = {
-  NIGHTLY: '/ night',
-  PER_GUEST: '/ guest',
   TOTAL: 'total',
+  PER_GUEST: '/ guest',
 };
 
 export function isPriceBasis(value: unknown): value is PriceBasis {
@@ -58,19 +56,16 @@ export function computeNightsFromDates(
 }
 
 /**
- * Which basis options are renderable given the trip context. NIGHTLY is
- * always available (we store nightly prices). TOTAL needs nights. PER_GUEST
- * needs both nights (to compute total) and a positive guest count.
+ * Which basis options are renderable given the trip context. TOTAL is always
+ * available (we store stay totals). PER_GUEST needs a positive guest count.
  */
 export function availablePriceBases(
   ctx: TripPriceContext | null | undefined,
 ): ReadonlyArray<PriceBasis> {
-  const nights = computeNightsFromDates(ctx?.startDate, ctx?.endDate);
   const guests = ctx?.numberOfPeople ?? null;
 
-  const available: PriceBasis[] = ['NIGHTLY'];
-  if (nights && nights > 0) available.push('TOTAL');
-  if (nights && nights > 0 && guests && guests > 0) available.push('PER_GUEST');
+  const available: PriceBasis[] = ['TOTAL'];
+  if (guests && guests > 0) available.push('PER_GUEST');
   return available;
 }
 
@@ -79,9 +74,9 @@ export interface ComputedListingPrice {
   amount: string | null;
   /** Raw number used to derive `amount`, or null if no price. */
   rawAmount: number | null;
-  /** Short label shown next to the amount (e.g. "/ night"). */
+  /** Short label shown next to the amount (e.g. "total"). */
   unitLabel: string;
-  /** True when the caller asked for a basis that couldn't be computed; we fell back to NIGHTLY. */
+  /** True when the caller asked for a basis that couldn't be computed; we fell back to TOTAL. */
   fallback: boolean;
 }
 
@@ -90,11 +85,11 @@ export interface ComputedListingPrice {
  * Rounds to whole dollars (storage is already Int dollars).
  */
 export function computeListingPriceDisplay(
-  nightlyPrice: number | null,
+  totalPrice: number | null,
   basis: PriceBasis,
   ctx: TripPriceContext | null | undefined,
 ): ComputedListingPrice {
-  if (nightlyPrice === null) {
+  if (totalPrice === null) {
     return {
       amount: null,
       rawAmount: null,
@@ -103,23 +98,15 @@ export function computeListingPriceDisplay(
     };
   }
 
-  const nights = computeNightsFromDates(ctx?.startDate, ctx?.endDate);
   const guests = ctx?.numberOfPeople ?? null;
 
-  let raw = nightlyPrice;
-  let effectiveBasis: PriceBasis = 'NIGHTLY';
+  let raw = totalPrice;
+  let effectiveBasis: PriceBasis = 'TOTAL';
   let fallback = false;
 
-  if (basis === 'TOTAL') {
-    if (nights && nights > 0) {
-      raw = nightlyPrice * nights;
-      effectiveBasis = 'TOTAL';
-    } else {
-      fallback = true;
-    }
-  } else if (basis === 'PER_GUEST') {
-    if (nights && nights > 0 && guests && guests > 0) {
-      raw = Math.round((nightlyPrice * nights) / guests);
+  if (basis === 'PER_GUEST') {
+    if (guests && guests > 0) {
+      raw = Math.round(totalPrice / guests);
       effectiveBasis = 'PER_GUEST';
     } else {
       fallback = true;

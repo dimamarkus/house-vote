@@ -186,8 +186,12 @@ function parseIsoDate(value?: string | null): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-interface DerivedNightlyPrice {
-  /** Per-night price in whole dollars, or null if we couldn't compute one. */
+interface DerivedTotalPrice {
+  /**
+   * Stay-total candidate in whole dollars, or null if we couldn't compute one.
+   * When `source` is `SCRAPED_NIGHTLY`, this is still the scraped per-night
+   * figure — callers convert to total using trip nights at write time.
+   */
   price: number | null;
   /** How we arrived at that price. Null when we had no price at all. */
   source: NightlyPriceSourceValue | null;
@@ -196,15 +200,15 @@ interface DerivedNightlyPrice {
 }
 
 /**
- * Converts a raw scraped price + optional `priceMeta` into a per-night price
- * plus provenance metadata. Defaults to assuming the raw price is already
- * nightly (matches current Airbnb/Vrbo behavior) unless `priceMeta.basis`
- * explicitly says it's a total for a multi-night stay.
+ * Converts a raw scraped price + optional `priceMeta` into a total-stay
+ * candidate plus provenance metadata. Totals are kept as-is. Nightly scrapes
+ * keep the nightly figure and are flagged `SCRAPED_NIGHTLY` so the writer can
+ * multiply by trip nights when available.
  */
-function deriveNightlyPrice(
+function deriveTotalPrice(
   rawPrice: number | null,
   priceMeta: ImportedPriceMeta | null | undefined,
-): DerivedNightlyPrice {
+): DerivedTotalPrice {
   const startDate = parseIsoDate(priceMeta?.startDate);
   const endDate = parseIsoDate(priceMeta?.endDate);
 
@@ -213,27 +217,10 @@ function deriveNightlyPrice(
   }
 
   if (priceMeta?.basis === 'TOTAL') {
-    const nights =
-      priceMeta.nights ??
-      (startDate && endDate
-        ? Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 86_400_000))
-        : null);
-
-    if (nights && nights > 0) {
-      return {
-        price: Math.round(rawPrice / nights),
-        source: 'DERIVED_FROM_TOTAL',
-        startDate,
-        endDate,
-      };
-    }
-    // Couldn't divide — fall through and treat as nightly, but flag as
-    // DERIVED so downstream knows the dollar amount is suspect. This is
-    // rare; better than silently dropping the price.
     return { price: rawPrice, source: 'DERIVED_FROM_TOTAL', startDate, endDate };
   }
 
-  // Default: the scraped number is already a per-night rate.
+  // Default: the scraped number is a per-night rate pending trip-night conversion.
   return { price: rawPrice, source: 'SCRAPED_NIGHTLY', startDate, endDate };
 }
 
@@ -257,7 +244,7 @@ export function normalizeImportedListing(
     source: nightlyPriceSource,
     startDate: priceQuotedStartDate,
     endDate: priceQuotedEndDate,
-  } = deriveNightlyPrice(rawPrice, capture.priceMeta ?? null);
+  } = deriveTotalPrice(rawPrice, capture.priceMeta ?? null);
   const bedroomCount = parseNumberish(capture.bedroomCount);
   const bedCount = parseNumberish(capture.bedCount ?? deriveBedCountFromRoomBreakdown(capture.roomBreakdown));
   const bathroomCount = parseNumberish(capture.bathroomCount);

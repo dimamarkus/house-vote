@@ -71,8 +71,8 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   footerClassName?: string;
   /**
    * Trip-level context used to compute per-guest / total prices when the
-   * user toggles away from per-night display. Omit to keep the card showing
-   * nightly prices (e.g. surfaces outside a trip page).
+   * user toggles to per-guest display. Omit to keep the card showing
+   * total-stay prices (e.g. surfaces outside a trip page).
    */
   tripContext?: TripPriceContext;
   /** Trip-level dates + guest count used to enrich outbound travel-site links. */

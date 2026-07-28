@@ -1,9 +1,13 @@
 'use server';
 
 import { createServerAction } from '@/core/server-actions';
-import { importListingCapture } from '../import/importListingCapture';
+import {
+  extractImportDebugData,
+  getMissingImportedListingFields,
+} from '../import/normalizeImportedListing';
 import { scrapeListingMetadataFromUrl } from '../import/scrapeListingMetadataFromUrl';
 import { UrlImportInputSchema } from '../import/schemas';
+import { upsertImportedListing } from '../import/upsertImportedListing';
 
 export async function importListingFromUrl(inputData: { url: string; tripId: string }) {
   return createServerAction({
@@ -15,29 +19,29 @@ export async function importListingFromUrl(inputData: { url: string; tripId: str
       const { url, tripId } = input;
 
       const normalizedListing = await scrapeListingMetadataFromUrl(url);
-      const importResult = await importListingCapture({
-        tripId,
-        capture: {
-          source: normalizedListing.source,
-          url: normalizedListing.canonicalUrl,
-          title: normalizedListing.title,
-          address: normalizedListing.address,
-          price: normalizedListing.price,
-          bedroomCount: normalizedListing.bedroomCount,
-          bedCount: normalizedListing.bedCount,
-          bathroomCount: normalizedListing.bathroomCount,
-          sourceDescription: normalizedListing.sourceDescription,
-          notes: normalizedListing.notes,
-          imageUrl: normalizedListing.imageUrl,
-          photoUrls: normalizedListing.photoUrls,
-          rawPayload: normalizedListing.rawImportPayload,
-        },
-        importMethod: 'URL_FETCH',
+      const { title } = normalizedListing;
+      if (title === null) {
+        throw new Error(
+          "Couldn't extract a title from this listing. The page may be gated behind a login, a bot wall, or missing the usual title markup — try the browser extension on the page in your logged-in browser.",
+        );
+      }
+
+      const savedListing = await upsertImportedListing(tripId, normalizedListing, {
         addedById: userId,
       });
+      const missingFields = getMissingImportedListingFields(normalizedListing);
 
       return {
-        data: importResult,
+        data: {
+          listingId: savedListing.id,
+          listingTitle: title,
+          tripId,
+          tripPath: `/trips/${tripId}`,
+          source: normalizedListing.source,
+          importStatus: normalizedListing.importStatus,
+          missingFields,
+          debug: extractImportDebugData(normalizedListing.rawImportPayload),
+        },
         revalidate: [`/trips/${tripId}`],
       };
     },

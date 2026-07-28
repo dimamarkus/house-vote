@@ -61,6 +61,7 @@ model Listing {
   title            String // Required
   address          String? // Optional
   url              String? // Optional
+  /// Total stay price in whole dollars (not per-night).
   price            Int? // Optional
   bedroomCount     Int? // Optional
   bedCount         Int? // Optional
@@ -79,7 +80,7 @@ model Listing {
   importError      String?
   rawImportPayload Json?
   roomBreakdown    Json?
-  /// Where the stored `price` (nightly) came from. Null on legacy rows that predate this field.
+  /// Provenance for the stored total-stay `price`. Null on legacy rows that predate this field.
   nightlyPriceSource   NightlyPriceSource?
   /// When scraping a hotel/OTA page the price is for a specific stay. These record that stay window so we can show "quoted for Mar 3-7" on cards.
   priceQuotedStartDate DateTime?
@@ -160,10 +161,10 @@ enum ListingType {
   OTHER
 }
 
-/// Describes how the `price` field (always stored as nightly) was derived.
-/// SCRAPED_NIGHTLY: parsed directly as a per-night price.
-/// DERIVED_FROM_TOTAL: OTA showed a total-for-stay; we divided by nights.
-/// MANUAL: user typed it.
+/// Describes how the stored total-stay `price` was derived.
+/// SCRAPED_NIGHTLY: OTA showed a per-night rate; we convert to total using trip nights when available.
+/// DERIVED_FROM_TOTAL: OTA showed a total-for-stay; stored as-is.
+/// MANUAL: user typed the total.
 enum NightlyPriceSource {
   SCRAPED_NIGHTLY
   DERIVED_FROM_TOTAL
@@ -285,4 +286,3 @@ enum ListingCommentKind {
 enum TripGuestSource {
   OWNER_ADDED
 }
-

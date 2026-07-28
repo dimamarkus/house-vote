@@ -97,11 +97,11 @@ export function ListingForm({
       <FormSection className="mb-6">
         <InputField
           name="price"
-          label="Nightly Price"
+          label="Total Price"
           type="number"
           min="0"
           step="1"
-          placeholder="Enter nightly price"
+          placeholder="Enter total stay price"
           defaultValue={initialState?.price?.toString() || ''}
         />
 

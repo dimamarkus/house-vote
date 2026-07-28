@@ -53,7 +53,7 @@ interface ListingsTableProps {
   basePath?: string;
   /**
    * Trip-level context (guests + date range) used to compute per-guest /
-   * total prices. Omit to keep the price column on per-night display.
+   * per-guest prices. Omit to keep the price column on total-stay display.
    */
   tripContext?: TripPriceContext;
 }

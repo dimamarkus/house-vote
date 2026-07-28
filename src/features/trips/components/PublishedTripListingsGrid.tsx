@@ -130,7 +130,6 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
           <ListingCard
             key={listing.id}
             listing={listing}
-            priceUnitLabel="total"
             travelLinkContext={travelLinkContext}
             roomBreakdown={cardView === 'beds' ? listing.roomBreakdown as ListingCardProps['roomBreakdown'] : null}
             showAllMetadata={cardView === 'beds'}

@@ -14,23 +14,21 @@ import { usePriceBasis } from '../hooks/usePriceBasis';
 interface TripPriceBasisToggleProps {
   /**
    * Trip-level inputs used to decide which toggle options can be computed.
-   * When dates are missing, "Total" and "Per guest" fall back to per-night
-   * display on the consuming card, so we disable those buttons to make the
-   * situation obvious.
+   * When guest count is missing, "Per guest" is disabled.
    */
   tripContext: TripPriceContext;
   className?: string;
 }
 
 /**
- * Three-way toggle for how prices render across the trip's listings. Backed
+ * Two-way toggle for how prices render across the trip's listings. Backed
  * by `usePriceBasis`, so every card/row on the page updates in sync.
  */
 export function TripPriceBasisToggle({ tripContext, className }: TripPriceBasisToggleProps) {
   const [basis, setBasis] = usePriceBasis();
   const available = availablePriceBases(tripContext);
 
-  // If only nightly is available there's nothing to toggle — hide the
+  // If only total is available there's nothing to toggle — hide the
   // control entirely so we don't imply options that don't work.
   if (available.length <= 1) {
     return null;
@@ -58,7 +56,7 @@ export function TripPriceBasisToggle({ tripContext, className }: TripPriceBasisT
             title={
               enabled
                 ? PRICE_BASIS_LABELS[value]
-                : missingContextMessage(value, tripContext)
+                : missingContextMessage(value)
             }
           />
         );
@@ -67,13 +65,9 @@ export function TripPriceBasisToggle({ tripContext, className }: TripPriceBasisT
   );
 }
 
-function missingContextMessage(basis: PriceBasis, ctx: TripPriceContext): string {
-  if (basis === 'TOTAL') {
-    return 'Add trip start / end dates to view totals';
-  }
+function missingContextMessage(basis: PriceBasis): string {
   if (basis === 'PER_GUEST') {
-    if (!ctx.numberOfPeople) return 'Set the trip guest count to view per-guest pricing';
-    return 'Add trip start / end dates to view per-guest pricing';
+    return 'Set the trip guest count to view per-guest pricing';
   }
   return PRICE_BASIS_LABELS[basis];
 }

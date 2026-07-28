@@ -18,7 +18,8 @@ export interface ListingImportAdapterHints {
    * Optional context about how the scraped `price` was measured. If the
    * adapter can tell whether the number is already per-night (most sites) or
    * a total for a date range (some hotel/OTA flows), populate this so the
-   * normalizer can label or derive a per-night price.
+   * normalizer can store totals as-is and flag nightly scrapes for trip-night
+   * conversion at write time.
    */
   priceMeta?: ImportedPriceMeta | null;
   rawSignals: Record<string, unknown>;

@@ -122,4 +122,26 @@ describe('extractListingCaptureFromHtml', () => {
 
     expect(normalized.price).toBeNull();
   });
+
+  it('keeps total-stay scrape prices as totals during normalization', () => {
+    const normalized = normalizeImportedListing(
+      {
+        url: 'https://www.example-hotel.com/rooms/1',
+        source: 'OTHER',
+        title: 'Downtown Suite',
+        price: '1200',
+        priceMeta: {
+          basis: 'TOTAL',
+          nights: 4,
+          startDate: '2026-05-21',
+          endDate: '2026-05-25',
+        },
+        photoUrls: [],
+      },
+      'URL_FETCH',
+    );
+
+    expect(normalized.price).toBe(1200);
+    expect(normalized.nightlyPriceSource).toBe('DERIVED_FROM_TOTAL');
+  });
 });
