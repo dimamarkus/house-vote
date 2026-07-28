@@ -254,7 +254,7 @@ Technical plan:
 - Confirm development origin behavior for `http://localhost:3000`.
 - Confirm whether production distribution is Chrome Web Store, unpacked extension, or internal install.
 - Confirm whether collaborators should be allowed to import listings through the extension. The recommendation is yes.
-- Confirm whether the old token flow should stay visible as a temporary fallback. The recommendation is yes, behind "Advanced manual setup."
+- Confirm whether the old token flow should stay visible as a temporary fallback. Initial rollout kept it behind "Advanced manual setup"; after verification, the chosen direction is full removal.
 
 Checklist:
 
@@ -262,7 +262,7 @@ Checklist:
 - [ ] Confirm Chrome extension distribution plan.
 - [ ] Confirm stable extension id/key strategy.
 - [ ] Confirm collaborators can import into shared trips.
-- [ ] Confirm manual token fallback stays for one release.
+- [x] Confirm manual token fallback removal after authenticated import works.
 - [ ] Check Clerk docs for latest Chrome Extension SDK setup and allowed-origin requirements.
 
 Checkpoint commit:
@@ -450,7 +450,7 @@ Technical plan:
 - Add a "Create trip" or "Open House Vote" link.
 - If a House Vote trip tab is already open, preselect that trip if it is in the authorized trips list.
 - Keep parser debug mode available, but separate it from the main happy path.
-- Hide the legacy manual token fields under "Advanced manual setup" during rollout.
+- Remove the legacy manual token fields once the authenticated path is verified.
 
 Popup states:
 
@@ -600,30 +600,32 @@ Plain English: once the new flow works, reduce the old shared-secret surface are
 
 Technical plan:
 
-- Keep `/api/import-listing` for one release if needed.
-- Add clearer comments marking it as legacy/manual-token import.
-- Consider restricting CORS instead of `*`.
-- Add a deprecation note to `TripImportTokenCard`.
-- Remove or hide `TripImportTokenCard` from the main edit sheet once the authenticated extension is stable.
-- If keeping manual setup permanently, move it to an advanced/admin-only area.
+- Remove the extension's manual trip id/import token fields and fallback save branch.
+- Remove the old public `/api/import-listing` token endpoint.
+- Remove the app-side import token card and token-generation server action.
+- Remove the `TripImportToken` Prisma model and add a migration to drop the old token table.
+- Keep parser debug mode available, but tuck it into a capture-details panel instead of the main happy path.
+- Polish the popup design now that the main flow is sign in -> select trip -> save.
 
-Important: do not delete the old path in the same PR that introduces the new path. That makes rollback harder.
+Important: this removal should land after the authenticated flow has been manually verified. If production rollback is needed, revert this cleanup commit rather than reintroducing token shims.
 
 Checklist:
 
 - [x] Confirm authenticated extension import works for owner.
 - [ ] Confirm authenticated extension import works for collaborator.
-- [ ] Confirm manual token fallback still works, if kept.
 - [x] Decide whether `/api/import-listing` remains public.
-- [x] Add deprecation copy to browser import token UI.
-- [ ] Create a follow-up ticket/PR for removing token fallback.
-- [ ] Run `pnpm lint`.
-- [ ] Run `pnpm check-types`.
+- [x] Remove `/api/import-listing`.
+- [x] Remove extension manual token fallback.
+- [x] Remove app import token UI and token-generation action.
+- [x] Remove `TripImportToken` from Prisma schema and add a drop-table migration.
+- [x] Improve extension popup visual design.
+- [x] Run `pnpm lint`.
+- [x] Run `pnpm check-types`.
 
 Checkpoint commit:
 
 ```bash
-git commit -m "chore: mark manual extension token flow as legacy"
+git commit -m "chore: remove legacy extension token import"
 ```
 
 ## Phase 8: QA And Release Notes
@@ -729,7 +731,7 @@ Includes:
 
 - `POST /api/extension/import-listing`.
 - Popup save flow uses authenticated API.
-- Legacy manual setup remains behind advanced UI.
+- Manual token fallback is removed after the authenticated path is verified.
 
 Validation:
 
@@ -738,20 +740,21 @@ Validation:
 - Unauthorized import fails.
 - Airbnb, Vrbo, and Booking.com still parse.
 
-### PR 5: Legacy Flow Hardening
+### PR 5: Legacy Flow Removal And Popup Polish
 
-Goal: reduce reliance on copy/paste tokens after new flow is stable.
+Goal: remove copy/paste tokens after the synced-session flow is stable and make the popup feel production-ready.
 
 Includes:
 
-- Deprecation copy for import token card.
-- CORS review for old import endpoint.
-- Follow-up cleanup ticket for removing manual token flow.
+- Remove the public token import endpoint.
+- Remove token generation UI/actions and the `TripImportToken` model.
+- Remove manual token fields from the extension popup.
+- Polish the popup layout, labels, and status hierarchy.
 
 Validation:
 
 - New flow remains default.
-- Manual fallback is available only where intended.
+- Token-based import paths no longer appear in the UI or extension bundle.
 
 ## Risks And Mitigations
 
@@ -762,7 +765,7 @@ Validation:
 | Current static extension cannot import Clerk cleanly | Package-based SDK needs bundling | Add a real build step in Phase 1. |
 | Token refresh fails when popup closes | Popup lifecycle is short | Use a background service worker token helper. |
 | User switches accounts | Stored selected trip might belong to previous user | Validate selected trip against fetched authorized trips every popup open. |
-| Public `/api/import-listing` remains too permissive | `Access-Control-Allow-Origin: *` plus shared token is broad | Treat old route as legacy and tighten after new flow ships. |
+| Token cleanup removes rollback path | Users must have working Clerk session sync to import from the extension | Land only after owner/collaborator QA; revert the cleanup commit if rollback is needed. |
 | Collaborator import attribution changes behavior | Listings will now show the collaborator as added-by | This is intended, but QA should verify UI labels still make sense. |
 
 ## Testing Plan

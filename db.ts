@@ -56,7 +56,6 @@ export type {
   TripGuest,
   TripShare,
   TripVote,
-  TripImportToken,
   TripInvitation,
   User,
 } from "@prisma/client";

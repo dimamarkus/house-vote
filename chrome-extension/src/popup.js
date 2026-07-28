@@ -1,19 +1,12 @@
 import { extensionMessageTypes } from './extension-messages';
 
 const storageKeys = {
-  appUrl: 'houseVoteAppUrl',
-  tripId: 'houseVoteTripId',
-  importToken: 'houseVoteImportToken',
   selectedTripId: 'houseVoteSelectedTripId',
   debugMode: 'houseVoteDebugMode',
 };
 
-const appUrlInput = document.getElementById('app-url');
-const tripIdInput = document.getElementById('trip-id');
-const importTokenInput = document.getElementById('import-token');
 const tripSelect = document.getElementById('trip-select');
 const debugModeInput = document.getElementById('debug-mode');
-const detectTripButton = document.getElementById('detect-trip');
 const saveListingButton = document.getElementById('save-listing');
 const openSavedTripLink = document.getElementById('open-saved-trip');
 const openSelectedTripLink = document.getElementById('open-selected-trip');
@@ -127,14 +120,8 @@ function renderTripOptions(tripsList) {
 function selectTrip(tripId, appUrl) {
   const selectedTrip = tripId || '';
   tripSelect.value = selectedTrip;
-  tripIdInput.value = selectedTrip;
-
-  if (appUrl) {
-    appUrlInput.value = appUrl;
-  }
 
   setOpenSelectedTripLink(appUrl, selectedTrip);
-  saveSettings();
   chrome.storage.local.set({ [storageKeys.selectedTripId]: selectedTrip });
 }
 
@@ -199,9 +186,6 @@ async function refreshAuthStatus() {
 
 function saveSettings() {
   chrome.storage.local.set({
-    [storageKeys.appUrl]: appUrlInput.value.trim(),
-    [storageKeys.tripId]: tripIdInput.value.trim(),
-    [storageKeys.importToken]: importTokenInput.value.trim(),
     [storageKeys.debugMode]: Boolean(debugModeInput.checked),
   });
 }
@@ -209,9 +193,6 @@ function saveSettings() {
 async function loadSettings() {
   const stored = await chrome.storage.local.get(Object.values(storageKeys));
 
-  appUrlInput.value = stored[storageKeys.appUrl] || 'http://localhost:3000';
-  tripIdInput.value = stored[storageKeys.tripId] || '';
-  importTokenInput.value = stored[storageKeys.importToken] || '';
   debugModeInput.checked = Boolean(stored[storageKeys.debugMode]);
 }
 
@@ -237,8 +218,7 @@ function parseTripContextFromUrl(urlString) {
   }
 }
 
-async function detectTripContext(preferredAppUrlOverride) {
-  const preferredAppUrl = (preferredAppUrlOverride || appUrlInput.value).trim().replace(/\/+$/, '');
+async function detectTripContext(preferredAppUrl) {
   const tabs = await chrome.tabs.query({});
   const tripTabs = tabs
     .map((tab) => parseTripContextFromUrl(tab.url))
@@ -253,21 +233,6 @@ async function detectTripContext(preferredAppUrlOverride) {
     : null;
 
   return matchingTripTab || tripTabs[0];
-}
-
-async function applyDetectedTripContext() {
-  const tripContext = await detectTripContext();
-
-  if (!tripContext) {
-    setStatus('No open House Vote trip tab found. You can still paste the trip id manually.', 'muted');
-    return null;
-  }
-
-  appUrlInput.value = tripContext.appUrl;
-  tripIdInput.value = tripContext.tripId;
-  saveSettings();
-  setStatus(`Using trip ${tripContext.tripId} from the open House Vote tab.`, 'muted');
-  return tripContext;
 }
 
 function formatCapturePreview(capture, debugMode) {
@@ -337,21 +302,16 @@ async function captureListingFromActiveTab(tabId) {
 }
 
 async function saveCurrentListing() {
-  const appUrl = appUrlInput.value.trim().replace(/\/+$/, '');
-  const tripId = tripIdInput.value.trim();
-  const importToken = importTokenInput.value.trim();
   const selectedTripId = tripSelect.value.trim();
   const debugMode = Boolean(debugModeInput.checked);
-  const canUseAuthenticatedImport = Boolean(
-    currentAuthStatus &&
-      currentAuthStatus.isSignedIn &&
-      currentAuthStatus.token &&
-      currentAuthStatus.appUrl &&
-      selectedTripId,
-  );
 
-  if (!canUseAuthenticatedImport && (!appUrl || !tripId || !importToken)) {
-    setStatus('Sign in and choose a trip, or use advanced manual setup with trip id and import token.', 'error');
+  if (!currentAuthStatus || !currentAuthStatus.isSignedIn || !currentAuthStatus.token || !currentAuthStatus.appUrl) {
+    setStatus('Sign in to House Vote, then refresh the extension session.', 'error');
+    return;
+  }
+
+  if (!selectedTripId) {
+    setStatus('Choose a trip before saving this listing.', 'error');
     return;
   }
 
@@ -379,31 +339,18 @@ async function saveCurrentListing() {
     previewElement.textContent = formatCapturePreview(capture, debugMode);
     setStatus('Saving listing into House Vote...');
 
-    const importAppUrl = canUseAuthenticatedImport ? currentAuthStatus.appUrl : appUrl;
-    const importTripId = canUseAuthenticatedImport ? selectedTripId : tripId;
-    const response = canUseAuthenticatedImport
-      ? await fetch(`${importAppUrl}/api/extension/import-listing`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${currentAuthStatus.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            tripId: importTripId,
-            capture,
-          }),
-        })
-      : await fetch(`${importAppUrl}/api/import-listing`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            tripId: importTripId,
-            importToken,
-            capture,
-          }),
-        });
+    const importAppUrl = currentAuthStatus.appUrl;
+    const response = await fetch(`${importAppUrl}/api/extension/import-listing`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${currentAuthStatus.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        tripId: selectedTripId,
+        capture,
+      }),
+    });
 
     const responseBody = await response.json();
 
@@ -424,14 +371,8 @@ async function saveCurrentListing() {
   }
 }
 
-appUrlInput.addEventListener('change', async () => {
-  saveSettings();
-  await applyDetectedTripContext();
-});
-tripIdInput.addEventListener('change', saveSettings);
-importTokenInput.addEventListener('change', saveSettings);
 tripSelect.addEventListener('change', () => {
-  selectTrip(tripSelect.value, appUrlInput.value.trim().replace(/\/+$/, ''));
+  selectTrip(tripSelect.value, currentAuthStatus?.appUrl || null);
   setTripPickerStatus('Selected trip saved.');
 });
 debugModeInput.addEventListener('change', () => {
@@ -441,23 +382,11 @@ debugModeInput.addEventListener('change', () => {
     previewElement.textContent = 'Capture debug mode changed. Save again to refresh this preview.';
   }
 });
-detectTripButton.addEventListener('click', async () => {
-  try {
-    await applyDetectedTripContext();
-  } catch {
-    setStatus('Failed to inspect open tabs for a House Vote trip.', 'error');
-  }
-});
 refreshAuthButton.addEventListener('click', refreshAuthStatus);
 saveListingButton.addEventListener('click', saveCurrentListing);
 
 loadSettings()
-  .then(async () => {
-    await Promise.all([
-      applyDetectedTripContext(),
-      refreshAuthStatus(),
-    ]);
-  })
+  .then(refreshAuthStatus)
   .catch(() => {
     setStatus('Failed to load saved settings.', 'error');
   });

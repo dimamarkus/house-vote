@@ -6,7 +6,6 @@ import { TripOperationOptions, TripGetOptions } from './types';
 import { randomUUID } from 'node:crypto';
 import { handleDbOperation } from '@/core/responses';
 import { assertTripOwnerId } from './guards';
-import { hashTripImportToken } from './utils/hashTripImportToken';
 
 type TripWithCollaborators = Prisma.TripGetPayload<{
   include: { collaborators: true };
@@ -353,71 +352,4 @@ export const trips = {
     }, 'Failed to find or create shareable invite link:', ErrorCode.DATABASE_ERROR);
   },
 
-  rotateImportToken: async (tripId: string, ownerId: string) => {
-    return handleDbOperation(async () => {
-      await assertTripOwnerId(tripId, ownerId, 'rotate import tokens');
-
-      const plainToken = randomUUID();
-      const tokenHash = hashTripImportToken(plainToken);
-
-      await db.tripImportToken.upsert({
-        where: { tripId },
-        update: {
-          tokenHash,
-          lastUsedAt: null,
-        },
-        create: {
-          tripId,
-          tokenHash,
-        },
-      });
-
-      return {
-        token: plainToken,
-      };
-    }, 'Failed to rotate trip import token:', ErrorCode.DATABASE_ERROR);
-  },
-
-  validateImportToken: async (tripId: string, token: string) => {
-    const tokenHash = hashTripImportToken(token);
-
-    return handleDbOperation(async () => {
-      const importToken = await db.tripImportToken.findUnique({
-        where: {
-          tripId,
-        },
-      });
-
-      if (!importToken || importToken.tokenHash !== tokenHash) {
-        throw new Error('Invalid import token.');
-      }
-
-      const trip = await db.trip.findUnique({
-        where: {
-          id: tripId,
-        },
-        select: {
-          userId: true,
-        },
-      });
-
-      if (!trip) {
-        throw new Error('Trip not found.');
-      }
-
-      await db.tripImportToken.update({
-        where: {
-          tripId,
-        },
-        data: {
-          lastUsedAt: new Date(),
-        },
-      });
-
-      return {
-        tripId,
-        ownerId: trip.userId,
-      };
-    }, 'Failed to validate trip import token:', ErrorCode.FORBIDDEN);
-  },
 };

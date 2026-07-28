@@ -4,7 +4,6 @@ import {
   ImportedPriceMetaSchema,
   ListingImportCaptureSchema,
   ListingImportMethodSchema,
-  ListingImportRequestSchema,
   ListingImportSourceSchema,
   ListingImportStatusSchema,
   UrlImportInputSchema,
@@ -15,8 +14,6 @@ export type ListingImportCapture = z.infer<typeof ListingImportCaptureSchema>;
 export type ImportedPriceMeta = z.infer<typeof ImportedPriceMetaSchema>;
 
 export type ListingImportMethodValue = z.infer<typeof ListingImportMethodSchema>;
-
-export type ListingImportRequest = z.infer<typeof ListingImportRequestSchema>;
 
 export type ListingImportSourceValue = z.infer<typeof ListingImportSourceSchema>;
 

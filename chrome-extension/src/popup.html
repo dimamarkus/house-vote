@@ -8,75 +8,48 @@
   </head>
   <body>
     <main class="popup">
-      <section class="section">
-        <h1>House Vote Importer</h1>
-        <p class="muted">Sign in with House Vote, choose a trip, then save from an Airbnb, Vrbo, or Booking.com property page.</p>
+      <section class="hero">
+        <span class="eyebrow">House Vote Extension</span>
+        <h1>Save rentals to your trip</h1>
+        <p>Open a listing on Airbnb, Vrbo, or Booking.com, pick a trip, and save it in one click.</p>
       </section>
 
-      <section class="section auth-card">
-        <h2>House Vote Account</h2>
-        <div id="auth-status" class="status muted">Checking House Vote sign-in...</div>
-        <div class="auth-actions">
-          <a id="open-sign-in" class="link-button hidden" href="#" target="_blank" rel="noopener noreferrer">Sign in to House Vote</a>
-          <button id="refresh-auth" class="secondary-button" type="button">Refresh Session</button>
+      <section class="card">
+        <div class="card-heading">
+          <div>
+            <h2>Account</h2>
+            <div id="auth-status" class="status muted">Checking House Vote sign-in...</div>
+          </div>
+          <button id="refresh-auth" class="secondary-button compact-button" type="button">Refresh</button>
         </div>
+        <a id="open-sign-in" class="link-button hidden" href="#" target="_blank" rel="noopener noreferrer">Sign in to House Vote</a>
       </section>
 
-      <section class="section">
-        <label for="trip-select">Save to Trip</label>
+      <section class="card">
+        <div class="field-heading">
+          <label for="trip-select">Save to trip</label>
+          <a id="open-selected-trip" class="subtle-link hidden" href="#" target="_blank" rel="noopener noreferrer">Open trip</a>
+        </div>
         <select id="trip-select" name="trip-select" disabled>
           <option value="">Sign in to load trips</option>
         </select>
-        <a id="open-selected-trip" class="link-button hidden" href="#" target="_blank" rel="noopener noreferrer">Open Selected Trip</a>
         <div id="trip-picker-status" class="status muted">Trips will load after sign-in.</div>
       </section>
 
-      <details class="section manual-setup">
-        <summary>Legacy manual token setup</summary>
-        <p class="muted">Only use this if synced sign-in is unavailable. The trip dropdown above is the preferred import flow.</p>
+      <section class="actions">
+        <button id="save-listing" type="button">Save current listing</button>
+        <a id="open-saved-trip" class="link-button hidden" href="#" target="_blank" rel="noopener noreferrer">Open saved trip</a>
+        <div id="status" class="status muted">Open a supported listing page, then click save.</div>
+      </section>
 
-        <section class="section">
-          <label for="app-url">House Vote URL</label>
-          <input id="app-url" name="app-url" placeholder="http://localhost:3000" type="url" />
-        </section>
-
-        <section class="section">
-          <label for="trip-id">Trip ID</label>
-          <input id="trip-id" name="trip-id" placeholder="cuid trip id" type="text" />
-          <button id="detect-trip" class="secondary-button" type="button">Use Open Trip Tab</button>
-        </section>
-
-        <section class="section">
-          <label for="import-token">Import Token</label>
-          <textarea
-            id="import-token"
-            name="import-token"
-            placeholder="Paste the token from House Vote"
-            rows="3"
-          ></textarea>
-        </section>
-      </details>
-
-      <section class="section compact-row">
+      <details class="debug-panel">
+        <summary>Capture details</summary>
         <label class="checkbox-row" for="debug-mode">
           <input id="debug-mode" name="debug-mode" type="checkbox" />
-          <span>Parser debug mode</span>
+          <span>Show parser debug data</span>
         </label>
-      </section>
-
-      <section class="section actions">
-        <button id="save-listing" type="button">Save Current Airbnb/VRBO Listing</button>
-        <a id="open-saved-trip" class="link-button hidden" href="#" target="_blank" rel="noopener noreferrer">Open Saved Trip</a>
-      </section>
-
-      <section class="section">
-        <h2>Last Capture</h2>
         <pre id="capture-preview">Nothing captured yet.</pre>
-      </section>
-
-      <section class="section">
-        <div id="status" class="status muted">Open an Airbnb or VRBO listing page, then click save.</div>
-      </section>
+      </details>
     </main>
 
     <script type="module" src="/popup.js"></script>

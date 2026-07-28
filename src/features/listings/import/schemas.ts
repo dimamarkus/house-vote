@@ -64,12 +64,6 @@ export const UrlImportInputSchema = z.object({
   tripId: z.string().cuid({ message: 'A valid trip id is required.' }),
 });
 
-export const ListingImportRequestSchema = z.object({
-  tripId: z.string().cuid({ message: 'A valid trip id is required.' }),
-  importToken: z.string().min(1, { message: 'Import token is required.' }),
-  capture: ListingImportCaptureSchema,
-});
-
 export const ExtensionListingImportRequestSchema = z.object({
   tripId: z.string().cuid({ message: 'A valid trip id is required.' }),
   capture: ListingImportCaptureSchema,
