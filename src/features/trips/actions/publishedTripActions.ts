@@ -15,6 +15,7 @@ import type { TripShareState } from '../types';
 import {
   addCommentSchema,
   castVoteSchema,
+  createPublishedListingSchema,
   guestNameSchema,
   moderateCommentSchema,
   publishedGuestSessionSchema,
@@ -300,6 +301,29 @@ export async function submitPublishedTripListing(
     validationErrorMessage: 'Invalid listing submission request.',
     handler: async ({ input: { token, guestId, url } }) => {
       const listing = await publishedTrips.submitGuestListingUrl(token, guestId, url);
+      return {
+        data: {
+          tripId: listing.tripId,
+          listingId: listing.id,
+        },
+        revalidate: publishedTripRevalidationPaths(listing.tripId, token),
+      };
+    },
+  });
+}
+
+export async function createPublishedTripListing(
+  formData: FormData,
+): Promise<BasicApiResponse<PublishedListingResult>> {
+  return createServerAction({
+    input: Object.fromEntries(formData.entries()),
+    schema: createPublishedListingSchema,
+    requireAuth: false,
+    errorPrefix: 'Failed to create guest listing:',
+    validationErrorMessage: 'Invalid listing form data.',
+    handler: async ({ input }) => {
+      const { token, guestId, ...listingData } = input;
+      const listing = await publishedTrips.createGuestListing(token, guestId, listingData);
       return {
         data: {
           tripId: listing.tripId,

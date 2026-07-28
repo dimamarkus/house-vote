@@ -1,6 +1,6 @@
 import { addFeedback, setCommentHidden } from './comments';
 import { addOwnerGuest, claimGuestSession, removeGuest } from './guests';
-import { submitGuestListingUrl, updateGuestListingDetails } from './listings';
+import { createGuestListing, submitGuestListingUrl, updateGuestListingDetails } from './listings';
 import {
   getOwnerTripShareSummary,
   getPublishedTripByToken,
@@ -32,6 +32,7 @@ export const publishedTrips = {
   setCommentHidden,
   updateGuestListingDetails,
   submitGuestListingUrl,
+  createGuestListing,
 };
 
 export type {

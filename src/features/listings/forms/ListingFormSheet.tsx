@@ -32,6 +32,8 @@ interface ListingFormSheetProps {
   open?: boolean;
   /** Controlled open-state change handler. */
   onOpenChange?: (open: boolean) => void;
+  /** Optional override for create/update. Defaults to authenticated listing actions. */
+  action?: (formData: FormData) => Promise<unknown>;
 }
 
 /**
@@ -48,6 +50,7 @@ export function ListingFormSheet({
   tripId,
   open: controlledOpen,
   onOpenChange,
+  action,
 }: ListingFormSheetProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = typeof controlledOpen === 'boolean';
@@ -98,6 +101,7 @@ export function ListingFormSheet({
           onSuccess={handleSuccess}
           onCancel={() => setOpen(false)}
           tripId={tripId}
+          action={action}
         />
       </SheetContent>
     </Sheet>

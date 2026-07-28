@@ -1,4 +1,5 @@
 import { db, Prisma } from 'db';
+import type { ListingFormData } from '@/features/listings/schemas';
 import { scrapeListingMetadataFromUrl } from '@/features/listings/import/scrapeListingMetadataFromUrl';
 import { upsertImportedListing } from '@/features/listings/import/upsertImportedListing';
 import { assertGuestInTrip, assertListingInTrip, assertPublishedShare } from './guards';
@@ -76,5 +77,56 @@ export async function submitGuestListingUrl(token: string, guestId: string, url:
   return upsertImportedListing(share.tripId, normalizedListing, {
     addedByGuestId: guest.id,
     addedByGuestName: guest.guestDisplayName,
+  });
+}
+
+type GuestManualListingInput = Omit<ListingFormData, 'tripId'>;
+
+/**
+ * Guest path for manually creating a listing with the full form fields.
+ * Trip id always comes from the published share token — never from the client.
+ */
+export async function createGuestListing(
+  token: string,
+  guestId: string,
+  data: GuestManualListingInput,
+) {
+  const share = await assertPublishedShare(token);
+
+  if (!share.allowGuestSuggestions) {
+    throw new Error('Guest listing suggestions are disabled right now.');
+  }
+
+  const guest = await assertGuestInTrip(share.tripId, guestId, db);
+  const emptyToNull = (value: string | null | undefined) => {
+    if (value == null) return null;
+    const trimmed = value.trim();
+    return trimmed === '' ? null : trimmed;
+  };
+
+  return db.listing.create({
+    data: {
+      tripId: share.tripId,
+      title: data.title.trim(),
+      listingType: data.listingType ?? 'HOUSE',
+      url: emptyToNull(data.url),
+      address: emptyToNull(data.address),
+      imageUrl: emptyToNull(data.imageUrl),
+      price: data.price ?? null,
+      bedroomCount: data.bedroomCount ?? null,
+      bedCount: data.bedCount ?? null,
+      bathroomCount: data.bathroomCount ?? null,
+      sourceDescription: emptyToNull(data.sourceDescription),
+      notes: emptyToNull(data.notes),
+      source: 'MANUAL',
+      importMethod: 'MANUAL',
+      nightlyPriceSource: data.price != null ? 'MANUAL' : null,
+      addedByGuestId: guest.id,
+      addedByGuestName: guest.guestDisplayName,
+    },
+    select: {
+      id: true,
+      tripId: true,
+    },
   });
 }

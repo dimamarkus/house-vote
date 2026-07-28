@@ -19,6 +19,8 @@ interface ListingFormProps {
   initialState?: ListingFormValues;
   onSuccess?: () => void;
   onCancel?: () => void;
+  /** Optional override for create/update. Defaults to authenticated listing actions. */
+  action?: (formData: FormData) => Promise<unknown>;
 }
 
 /**
@@ -34,10 +36,14 @@ export function ListingForm({
   onSuccess,
   onCancel,
   tripId,
+  action,
 }: ListingFormProps) {
   const isEditing = !!listingId;
 
   const handleFormAction = async (formData: FormData) => {
+    if (action) {
+      return action(formData);
+    }
     if (isEditing && listingId) {
       return updateListing(listingId, formData);
     }

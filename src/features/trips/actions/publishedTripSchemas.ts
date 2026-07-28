@@ -1,5 +1,6 @@
 import { ListingCommentKind } from 'db';
 import { z } from 'zod';
+import { ListingFormDataSchema } from '@/features/listings/schemas';
 
 /**
  * Shared input schemas for the share-page server actions. Kept in a
@@ -57,6 +58,13 @@ export const submitListingSchema = z.object({
   guestId: z.string().cuid('A valid guest id is required.'),
   url: z.string().url('A valid listing URL is required.'),
 });
+
+export const createPublishedListingSchema = ListingFormDataSchema
+  .omit({ tripId: true })
+  .extend({
+    token: z.string().uuid('A valid published trip link is required.'),
+    guestId: z.string().cuid('A valid guest id is required.'),
+  });
 
 const optionalNullableInt = z.union([z.number().int(), z.null()]).optional();
 
