@@ -252,7 +252,7 @@ model TripVote {
   guest     TripGuest @relation(fields: [guestId], references: [id], onDelete: Cascade)
   listing   Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
-  @@unique([tripId, guestId])
+  @@unique([tripId, guestId, listingId])
   @@index([tripId])
   @@index([guestId])
   @@index([listingId])

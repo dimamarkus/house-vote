@@ -36,6 +36,7 @@ export function PublishedTripGuestsSheet({
       listings.map((listing) => [
         listing.id,
         {
+          id: listing.id,
           photoUrl: listing.photos[0]?.url ?? null,
           title: listing.title,
         },
@@ -68,7 +69,7 @@ export function PublishedTripGuestsSheet({
             <Badge variant="secondary">{guestCount}</Badge>
           </div>
           <SheetDescription>
-            Everyone currently on this trip and the listing they are voting for.
+            Everyone currently on this trip and the listings they are voting for.
           </SheetDescription>
         </SheetHeader>
 
@@ -76,10 +77,9 @@ export function PublishedTripGuestsSheet({
           {share.guests.length > 0 ? (
             <div className="space-y-3">
               {share.guests.map((guest) => {
-                const currentVoteListingId = guest.votes[0]?.listingId;
-                const currentVoteListing = currentVoteListingId
-                  ? listingPreviewById.get(currentVoteListingId)
-                  : null;
+                const votedListings = guest.votes
+                  .map((vote) => listingPreviewById.get(vote.listingId))
+                  .filter((listing): listing is NonNullable<typeof listing> => Boolean(listing));
                 const isActiveGuest = activeGuest?.id === guest.id;
 
                 return (
@@ -94,27 +94,34 @@ export function PublishedTripGuestsSheet({
                       <p className="text-sm font-semibold text-foreground">{guest.guestDisplayName}</p>
                       {isActiveGuest ? <Badge>You</Badge> : null}
                     </div>
-                    {currentVoteListing ? (
-                      <div className="mt-2 flex items-center gap-3 rounded-lg border bg-background p-2">
-                        {currentVoteListing.photoUrl ? (
-                          <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
-                            <Image
-                              src={currentVoteListing.photoUrl}
-                              alt={currentVoteListing.title}
-                              fill
-                              sizes="40px"
-                              className="object-cover"
-                            />
+                    {votedListings.length > 0 ? (
+                      <div className="mt-2 space-y-2">
+                        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                          {votedListings.length === 1 ? 'Voted for' : `Voted for ${votedListings.length} homes`}
+                        </p>
+                        {votedListings.map((votedListing) => (
+                          <div
+                            key={votedListing.id}
+                            className="flex items-center gap-3 rounded-lg border bg-background p-2"
+                          >
+                            {votedListing.photoUrl ? (
+                              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md">
+                                <Image
+                                  src={votedListing.photoUrl}
+                                  alt={votedListing.title}
+                                  fill
+                                  sizes="40px"
+                                  className="object-cover"
+                                />
+                              </div>
+                            ) : null}
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium text-foreground" title={votedListing.title}>
+                                {votedListing.title}
+                              </p>
+                            </div>
                           </div>
-                        ) : null}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                            Current vote
-                          </p>
-                          <p className="truncate text-sm font-medium text-foreground" title={currentVoteListing.title}>
-                            {currentVoteListing.title}
-                          </p>
-                        </div>
+                        ))}
                       </div>
                     ) : (
                       <p className="mt-2 text-sm text-muted-foreground">No vote yet.</p>

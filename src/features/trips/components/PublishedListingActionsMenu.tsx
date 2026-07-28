@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/ui/shadcn/dropdown-menu';
+import { cn } from '@/ui/utils/cn';
 
 interface PublishedListingActionsMenuProps {
   listing: PublishedTripListingRecord;
@@ -47,16 +48,15 @@ export function PublishedListingActionsMenu({
   const editDisabledReason = !guestEditsAllowed
     ? 'The trip owner has disabled guest edits'
     : undefined;
-  const canVote = share.votingOpen && isVoteEligibleListingStatus(listing.status) && !isCurrentVote && !pendingVote;
+  const canVote = share.votingOpen && isVoteEligibleListingStatus(listing.status) && !pendingVote;
   const voteDisabledReason = !share.votingOpen
     ? 'Voting is closed'
-    : isCurrentVote
-      ? 'This is your current vote'
-      : !isVoteEligibleListingStatus(listing.status)
-        ? 'This listing is not eligible for votes'
-        : pendingVote
-          ? 'Vote is updating'
-          : undefined;
+    : !isVoteEligibleListingStatus(listing.status)
+      ? 'This listing is not eligible for votes'
+      : pendingVote
+        ? 'Vote is updating'
+        : undefined;
+  const voteActionLabel = isCurrentVote ? 'Remove my vote' : 'Vote for this listing';
 
   return (
     <>
@@ -132,8 +132,8 @@ export function PublishedListingActionsMenu({
             onSelect={onVote}
             title={voteDisabledReason}
           >
-            <Heart className="h-4 w-4" />
-            Vote for this listing
+            <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
+            {voteActionLabel}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

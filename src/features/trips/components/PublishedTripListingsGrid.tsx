@@ -41,10 +41,6 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
         return leftIsVoteEligible ? -1 : 1;
       }
 
-      if (right.votes.length !== left.votes.length) {
-        return right.votes.length - left.votes.length;
-      }
-
       return left.title.localeCompare(right.title);
     });
   }, [listings]);
@@ -61,12 +57,27 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
     .slice(0, 3);
 
   const currentWinnerListingId = useMemo(() => {
-    return sortedListings.find((listing) => (
-      isVoteEligibleListingStatus(listing.status) && listing.votes.length > 0
-    ))?.id ?? null;
+    let winnerId: string | null = null;
+    let topVoteCount = 0;
+
+    for (const listing of sortedListings) {
+      if (!isVoteEligibleListingStatus(listing.status)) {
+        continue;
+      }
+
+      if (listing.votes.length > topVoteCount) {
+        topVoteCount = listing.votes.length;
+        winnerId = listing.id;
+      }
+    }
+
+    return winnerId;
   }, [sortedListings]);
 
-  const currentVoteListingId = activeGuest.votes[0]?.listingId ?? null;
+  const currentVoteListingIds = useMemo(
+    () => new Set(activeGuest.votes.map((vote) => vote.listingId)),
+    [activeGuest.votes],
+  );
   const travelLinkContext = useMemo(() => createTripTravelContext({
     numberOfPeople: share.trip.numberOfPeople ?? null,
     adultCount: share.trip.adultCount ?? null,
@@ -96,7 +107,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
     }
 
     router.refresh();
-    toast.success(result.data.listingId === null ? 'Vote removed.' : 'Vote updated.');
+    toast.success(result.data.listingId === null ? 'Vote removed.' : 'Vote added.');
   }
 
   if (sortedListings.length === 0) {
@@ -113,7 +124,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
     <div className="grid min-w-0 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {visibleListings.map((listing) => {
         const isVoteEligible = isVoteEligibleListingStatus(listing.status);
-        const isCurrentVote = currentVoteListingId === listing.id;
+        const isCurrentVote = currentVoteListingIds.has(listing.id);
         const isCurrentWinner = currentWinnerListingId === listing.id;
         const tabContentFillsCard = cardView === 'votes' || cardView === 'feedback' || cardView === 'comments';
         const voteButtonLabel = !share.votingOpen
@@ -122,9 +133,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
             ? (isCurrentVote ? 'Your vote' : formatListingStatusLabel(listing.status))
             : isCurrentVote
               ? 'Your vote'
-              : currentVoteListingId
-                ? 'Move my vote here'
-                : 'Vote for this house';
+              : 'Vote for this house';
 
         return (
           <ListingCard
