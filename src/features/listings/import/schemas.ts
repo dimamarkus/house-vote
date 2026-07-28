@@ -17,9 +17,9 @@ const ImportedNumericFieldSchema = z.union([z.number(), z.string()]).nullable().
 
 /**
  * Raw, pre-normalized price context the scraper observed. The basis tells the
- * normalizer whether the `price` field is already a stay total ("TOTAL",
- * stored as-is) or a per-night rate ("NIGHTLY", converted to total using trip
- * nights at write time when available).
+ * normalizer whether the `price` field is already a per-night rate ("NIGHTLY",
+ * stored as-is) or a stay total ("TOTAL", divided by the quoted nights to
+ * recover the nightly rate).
  * Dates are ISO strings so the payload stays JSON-safe for Chrome extension
  * / cross-process transport.
  */

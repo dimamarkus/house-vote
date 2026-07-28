@@ -8,7 +8,7 @@ import {
 } from '../utils/priceBasis';
 
 interface ListingPriceCellProps {
-  /** Stored total-stay price (whole dollars) for the listing. */
+  /** Stored per-night price (whole dollars) for the listing. */
   price: number | null;
   /** Trip-level context; omit outside a trip page to keep total-only behavior. */
   tripContext?: TripPriceContext;

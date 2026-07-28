@@ -1,5 +1,4 @@
 import { db, Prisma } from 'db';
-import { computeNightsFromDates } from '@/features/listings/utils/priceBasis';
 import type { NormalizedImportedListing } from './types';
 
 function toJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.JsonNull {
@@ -24,47 +23,10 @@ function toJsonValue(value: unknown): Prisma.InputJsonValue | typeof Prisma.Json
   return String(value);
 }
 
-/**
- * Convert a normalized import price to a stored stay-total when the scrape
- * was nightly and the trip has a usable night count. Totals and undated trips
- * pass through unchanged.
- */
-function toStoredTotalPrice(
-  listing: NormalizedImportedListing,
-  tripNights: number | null,
-): number | null {
-  if (listing.price === null) {
-    return null;
-  }
-
-  if (listing.nightlyPriceSource === 'SCRAPED_NIGHTLY' && tripNights && tripNights > 0) {
-    return listing.price * tripNights;
-  }
-
-  return listing.price;
-}
-
-async function getTripNights(tripId: string): Promise<number | null> {
-  const trip = await db.trip.findUnique({
-    where: { id: tripId },
-    select: {
-      startDate: true,
-      endDate: true,
-    },
-  });
-
-  if (!trip) {
-    return null;
-  }
-
-  return computeNightsFromDates(trip.startDate, trip.endDate);
-}
-
 /** Shared field map for URL import writes (create + update). */
 function buildImportedListingImportPayload(
   listing: NormalizedImportedListing,
   importedAt: Date,
-  tripNights: number | null,
 ): Prisma.ListingUncheckedUpdateInput {
   if (listing.title === null) {
     // Unreachable in practice — `importListingCapture` throws before calling this
@@ -80,7 +42,7 @@ function buildImportedListingImportPayload(
     title: listing.title,
     address: listing.address,
     url: listing.canonicalUrl,
-    price: toStoredTotalPrice(listing, tripNights),
+    price: listing.price,
     nightlyPriceSource: listing.nightlyPriceSource,
     priceQuotedStartDate: listing.priceQuotedStartDate,
     priceQuotedEndDate: listing.priceQuotedEndDate,
@@ -130,15 +92,14 @@ export async function applyNormalizedImportToListingId(
   const importedAt = new Date();
   const existingListing = await db.listing.findUnique({
     where: { id: listingId },
-    select: { tripId: true },
+    select: { id: true },
   });
 
   if (!existingListing) {
     throw new Error('Listing not found');
   }
 
-  const tripNights = await getTripNights(existingListing.tripId);
-  const listingData = buildImportedListingImportPayload(listing, importedAt, tripNights);
+  const listingData = buildImportedListingImportPayload(listing, importedAt);
 
   return db.$transaction(async (tx) => {
     await tx.listing.update({
@@ -173,8 +134,7 @@ export async function upsertImportedListing(
   options?: UpsertImportedListingOptions,
 ) {
   const importedAt = new Date();
-  const tripNights = await getTripNights(tripId);
-  const listingData = buildImportedListingImportPayload(listing, importedAt, tripNights);
+  const listingData = buildImportedListingImportPayload(listing, importedAt);
 
   return db.$transaction(async (tx) => {
     const existingListing = await tx.listing.findFirst({

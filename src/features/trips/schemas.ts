@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { PARTY_UNIT_VALUES } from './utils/partyUnitLabels';
 import { normalizeTripGuestBreakdown } from './utils/tripTravelContext';
 
 const optionalNonNegativeInteger = z.preprocess(
@@ -14,6 +15,7 @@ export const TripSchema = z.object({
   endDate: z.date().nullable().optional(),
   location: z.string().nullable().optional(),
   numberOfPeople: z.number().int().positive().nullable().optional(),
+  partyUnit: z.enum(PARTY_UNIT_VALUES).default('GUEST'),
   adultCount: z.number().int().nonnegative().nullable().optional(),
   childCount: z.number().int().nonnegative().nullable().optional(),
   createdAt: z.date(),
@@ -52,6 +54,10 @@ export const TripFormSchema = TripSchema
       (val) => (val === "" ? undefined : val),
       z.coerce.number().int().positive().optional().nullable()
     ),
+    partyUnit: z.preprocess(
+      (val) => (val === "" || val === undefined || val === null ? 'GUEST' : val),
+      z.enum(PARTY_UNIT_VALUES),
+    ),
     adultCount: optionalNonNegativeInteger,
     childCount: optionalNonNegativeInteger,
   })
@@ -59,23 +65,6 @@ export const TripFormSchema = TripSchema
     ...data,
     ...normalizeTripGuestBreakdown(data),
   }))
-  .refine(
-    (data) => (
-      data.numberOfPeople !== null ||
-      (data.adultCount === null && data.childCount === null)
-    ),
-    {
-      message: "Enter at least one adult or child",
-      path: ["adultCount"]
-    }
-  )
-  .refine(
-    (data) => data.numberOfPeople === null || (data.adultCount ?? 0) > 0,
-    {
-      message: "Enter at least one adult",
-      path: ["adultCount"]
-    }
-  )
   .refine(
     (data) => !data.startDate || !data.endDate || data.endDate >= data.startDate,
     {

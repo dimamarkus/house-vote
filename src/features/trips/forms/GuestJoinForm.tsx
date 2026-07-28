@@ -71,7 +71,7 @@ export function GuestJoinForm({ token }: GuestJoinFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Enter your name to join this trip as a guest. Your name will be visible to others on the trip.
+        Enter your name to join this trip. Your name will be visible to others on the trip.
       </p>
 
       {error && (

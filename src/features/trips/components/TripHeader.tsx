@@ -14,7 +14,7 @@ import { TripPriceBasisToggle } from './TripPriceBasisToggle';
 const DASHBOARD_META_PILL_CLASSNAME = 'shadow-sm sm:text-base';
 
 interface TripHeaderProps {
-  trip: Partial<Trip> & Pick<Trip, 'id' | 'name' | 'userId' | 'startDate' | 'endDate' | 'location' | 'numberOfPeople' | 'adultCount' | 'childCount' | 'description'>;
+  trip: Partial<Trip> & Pick<Trip, 'id' | 'name' | 'userId' | 'startDate' | 'endDate' | 'location' | 'numberOfPeople' | 'partyUnit' | 'adultCount' | 'childCount' | 'description'>;
 }
 
 export function TripHeader({ trip }: TripHeaderProps) {
@@ -22,6 +22,7 @@ export function TripHeader({ trip }: TripHeaderProps) {
   const canSearchTravelSites = Boolean(trip.location);
   const tripTravelContext = createTripTravelContext({
     numberOfPeople: trip.numberOfPeople ?? null,
+    partyUnit: trip.partyUnit ?? null,
     adultCount: trip.adultCount ?? null,
     childCount: trip.childCount ?? null,
     startDate: trip.startDate,
@@ -43,6 +44,7 @@ export function TripHeader({ trip }: TripHeaderProps) {
     startDate: trip.startDate ? new Date(trip.startDate) : null,
     endDate: trip.endDate ? new Date(trip.endDate) : null,
     numberOfPeople: trip.numberOfPeople ?? null,
+    partyUnit: trip.partyUnit ?? 'GUEST',
     adultCount: trip.adultCount ?? null,
     childCount: trip.childCount ?? null,
   };

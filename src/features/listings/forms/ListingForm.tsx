@@ -103,11 +103,11 @@ export function ListingForm({
       <FormSection className="mb-6">
         <InputField
           name="price"
-          label="Total Price"
+          label="Price per night"
           type="number"
           min="0"
           step="1"
-          placeholder="Enter total stay price"
+          placeholder="Enter nightly price"
           defaultValue={initialState?.price?.toString() || ''}
         />
 

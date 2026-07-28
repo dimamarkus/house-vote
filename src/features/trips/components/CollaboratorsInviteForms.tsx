@@ -9,15 +9,18 @@ import { Input } from '@/ui/shadcn/input';
 import { Form } from '@/ui/form/Form';
 import { addPublishedTripGuest } from '../actions/publishedTripActions';
 import { createInvitation } from '../actions/createInvitation';
+import { getPartyUnitLabels, type PartyUnit } from '../utils/partyUnitLabels';
 
 interface CollaboratorsInviteFormsProps {
   tripId: string;
+  partyUnit: PartyUnit;
 }
 
-export function CollaboratorsInviteForms({ tripId }: CollaboratorsInviteFormsProps) {
+export function CollaboratorsInviteForms({ tripId, partyUnit }: CollaboratorsInviteFormsProps) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState('');
   const [isAddingGuest, setIsAddingGuest] = useState(false);
+  const partyLabels = getPartyUnitLabels(partyUnit);
 
   function handleInvitationCreated() {
     toast.success('Invitation sent successfully');
@@ -31,7 +34,7 @@ export function CollaboratorsInviteForms({ tripId }: CollaboratorsInviteFormsPro
     setIsAddingGuest(false);
 
     if (!result.success) {
-      toast.error(typeof result.error === 'string' ? result.error : 'Unable to add guest.');
+      toast.error(typeof result.error === 'string' ? result.error : `Unable to add ${partyLabels.singular}.`);
       return;
     }
 
@@ -73,12 +76,12 @@ export function CollaboratorsInviteForms({ tripId }: CollaboratorsInviteFormsPro
       </Form>
 
       <form onSubmit={handleAddGuest} className="space-y-2">
-        <p className="text-sm font-medium">Add guests</p>
+        <p className="text-sm font-medium">Add {partyLabels.plural}</p>
         <div className="flex gap-2">
           <Input
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
-            placeholder="Add guest name"
+            placeholder={`Add ${partyLabels.singular} name`}
             disabled={isAddingGuest}
           />
           <Button type="submit" disabled={isAddingGuest}>
@@ -87,7 +90,7 @@ export function CollaboratorsInviteForms({ tripId }: CollaboratorsInviteFormsPro
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
-          Guests cannot add themselves. If someone is missing, add their name here before sharing the link.
+          {partyLabels.Plural} cannot add themselves. If someone is missing, add their name here before sharing the link.
         </p>
       </form>
     </>

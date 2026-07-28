@@ -29,6 +29,7 @@ import {
   type TripPriceContext,
 } from '../utils/priceBasis';
 import { usePriceBasis } from '@/features/trips/hooks/usePriceBasis';
+import { getPartyUnitLabels } from '@/features/trips/utils/partyUnitLabels';
 import { generateTravelListingUrl } from '@/features/trips/utils/travelLinks';
 import type { TripTravelContext } from '@/features/trips/utils/tripTravelContext';
 
@@ -72,9 +73,9 @@ export interface ListingCardProps extends HTMLAttributes<HTMLDivElement> {
   contentClassName?: string;
   footerClassName?: string;
   /**
-   * Trip-level context used to compute per-guest / total prices when the
-   * user toggles to per-guest display. Omit to keep the card showing
-   * total-stay prices (e.g. surfaces outside a trip page).
+   * Trip-level context used to compute total / per-guest prices from the
+   * stored nightly rate when the user toggles the basis. Omit to keep the
+   * card showing the nightly rate (e.g. surfaces outside a trip page).
    */
   tripContext?: TripPriceContext;
   /** Trip-level dates + guest count used to enrich outbound travel-site links. */
@@ -275,12 +276,12 @@ export function ListingCard({
                   )}
                   aria-label={
                     priceBasis === 'TOTAL'
-                      ? 'Show price per guest'
+                      ? `Show price ${getPartyUnitLabels(tripContext?.partyUnit).perUnitShort}`
                       : 'Show total stay price'
                   }
                   title={
                     priceBasis === 'TOTAL'
-                      ? 'Click to show per guest'
+                      ? `Click to show ${getPartyUnitLabels(tripContext?.partyUnit).perUnit.toLowerCase()}`
                       : 'Click to show total'
                   }
                 >

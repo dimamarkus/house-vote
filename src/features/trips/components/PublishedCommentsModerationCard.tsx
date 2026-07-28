@@ -62,7 +62,7 @@ export function PublishedCommentsModerationCard({
     }
 
     router.refresh();
-    toast.success(hidden ? 'Comment hidden from guests.' : 'Comment restored.');
+    toast.success(hidden ? 'Comment hidden from voters.' : 'Comment restored.');
   }
 
   return (
@@ -73,7 +73,7 @@ export function PublishedCommentsModerationCard({
           Public comments
         </CardTitle>
         <CardDescription>
-          Moderate guest comments from the published voting page without deleting them permanently.
+          Moderate comments from the published voting page without deleting them permanently.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -158,6 +158,7 @@ export default async function TripDashboardPage({ params, searchParams }: TripDa
   const currentGuestName = null;
   const tripTravelContext = createTripTravelContext({
     numberOfPeople: trip.numberOfPeople ?? null,
+    partyUnit: trip.partyUnit ?? null,
     adultCount: trip.adultCount ?? null,
     childCount: trip.childCount ?? null,
     startDate: trip.startDate,

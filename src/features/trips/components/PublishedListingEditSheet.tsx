@@ -120,13 +120,13 @@ export function PublishedListingEditSheet({
         <SheetHeader>
           <SheetTitle>Edit listing details</SheetTitle>
           <SheetDescription>
-            Correct shared details everyone voting can see. Changes are visible to all guests.
+            Correct shared details everyone voting can see. Changes are visible to everyone on the trip.
           </SheetDescription>
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4 p-4">
           <div className="space-y-2">
-            <Label htmlFor="pl-edit-price">Price (total stay)</Label>
+            <Label htmlFor="pl-edit-price">Price per night</Label>
             <Input
               id="pl-edit-price"
               inputMode="numeric"

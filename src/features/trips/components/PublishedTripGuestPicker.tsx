@@ -9,6 +9,7 @@ import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { cn } from '@/ui/utils/cn';
 import { toast } from 'sonner';
+import { getPartyUnitLabels } from '../utils/partyUnitLabels';
 
 interface PublishedTripGuestPickerProps {
   token: string;
@@ -28,6 +29,7 @@ export function PublishedTripGuestPicker({
   );
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const votingHref = `/share/${token}`;
+  const partyLabels = getPartyUnitLabels(share.trip.partyUnit);
 
   useEffect(() => {
     if (rawSession && !session) {
@@ -38,9 +40,9 @@ export function PublishedTripGuestPicker({
   useEffect(() => {
     if (session && !activeGuest) {
       clearSession();
-      toast.error('Your guest session is no longer available. Please pick your name again.');
+      toast.error(`Your ${partyLabels.singular} session is no longer available. Please pick your name again.`);
     }
-  }, [activeGuest, clearSession, session]);
+  }, [activeGuest, clearSession, partyLabels.singular, session]);
 
   async function handlePickGuest(guestId: string) {
     setPendingAction(`pick-${guestId}`);
@@ -51,7 +53,7 @@ export function PublishedTripGuestPicker({
     setPendingAction(null);
 
     if (!result.success) {
-      toast.error(typeof result.error === 'string' ? result.error : 'Unable to use that guest name.');
+      toast.error(typeof result.error === 'string' ? result.error : `Unable to use that ${partyLabels.singular} name.`);
       return;
     }
 

@@ -16,6 +16,7 @@ import {
 } from '@/ui/shadcn/sheet';
 import { cn } from '@/ui/utils/cn';
 import { Users } from 'lucide-react';
+import { formatPartyUnitCount, getPartyUnitLabels } from '../utils/partyUnitLabels';
 
 interface PublishedTripGuestsSheetProps {
   share: PublishedTripShareRecord;
@@ -47,6 +48,7 @@ export function PublishedTripGuestsSheet({
     );
   }, [listings]);
   const guestCount = share.guests.length;
+  const partyLabels = getPartyUnitLabels(share.trip.partyUnit);
 
   return (
     <Sheet>
@@ -58,18 +60,18 @@ export function PublishedTripGuestsSheet({
             'cursor-pointer transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             triggerClassName,
           )}
-          aria-label={`Open guest list for ${share.trip.name}`}
+          aria-label={`Open ${partyLabels.singular} list for ${share.trip.name}`}
         >
           <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
           <span className="wrap-break-word">
-            {guestCount} {guestCount === 1 ? 'guest' : 'guests'}
+            {formatPartyUnitCount(guestCount, share.trip.partyUnit)}
           </span>
         </button>
       </SheetTrigger>
       <SheetContent className="flex h-full w-full flex-col gap-0 sm:max-w-md">
         <SheetHeader className="border-b pb-4">
           <div className="flex items-center gap-2">
-            <SheetTitle>Guests</SheetTitle>
+            <SheetTitle>{partyLabels.Plural}</SheetTitle>
             <Badge variant="secondary">{guestCount}</Badge>
           </div>
           <SheetDescription>
@@ -136,7 +138,7 @@ export function PublishedTripGuestsSheet({
             </div>
           ) : (
             <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-              No guests have joined this trip yet.
+              No {partyLabels.plural} have joined this trip yet.
             </div>
           )}
         </div>

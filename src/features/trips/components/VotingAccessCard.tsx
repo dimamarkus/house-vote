@@ -9,6 +9,7 @@ import {
   updateTripShareSettings,
 } from '@/features/trips/actions/publishedTripActions';
 import type { TripShareSettings } from '@/features/trips/types';
+import { getPartyUnitLabels, type PartyUnit } from '@/features/trips/utils/partyUnitLabels';
 import { Button } from '@/ui/shadcn/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/shadcn/card';
 import { Input } from '@/ui/shadcn/input';
@@ -18,6 +19,7 @@ import { Copy, ExternalLink, Globe, RotateCcw } from 'lucide-react';
 
 interface VotingAccessCardProps {
   tripId: string;
+  partyUnit: PartyUnit;
   share: TripShareSettings | null;
 }
 
@@ -69,9 +71,10 @@ function VotingSettingRow({
   );
 }
 
-export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
+export function VotingAccessCard({ tripId, partyUnit, share }: VotingAccessCardProps) {
   const router = useRouter();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const partyLabels = getPartyUnitLabels(partyUnit);
   const [origin] = useState<string | null>(() => (
     typeof window === 'undefined' ? null : window.location.origin
   ));
@@ -177,7 +180,7 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
           Voting
         </CardTitle>
         <CardDescription>
-          Control the public voting page and whether guests can cast votes right now.
+          Control the public voting page and whether {partyLabels.plural} can cast votes right now.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -211,7 +214,7 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
               <div>
                 <p className="text-sm font-medium">Published link</p>
                 <p className="text-xs text-muted-foreground">
-                  Share this URL with guests. Rotating the link will invalidate the current one.
+                  Share this URL with {partyLabels.plural}. Rotating the link will invalidate the current one.
                 </p>
               </div>
               <div className="flex gap-2">
@@ -242,7 +245,7 @@ export function VotingAccessCard({ tripId, share }: VotingAccessCardProps) {
           </div>
         ) : (
           <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-            Turn on the public voting page to create a share link for guests.
+            Turn on the public voting page to create a share link for {partyLabels.plural}.
           </div>
         )}
       </CardContent>

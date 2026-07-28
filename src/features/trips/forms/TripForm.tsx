@@ -13,6 +13,14 @@ import type { TripFormData } from '../schemas';
 import { toast } from 'sonner';
 import type { Trip } from 'db';
 import type { BasicApiResponse } from '@/core/types';
+import { cn } from '@/ui/utils/cn';
+import {
+  DEFAULT_PARTY_UNIT,
+  formatPartyUnitCount,
+  getPartyUnitLabels,
+  normalizePartyUnit,
+  type PartyUnit,
+} from '../utils/partyUnitLabels';
 import { normalizeTripGuestBreakdown } from '../utils/tripTravelContext';
 
 interface TripFormProps {
@@ -36,28 +44,38 @@ export function TripForm({
     adultCount: initialData?.adultCount,
     childCount: initialData?.childCount,
     numberOfPeople: initialData?.numberOfPeople,
+    partyUnit: initialData?.partyUnit,
   });
 
-  const formattedInitialData: Partial<Omit<TripFormData, 'startDate' | 'endDate' | 'numberOfPeople' | 'adultCount' | 'childCount'>> & {
+  const formattedInitialData: Partial<Omit<TripFormData, 'startDate' | 'endDate' | 'numberOfPeople' | 'adultCount' | 'childCount' | 'partyUnit'>> & {
     startDate?: Date;
     endDate?: Date;
+    numberOfPeople?: string;
     adultCount?: string;
     childCount?: string;
+    partyUnit: PartyUnit;
   } = {
     name: initialData?.name ?? '',
     description: initialData?.description ?? undefined,
     location: initialData?.location ?? undefined,
     startDate: initialData?.startDate ? new Date(initialData.startDate) : undefined,
     endDate: initialData?.endDate ? new Date(initialData.endDate) : undefined,
+    numberOfPeople: initialGuestBreakdown.numberOfPeople?.toString() ?? '',
     adultCount: initialGuestBreakdown.adultCount?.toString() ?? '',
     childCount: initialGuestBreakdown.childCount?.toString() ?? '',
+    partyUnit: initialGuestBreakdown.partyUnit,
   };
+  const [partyUnit, setPartyUnit] = useState<PartyUnit>(
+    normalizePartyUnit(formattedInitialData.partyUnit ?? DEFAULT_PARTY_UNIT),
+  );
+  const [partyCountValue, setPartyCountValue] = useState(formattedInitialData.numberOfPeople ?? '');
   const [adultCountValue, setAdultCountValue] = useState(formattedInitialData.adultCount ?? '');
   const [childCountValue, setChildCountValue] = useState(formattedInitialData.childCount ?? '');
-  const previewGuestBreakdown = normalizeTripGuestBreakdown({
-    adultCount: adultCountValue === '' ? null : Number(adultCountValue),
-    childCount: childCountValue === '' ? null : Number(childCountValue),
-  });
+  const partyLabels = getPartyUnitLabels(partyUnit);
+  const previewPartyCount = normalizeTripGuestBreakdown({
+    numberOfPeople: partyCountValue === '' ? null : Number(partyCountValue),
+    partyUnit,
+  }).numberOfPeople;
 
   if (!actionToUse && isEditing) {
     console.error("boundUpdateAction is required when editing a trip.");
@@ -126,6 +144,66 @@ export function TripForm({
                 defaultValue={formattedInitialData.endDate}
               />
             </div>
+
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Party counted as</p>
+              <input type="hidden" name="partyUnit" value={partyUnit} />
+              <div
+                role="group"
+                aria-label="Party unit"
+                className="inline-flex w-full gap-1 rounded-xl border bg-background p-1 sm:w-auto"
+              >
+                <button
+                  type="button"
+                  onClick={() => setPartyUnit('GUEST')}
+                  className={cn(
+                    'flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:flex-none',
+                    partyUnit === 'GUEST'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  )}
+                  aria-pressed={partyUnit === 'GUEST'}
+                >
+                  Guests
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPartyUnit('FAMILY')}
+                  className={cn(
+                    'flex-1 rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:flex-none',
+                    partyUnit === 'FAMILY'
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  )}
+                  aria-pressed={partyUnit === 'FAMILY'}
+                >
+                  Families
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Controls labels and the per-{partyLabels.singular} price divider across the trip.
+                Adults/children below are only used for Airbnb and Vrbo search links.
+              </p>
+            </div>
+
+            <InputField
+              name="numberOfPeople"
+              label={`Number of ${partyLabels.plural} (Optional)`}
+              type="number"
+              min="1"
+              inputMode="numeric"
+              placeholder={partyUnit === 'FAMILY' ? 'e.g., 5' : 'e.g., 12'}
+              error={formState.fieldErrors?.numberOfPeople?.[0]}
+              helperText={`Used as the price divider (total ÷ ${partyLabels.plural}).`}
+              defaultValue={formattedInitialData.numberOfPeople ?? ''}
+              onChange={(event) => setPartyCountValue(event.currentTarget.value)}
+            />
+            {previewPartyCount ? (
+              <p className="text-sm text-muted-foreground">
+                {formatPartyUnitCount(previewPartyCount, partyUnit)}
+              </p>
+            ) : null}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <InputField
                 name="adultCount"
@@ -135,7 +213,7 @@ export function TripForm({
                 inputMode="numeric"
                 placeholder="e.g., 8"
                 error={formState.fieldErrors?.adultCount?.[0]}
-                helperText="Used for Airbnb, Vrbo, and hotel search links."
+                helperText="Used only for Airbnb, Vrbo, and hotel search links."
                 defaultValue={formattedInitialData.adultCount ?? ''}
                 onChange={(event) => setAdultCountValue(event.currentTarget.value)}
               />
@@ -147,15 +225,17 @@ export function TripForm({
                 inputMode="numeric"
                 placeholder="e.g., 4"
                 error={formState.fieldErrors?.childCount?.[0]}
+                helperText="Used only for Airbnb, Vrbo, and hotel search links."
                 defaultValue={formattedInitialData.childCount ?? ''}
                 onChange={(event) => setChildCountValue(event.currentTarget.value)}
               />
             </div>
-            {previewGuestBreakdown.numberOfPeople ? (
-              <p className="text-sm text-muted-foreground">
-                Total guests: {previewGuestBreakdown.numberOfPeople}
+            {(adultCountValue !== '' || childCountValue !== '') && (
+              <p className="text-xs text-muted-foreground">
+                Search-link headcount:{' '}
+                {(Number(adultCountValue) || 0) + (Number(childCountValue) || 0)} people
               </p>
-            ) : null}
+            )}
             {formState.fieldErrors?.endDate && !formState.fieldErrors.startDate && formState.fieldErrors.endDate[0]?.includes('End date must be on or after start date') && (
                 <p className="text-sm text-destructive">{formState.fieldErrors.endDate[0]}</p>
             )}

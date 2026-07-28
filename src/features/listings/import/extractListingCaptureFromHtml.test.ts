@@ -123,7 +123,7 @@ describe('extractListingCaptureFromHtml', () => {
     expect(normalized.price).toBeNull();
   });
 
-  it('keeps total-stay scrape prices as totals during normalization', () => {
+  it('converts total-stay scrape prices to a nightly rate during normalization', () => {
     const normalized = normalizeImportedListing(
       {
         url: 'https://www.example-hotel.com/rooms/1',
@@ -141,7 +141,8 @@ describe('extractListingCaptureFromHtml', () => {
       'URL_FETCH',
     );
 
-    expect(normalized.price).toBe(1200);
+    // $1,200 over the quoted 4-night stay => $300/night.
+    expect(normalized.price).toBe(300);
     expect(normalized.nightlyPriceSource).toBe('DERIVED_FROM_TOTAL');
   });
 });

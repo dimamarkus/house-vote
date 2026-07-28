@@ -3,18 +3,19 @@
 import { Button } from '@/ui/core/Button';
 import { cn } from '@/ui/utils/cn';
 import {
-  PRICE_BASIS_LABELS,
   PRICE_BASIS_VALUES,
   availablePriceBases,
+  priceBasisLabel,
   type PriceBasis,
   type TripPriceContext,
 } from '@/features/listings/utils/priceBasis';
+import { getPartyUnitLabels } from '../utils/partyUnitLabels';
 import { usePriceBasis } from '../hooks/usePriceBasis';
 
 interface TripPriceBasisToggleProps {
   /**
    * Trip-level inputs used to decide which toggle options can be computed.
-   * When guest count is missing, "Per guest" is disabled.
+   * When party-unit count is missing, the per-unit option is disabled.
    */
   tripContext: TripPriceContext;
   className?: string;
@@ -27,6 +28,7 @@ interface TripPriceBasisToggleProps {
 export function TripPriceBasisToggle({ tripContext, className }: TripPriceBasisToggleProps) {
   const [basis, setBasis] = usePriceBasis();
   const available = availablePriceBases(tripContext);
+  const partyLabels = getPartyUnitLabels(tripContext.partyUnit);
 
   // If only total is available there's nothing to toggle — hide the
   // control entirely so we don't imply options that don't work.
@@ -43,10 +45,11 @@ export function TripPriceBasisToggle({ tripContext, className }: TripPriceBasisT
       {PRICE_BASIS_VALUES.map((value) => {
         const enabled = available.includes(value);
         const active = basis === value;
+        const label = priceBasisLabel(value, tripContext.partyUnit);
         return (
           <Button
             key={value}
-            text={PRICE_BASIS_LABELS[value]}
+            text={label}
             variant="neutral"
             weight={active ? 'solid' : 'hollow'}
             size="sm"
@@ -55,8 +58,8 @@ export function TripPriceBasisToggle({ tripContext, className }: TripPriceBasisT
             aria-pressed={active}
             title={
               enabled
-                ? PRICE_BASIS_LABELS[value]
-                : missingContextMessage(value)
+                ? label
+                : missingContextMessage(value, partyLabels.singular)
             }
           />
         );
@@ -65,9 +68,9 @@ export function TripPriceBasisToggle({ tripContext, className }: TripPriceBasisT
   );
 }
 
-function missingContextMessage(basis: PriceBasis): string {
+function missingContextMessage(basis: PriceBasis, singular: string): string {
   if (basis === 'PER_GUEST') {
-    return 'Set the trip guest count to view per-guest pricing';
+    return `Set the trip ${singular} count to view per-${singular} pricing`;
   }
-  return PRICE_BASIS_LABELS[basis];
+  return priceBasisLabel(basis, 'GUEST');
 }

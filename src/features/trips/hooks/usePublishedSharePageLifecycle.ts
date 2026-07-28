@@ -58,7 +58,7 @@ export function usePublishedSharePageLifecycle({
   useEffect(() => {
     if (session && !activeGuest) {
       clearSession();
-      toast.error('Your guest session is no longer available. Please pick your name again.');
+      toast.error('Your voting session is no longer available. Please pick your name again.');
       router.replace(joinHref);
     }
   }, [activeGuest, clearSession, joinHref, router, session]);

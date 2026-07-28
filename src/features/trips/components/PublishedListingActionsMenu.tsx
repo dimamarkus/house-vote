@@ -12,6 +12,7 @@ import type { PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { PublishedListingEditSheet } from '@/features/trips/components/PublishedListingEditSheet';
 import { PublishedListingFeedbackDialog } from '@/features/trips/components/PublishedListingFeedbackSection';
 import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
+import { getPartyUnitLabels } from '@/features/trips/utils/partyUnitLabels';
 import { Button } from '@/ui/shadcn/button';
 import {
   DropdownMenu,
@@ -43,10 +44,10 @@ export function PublishedListingActionsMenu({
   const canViewSource = typeof listing.url === 'string' && listing.url.length > 0;
   const canEdit = guestEditsAllowed;
   const commentsDisabledReason = !share.commentsOpen
-    ? 'Guest feedback is closed'
+    ? `${getPartyUnitLabels(share.trip.partyUnit).Singular} feedback is closed`
     : undefined;
   const editDisabledReason = !guestEditsAllowed
-    ? 'The trip owner has disabled guest edits'
+    ? `The trip owner has disabled ${getPartyUnitLabels(share.trip.partyUnit).singular} edits`
     : undefined;
   const canVote = share.votingOpen && isVoteEligibleListingStatus(listing.status) && !pendingVote;
   const voteDisabledReason = !share.votingOpen

@@ -1,4 +1,9 @@
 import type { TripPriceContext } from '@/features/listings/utils/priceBasis';
+import {
+  formatPartyUnitCount,
+  normalizePartyUnit,
+  type PartyUnit,
+} from './partyUnitLabels';
 
 type DateValue = Date | string | null | undefined;
 
@@ -16,6 +21,7 @@ interface TripGuestBreakdownInput {
   adultCount?: number | null;
   childCount?: number | null;
   numberOfPeople?: number | null;
+  partyUnit?: PartyUnit | null;
 }
 
 interface TripTravelContextInput extends TripGuestBreakdownInput {
@@ -46,39 +52,37 @@ function normalizeDateValue(value: DateValue): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+/**
+ * Normalize the two independent trip counts:
+ * - `numberOfPeople` = party-unit size (guests or families) for price dividers
+ * - `adultCount` / `childCount` = OTA search-link headcount only
+ *
+ * These are intentionally not derived from each other.
+ */
 export function normalizeTripGuestBreakdown(
   input: TripGuestBreakdownInput,
-): TripGuestBreakdown & { numberOfPeople: number | null } {
+): TripGuestBreakdown & { numberOfPeople: number | null; partyUnit: PartyUnit } {
   const adultCount = normalizeNonNegativeInteger(input.adultCount);
   const childCount = normalizeNonNegativeInteger(input.childCount);
-  const legacyGuestCount = normalizePositiveInteger(input.numberOfPeople);
-  const hasStructuredCounts = adultCount !== null || childCount !== null;
-
-  if (hasStructuredCounts) {
-    const normalizedAdultCount = adultCount ?? 0;
-    const normalizedChildCount = childCount ?? 0;
-    const numberOfPeople = normalizedAdultCount + normalizedChildCount;
-
-    return {
-      adultCount: normalizedAdultCount,
-      childCount: normalizedChildCount,
-      numberOfPeople: numberOfPeople > 0 ? numberOfPeople : null,
-    };
-  }
-
-  if (legacyGuestCount) {
-    return {
-      adultCount: legacyGuestCount,
-      childCount: 0,
-      numberOfPeople: legacyGuestCount,
-    };
-  }
+  const numberOfPeople = normalizePositiveInteger(input.numberOfPeople);
 
   return {
-    adultCount: null,
-    childCount: null,
-    numberOfPeople: null,
+    adultCount,
+    childCount,
+    numberOfPeople,
+    partyUnit: normalizePartyUnit(input.partyUnit),
   };
+}
+
+/** Headcount sent to Airbnb / Vrbo. Uses adults+children only — never the party-unit count. */
+export function getOtaGuestTotal(input: TripGuestBreakdownInput): number | null {
+  const { adultCount, childCount } = normalizeTripGuestBreakdown(input);
+  if (adultCount === null && childCount === null) {
+    return null;
+  }
+
+  const total = (adultCount ?? 0) + (childCount ?? 0);
+  return total > 0 ? total : null;
 }
 
 export function createTripTravelContext(input: TripTravelContextInput): TripTravelContext {
@@ -91,27 +95,18 @@ export function createTripTravelContext(input: TripTravelContextInput): TripTrav
   };
 }
 
-function pluralize(count: number, singular: string, plural: string): string {
-  return `${count} ${count === 1 ? singular : plural}`;
-}
-
+/**
+ * Party-size badge label, e.g. "5 families" or "12 guests".
+ * Adults/children are omitted — those are OTA-only.
+ */
 export function formatTripGuestBreakdownLabel(
   input: TripGuestBreakdownInput,
 ): string | null {
-  const { adultCount, childCount, numberOfPeople } = normalizeTripGuestBreakdown(input);
+  const { numberOfPeople, partyUnit } = normalizeTripGuestBreakdown(input);
 
   if (!numberOfPeople) {
     return null;
   }
 
-  if (childCount && childCount > 0) {
-    const parts = [];
-    if (adultCount && adultCount > 0) {
-      parts.push(pluralize(adultCount, 'adult', 'adults'));
-    }
-    parts.push(pluralize(childCount, 'child', 'children'));
-    return parts.join(', ');
-  }
-
-  return pluralize(numberOfPeople, 'guest', 'guests');
+  return formatPartyUnitCount(numberOfPeople, partyUnit);
 }

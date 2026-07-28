@@ -40,7 +40,7 @@ export function PublishedTripPageClient({
     return (
       <Card>
         <CardContent className="py-10 text-center text-muted-foreground">
-          Opening guest picker...
+          Opening name picker...
         </CardContent>
       </Card>
     );

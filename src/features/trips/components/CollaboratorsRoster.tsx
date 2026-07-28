@@ -11,6 +11,7 @@ import { Button } from '@/ui/shadcn/button';
 import { getInitials } from '@/ui/utils/getInitials';
 import { removePublishedTripGuest } from '../actions/publishedTripActions';
 import type { OwnerTripShareSummary } from '../types';
+import { getPartyUnitLabels, type PartyUnit } from '../utils/partyUnitLabels';
 
 const VOTED_BADGE_CLASSNAME = 'bg-teal-50 text-teal-700';
 const OWNER_BADGE_CLASSNAME = 'bg-amber-50 text-amber-700';
@@ -24,6 +25,7 @@ interface RosterPerson {
 
 interface CollaboratorsRosterProps {
   tripId: string;
+  partyUnit: PartyUnit;
   owner: RosterPerson;
   collaborators: RosterPerson[];
   guestNames: string[];
@@ -34,6 +36,7 @@ interface CollaboratorsRosterProps {
 
 export function CollaboratorsRoster({
   tripId,
+  partyUnit,
   owner,
   collaborators,
   guestNames,
@@ -44,6 +47,7 @@ export function CollaboratorsRoster({
   const router = useRouter();
   const [removingGuestId, setRemovingGuestId] = useState<string | null>(null);
   const { isLoaded, user } = useUser();
+  const partyLabels = getPartyUnitLabels(partyUnit);
 
   const ownerDetails = useMemo(() => {
     if (isLoaded && user && user.id === owner.id) {
@@ -72,7 +76,7 @@ export function CollaboratorsRoster({
     setRemovingGuestId(null);
 
     if (!result.success) {
-      toast.error(typeof result.error === 'string' ? result.error : 'Unable to remove guest.');
+      toast.error(typeof result.error === 'string' ? result.error : `Unable to remove ${partyLabels.singular}.`);
       return;
     }
 
@@ -108,7 +112,7 @@ export function CollaboratorsRoster({
                       {hasVoted ? 'Voted' : 'Waiting'}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">Guest</p>
+                  <p className="text-sm text-muted-foreground">{partyLabels.Singular}</p>
                 </div>
                 {isOwner ? (
                   <Button
@@ -118,10 +122,10 @@ export function CollaboratorsRoster({
                     disabled={removingGuestId === guest.id}
                   >
                     <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Remove guest</span>
+                    <span className="sr-only">Remove {partyLabels.singular}</span>
                   </Button>
                 ) : (
-                  <Badge variant="secondary">Guest</Badge>
+                  <Badge variant="secondary">{partyLabels.Singular}</Badge>
                 )}
               </div>
             );
@@ -136,9 +140,9 @@ export function CollaboratorsRoster({
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-medium">{guestName}</p>
-                    <p className="text-sm text-muted-foreground">Guest</p>
+                    <p className="text-sm text-muted-foreground">{partyLabels.Singular}</p>
                   </div>
-                  <Badge variant="secondary">Guest</Badge>
+                  <Badge variant="secondary">{partyLabels.Singular}</Badge>
                 </div>
               ))
           : null}
@@ -152,9 +156,9 @@ export function CollaboratorsRoster({
             </Avatar>
             <div className="flex-1">
               <p className="font-medium">{currentGuestName} (You)</p>
-              <p className="text-sm text-muted-foreground">Guest</p>
+              <p className="text-sm text-muted-foreground">{partyLabels.Singular}</p>
             </div>
-            <Badge variant="secondary">Guest</Badge>
+            <Badge variant="secondary">{partyLabels.Singular}</Badge>
           </div>
         )}
 
@@ -210,7 +214,7 @@ export function CollaboratorsRoster({
       {isEmpty && (
         <div className="flex items-center justify-center py-6 text-muted-foreground">
           <Users className="h-5 w-5 mr-2" />
-          <span>No collaborators or guests yet</span>
+          <span>No collaborators or {partyLabels.plural} yet</span>
         </div>
       )}
     </>

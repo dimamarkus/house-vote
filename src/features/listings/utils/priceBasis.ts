@@ -1,22 +1,40 @@
 /**
- * Price-basis (total / per-guest) display math.
+ * Price-basis (total / per-guest-or-family) display math.
  *
  * Storage is the per-night rate in whole dollars — the date-independent unit
  * OTAs quote reliably. This module derives everything shown to the user at
- * render time from that nightly rate plus the trip's current dates and guest
+ * render time from that nightly rate plus the trip's current dates and party
  * count, so changing the dates (or who has joined) never leaves a stale total
  * baked into the row.
  */
+
+import {
+  getPartyUnitLabels,
+  normalizePartyUnit,
+  type PartyUnit,
+} from '@/features/trips/utils/partyUnitLabels';
 
 export const PRICE_BASIS_VALUES = ['TOTAL', 'PER_GUEST'] as const;
 export type PriceBasis = (typeof PRICE_BASIS_VALUES)[number];
 
 export const DEFAULT_PRICE_BASIS: PriceBasis = 'TOTAL';
 
+/** Default labels (guest mode). Prefer `priceBasisLabel` when partyUnit is known. */
 export const PRICE_BASIS_LABELS: Record<PriceBasis, string> = {
   TOTAL: 'Total',
   PER_GUEST: 'Per guest',
 };
+
+export function priceBasisLabel(
+  basis: PriceBasis,
+  partyUnit: PartyUnit | null | undefined,
+): string {
+  if (basis === 'TOTAL') {
+    return 'Total';
+  }
+
+  return getPartyUnitLabels(partyUnit).perUnit;
+}
 
 export function isPriceBasis(value: unknown): value is PriceBasis {
   return (
@@ -26,14 +44,16 @@ export function isPriceBasis(value: unknown): value is PriceBasis {
 }
 
 export interface TripPriceContext {
-  /** Party size used for the outbound OTA search link (and per-guest fallback). */
+  /** Party-unit size (guests or families) used as the per-unit price divisor. */
   numberOfPeople: number | null;
   /**
-   * Preferred divisor for the per-guest basis. On the public voting page this
-   * is the number of people who have joined; elsewhere it's omitted and we fall
-   * back to `numberOfPeople`.
+   * Preferred divisor for the per-unit basis. On the public voting page this
+   * is the number of people/families who have joined; elsewhere it's omitted
+   * and we fall back to `numberOfPeople`.
    */
   guestCount?: number | null;
+  /** Drives "Per guest" vs "Per family" copy. Defaults to GUEST. */
+  partyUnit?: PartyUnit | null;
   startDate: Date | null;
   endDate: Date | null;
   adultCount?: number | null;
@@ -121,11 +141,13 @@ export function computeListingPriceDisplay(
   basis: PriceBasis,
   ctx: TripPriceContext | null | undefined,
 ): ComputedListingPrice {
+  const perUnitShort = getPartyUnitLabels(normalizePartyUnit(ctx?.partyUnit)).perUnitShort;
+
   if (nightlyPrice === null) {
     return {
       amount: null,
       rawAmount: null,
-      unitLabel: basis === 'PER_GUEST' ? '/ guest' : 'total',
+      unitLabel: basis === 'PER_GUEST' ? perUnitShort : 'total',
       fallback: false,
     };
   }
@@ -149,7 +171,7 @@ export function computeListingPriceDisplay(
   }
 
   const unitLabel = effectiveBasis === 'PER_GUEST'
-    ? (hasDates ? '/ guest' : '/ guest / night')
+    ? (hasDates ? perUnitShort : `${perUnitShort} / night`)
     : (hasDates ? 'total' : '/ night');
 
   return {

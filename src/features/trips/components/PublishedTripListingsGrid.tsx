@@ -80,6 +80,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
   );
   const travelLinkContext = useMemo(() => createTripTravelContext({
     numberOfPeople: share.trip.numberOfPeople ?? null,
+    partyUnit: share.trip.partyUnit ?? null,
     adultCount: share.trip.adultCount ?? null,
     childCount: share.trip.childCount ?? null,
     startDate: share.trip.startDate,
@@ -89,8 +90,15 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
     share.trip.childCount,
     share.trip.endDate,
     share.trip.numberOfPeople,
+    share.trip.partyUnit,
     share.trip.startDate,
   ]);
+  // Per-unit pricing on the public board splits by the guests/families who
+  // have actually joined the trip, not the OTA headcount used for source links.
+  const priceContext = useMemo(() => ({
+    ...travelLinkContext,
+    guestCount: share.guests.length,
+  }), [travelLinkContext, share.guests.length]);
 
   async function handleVote(listingId: string) {
     setPendingAction(`vote-${listingId}`);
@@ -139,7 +147,7 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
           <ListingCard
             key={listing.id}
             listing={listing}
-            tripContext={travelLinkContext}
+            tripContext={priceContext}
             travelLinkContext={travelLinkContext}
             priceBasisToggleable
             roomBreakdown={cardView === 'beds' ? listing.roomBreakdown as ListingCardProps['roomBreakdown'] : null}

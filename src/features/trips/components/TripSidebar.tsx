@@ -5,7 +5,7 @@ import { VotingAccessCard } from '@/features/trips/components/VotingAccessCard';
 import type { OwnerTripShareSummary } from '@/features/trips/types';
 
 interface TripSidebarProps {
-  trip: Pick<Trip, 'id' | 'userId' | 'location' | 'startDate' | 'endDate' | 'numberOfPeople' | 'adultCount' | 'childCount' | 'name' | 'description'> & {
+  trip: Pick<Trip, 'id' | 'userId' | 'location' | 'startDate' | 'endDate' | 'numberOfPeople' | 'partyUnit' | 'adultCount' | 'childCount' | 'name' | 'description'> & {
     collaborators?: User[]; // Make collaborators optional as they might not always be included
   };
   guestNames: string[];
@@ -29,6 +29,7 @@ export function TripSidebar({
       {isOwner ? (
         <VotingAccessCard
           tripId={trip.id}
+          partyUnit={trip.partyUnit}
           share={publishedShareSummary?.share ?? null}
         />
       ) : null}
@@ -42,6 +43,7 @@ export function TripSidebar({
 
       <CollaboratorsList
         tripId={trip.id}
+        partyUnit={trip.partyUnit}
         owner={{ id: trip.userId }} // Reconstruct owner object
         collaborators={trip.collaborators || []}
         guestNames={guestNames}

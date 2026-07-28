@@ -33,8 +33,13 @@ model Trip {
   endDate        DateTime?
   /// @zod.optional().nullable()
   location       String?
+  /// Party-unit count used for price dividers and "N guests/families" copy.
+  /// Independent of adultCount/childCount (those are OTA search-link only).
   /// @zod.int().positive().optional().nullable()
   numberOfPeople Int?
+  /// Whether user-facing copy refers to guests or families. Does not change
+  /// storage — TripGuest rows and related ids stay the same.
+  partyUnit      PartyUnit        @default(GUEST)
   /// @zod.int().nonnegative().optional().nullable()
   adultCount     Int?
   /// @zod.int().nonnegative().optional().nullable()
@@ -61,7 +66,7 @@ model Listing {
   title            String // Required
   address          String? // Optional
   url              String? // Optional
-  /// Total stay price in whole dollars (not per-night).
+  /// Per-night rate in whole dollars. Stay totals are computed live from trip dates at display time.
   price            Int? // Optional
   bedroomCount     Int? // Optional
   bedCount         Int? // Optional
@@ -80,7 +85,7 @@ model Listing {
   importError      String?
   rawImportPayload Json?
   roomBreakdown    Json?
-  /// Provenance for the stored total-stay `price`. Null on legacy rows that predate this field.
+  /// Provenance for the stored per-night `price`. Null on legacy rows that predate this field.
   nightlyPriceSource   NightlyPriceSource?
   /// When scraping a hotel/OTA page the price is for a specific stay. These record that stay window so we can show "quoted for Mar 3-7" on cards.
   priceQuotedStartDate DateTime?
@@ -161,10 +166,10 @@ enum ListingType {
   OTHER
 }
 
-/// Describes how the stored total-stay `price` was derived.
-/// SCRAPED_NIGHTLY: OTA showed a per-night rate; we convert to total using trip nights when available.
-/// DERIVED_FROM_TOTAL: OTA showed a total-for-stay; stored as-is.
-/// MANUAL: user typed the total.
+/// Describes how the stored per-night `price` was derived.
+/// SCRAPED_NIGHTLY: OTA showed a per-night rate; stored as-is.
+/// DERIVED_FROM_TOTAL: OTA showed a total-for-stay; divided by the quoted nights to recover the nightly rate.
+/// MANUAL: user typed the nightly rate.
 enum NightlyPriceSource {
   SCRAPED_NIGHTLY
   DERIVED_FROM_TOTAL
@@ -285,4 +290,11 @@ enum ListingCommentKind {
 
 enum TripGuestSource {
   OWNER_ADDED
+}
+
+/// Whether a trip's party-size count is counted as individual guests or families.
+/// Drives user-facing copy and price-basis labels; storage stays on TripGuest.
+enum PartyUnit {
+  GUEST
+  FAMILY
 }

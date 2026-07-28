@@ -1,5 +1,5 @@
 import type { ListingSource } from 'db';
-import { normalizeTripGuestBreakdown } from './tripTravelContext';
+import { getOtaGuestTotal, normalizeTripGuestBreakdown } from './tripTravelContext';
 
 /**
  * Generates travel site URLs with parameters from trip data.
@@ -10,6 +10,7 @@ export type TravelDateValue = Date | string | null | undefined;
 interface TravelGuestParams {
   adultCount?: number | null;
   childCount?: number | null;
+  /** Ignored for OTA params — party-unit count is for price dividers only. */
   numberOfPeople?: number | null;
 }
 
@@ -83,9 +84,11 @@ export function generateAirbnbUrl(params: {
     queryParams.set('date_picker_type', 'calendar');
   }
 
-  // Add guests if available
-  if (guestBreakdown.numberOfPeople) {
-    queryParams.set('guests', guestBreakdown.numberOfPeople.toString());
+  // OTA headcount comes from adults/children only — never the party-unit
+  // (guests/families) count used for price dividers.
+  const otaGuestTotal = getOtaGuestTotal(params);
+  if (otaGuestTotal) {
+    queryParams.set('guests', otaGuestTotal.toString());
 
     if (guestBreakdown.adultCount !== null) {
       const adultCount = guestBreakdown.adultCount.toString();
@@ -203,8 +206,9 @@ function addAirbnbListingParams(
   const checkinDate = formatTravelDate(startDate);
   const checkoutDate = formatTravelDate(endDate);
   const guestBreakdown = normalizeTripGuestBreakdown(guestParams);
+  const otaGuestTotal = getOtaGuestTotal(guestParams);
   const productId = extractAirbnbProductId(url);
-  const hasTripParams = Boolean(checkinDate || checkoutDate || guestBreakdown.numberOfPeople);
+  const hasTripParams = Boolean(checkinDate || checkoutDate || otaGuestTotal);
 
   if (checkinDate) {
     url.searchParams.set('checkin', checkinDate);
@@ -216,8 +220,8 @@ function addAirbnbListingParams(
     url.searchParams.set('check_out', checkoutDate);
   }
 
-  if (guestBreakdown.numberOfPeople) {
-    url.searchParams.set('guests', guestBreakdown.numberOfPeople.toString());
+  if (otaGuestTotal) {
+    url.searchParams.set('guests', otaGuestTotal.toString());
 
     if (guestBreakdown.adultCount !== null) {
       const adultCount = guestBreakdown.adultCount.toString();

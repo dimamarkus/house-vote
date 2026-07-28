@@ -1,3 +1,4 @@
+import { computeNightsFromDates } from '../utils/priceBasis';
 import { pickListingImportAdapter } from './adapters/registry';
 import type { ListingImportAdapter } from './adapters/types';
 import type {
@@ -186,29 +187,26 @@ function parseIsoDate(value?: string | null): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-interface DerivedTotalPrice {
-  /**
-   * Stay-total candidate in whole dollars, or null if we couldn't compute one.
-   * When `source` is `SCRAPED_NIGHTLY`, this is still the scraped per-night
-   * figure — callers convert to total using trip nights at write time.
-   */
+interface DerivedNightlyPrice {
+  /** Per-night rate in whole dollars, or null if we couldn't derive one. */
   price: number | null;
-  /** How we arrived at that price. Null when we had no price at all. */
+  /** How we arrived at that nightly rate. Null when we had no price at all. */
   source: NightlyPriceSourceValue | null;
   startDate: Date | null;
   endDate: Date | null;
 }
 
 /**
- * Converts a raw scraped price + optional `priceMeta` into a total-stay
- * candidate plus provenance metadata. Totals are kept as-is. Nightly scrapes
- * keep the nightly figure and are flagged `SCRAPED_NIGHTLY` so the writer can
- * multiply by trip nights when available.
+ * Converts a raw scraped price + optional `priceMeta` into a per-night rate
+ * plus provenance. A nightly scrape is kept as-is (`SCRAPED_NIGHTLY`). A total
+ * scrape is divided by the quoted stay length to recover the nightly rate
+ * (`DERIVED_FROM_TOTAL`); if the quoted length is missing we keep the figure
+ * as a best-effort nightly value rather than dropping the price.
  */
-function deriveTotalPrice(
+function deriveNightlyPrice(
   rawPrice: number | null,
   priceMeta: ImportedPriceMeta | null | undefined,
-): DerivedTotalPrice {
+): DerivedNightlyPrice {
   const startDate = parseIsoDate(priceMeta?.startDate);
   const endDate = parseIsoDate(priceMeta?.endDate);
 
@@ -217,10 +215,13 @@ function deriveTotalPrice(
   }
 
   if (priceMeta?.basis === 'TOTAL') {
-    return { price: rawPrice, source: 'DERIVED_FROM_TOTAL', startDate, endDate };
+    const quotedNights = computeNightsFromDates(startDate, endDate);
+    const nightly = quotedNights && quotedNights > 0
+      ? Math.round(rawPrice / quotedNights)
+      : rawPrice;
+    return { price: nightly, source: 'DERIVED_FROM_TOTAL', startDate, endDate };
   }
 
-  // Default: the scraped number is a per-night rate pending trip-night conversion.
   return { price: rawPrice, source: 'SCRAPED_NIGHTLY', startDate, endDate };
 }
 
@@ -244,7 +245,7 @@ export function normalizeImportedListing(
     source: nightlyPriceSource,
     startDate: priceQuotedStartDate,
     endDate: priceQuotedEndDate,
-  } = deriveTotalPrice(rawPrice, capture.priceMeta ?? null);
+  } = deriveNightlyPrice(rawPrice, capture.priceMeta ?? null);
   const bedroomCount = parseNumberish(capture.bedroomCount);
   const bedCount = parseNumberish(capture.bedCount ?? deriveBedCountFromRoomBreakdown(capture.roomBreakdown));
   const bathroomCount = parseNumberish(capture.bathroomCount);

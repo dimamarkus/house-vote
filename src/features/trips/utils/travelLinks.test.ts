@@ -42,13 +42,14 @@ describe('travel search URLs', () => {
 });
 
 describe('generateTravelListingUrl', () => {
-  it('adds trip dates and guest count to Airbnb listing URLs', () => {
+  it('adds trip dates and OTA headcount to Airbnb listing URLs', () => {
     const url = generateTravelListingUrl({
       url: 'https://www.airbnb.com/rooms/46898739',
       source: 'AIRBNB',
       startDate: '2026-05-19',
       endDate: '2026-05-21',
-      numberOfPeople: 5,
+      adultCount: 5,
+      childCount: 0,
     });
 
     const parsedUrl = new URL(url ?? '');
@@ -66,6 +67,21 @@ describe('generateTravelListingUrl', () => {
     expect(parsedUrl.searchParams.get('numberOfInfants')).toBe('0');
     expect(parsedUrl.searchParams.get('numberOfPets')).toBe('0');
     expect(parsedUrl.searchParams.get('productId')).toBe('46898739');
+  });
+
+  it('does not send party-unit count to Airbnb when adults/children are missing', () => {
+    const url = generateTravelListingUrl({
+      url: 'https://www.airbnb.com/rooms/46898739',
+      source: 'AIRBNB',
+      startDate: '2026-05-19',
+      endDate: '2026-05-21',
+      numberOfPeople: 5,
+    });
+
+    const parsedUrl = new URL(url ?? '');
+
+    expect(parsedUrl.searchParams.get('guests')).toBeNull();
+    expect(parsedUrl.searchParams.get('adults')).toBeNull();
   });
 
   it('uses adult and child counts for Airbnb listing URLs', () => {
@@ -87,13 +103,13 @@ describe('generateTravelListingUrl', () => {
     expect(parsedUrl.searchParams.get('children')).toBe('2');
   });
 
-  it('adds trip dates and guest count to Vrbo listing URLs', () => {
+  it('adds trip dates and adult count to Vrbo listing URLs', () => {
     const url = generateTravelListingUrl({
       url: 'https://www.vrbo.com/2677958?selected=75860009',
       source: 'VRBO',
       startDate: '2026-05-12',
       endDate: '2026-05-23',
-      numberOfPeople: 10,
+      adultCount: 10,
     });
 
     const parsedUrl = new URL(url ?? '');
