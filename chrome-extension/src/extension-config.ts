@@ -14,7 +14,7 @@ export function getExtensionConfig(): ExtensionRuntimeConfig {
   const syncHost = normalizeOrigin(__HOUSE_VOTE_EXTENSION_CONFIG__.syncHost);
 
   const missingValues = [
-    clerkPublishableKey ? null : 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
+    clerkPublishableKey ? null : 'HOUSE_VOTE_EXTENSION_CLERK_PUBLISHABLE_KEY',
     syncHost ? null : 'HOUSE_VOTE_EXTENSION_SYNC_HOST',
   ].filter(Boolean);
 

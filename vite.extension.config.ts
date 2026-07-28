@@ -30,8 +30,13 @@ export default defineConfig(({ mode }) => {
     root: extensionSourceDir,
     publicDir: false,
     define: {
+      // The extension must target the SAME Clerk instance as the web origin it
+      // syncs with. That is often NOT the app's local dev key: `pnpm dev` needs
+      // a `pk_test_...` key, while an extension that syncs with production needs
+      // the `pk_live_...` key for the deployed site. Use a dedicated var so the
+      // two can differ, mirroring `HOUSE_VOTE_EXTENSION_SYNC_HOST`.
       __HOUSE_VOTE_EXTENSION_CONFIG__: JSON.stringify({
-        clerkPublishableKey: env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? '',
+        clerkPublishableKey: env.HOUSE_VOTE_EXTENSION_CLERK_PUBLISHABLE_KEY ?? '',
         syncHost: env.HOUSE_VOTE_EXTENSION_SYNC_HOST ?? '',
       }),
     },
