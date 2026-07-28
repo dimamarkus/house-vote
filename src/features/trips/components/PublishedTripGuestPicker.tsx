@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { claimPublishedTripGuest } from '@/features/trips/actions/publishedTripActions';
 import type { PublishedGuestSessionValue } from '@/features/trips/constants/publishedGuestSession';
 import { usePublishedGuestSession } from '@/features/trips/hooks/usePublishedGuestSession';
@@ -22,7 +21,6 @@ export function PublishedTripGuestPicker({
   share,
   initialSession = null,
 }: PublishedTripGuestPickerProps) {
-  const router = useRouter();
   const { activeGuest, clearSession, persistSession, rawSession, session } = usePublishedGuestSession(
     share.trip.id,
     share.guests,
@@ -61,7 +59,14 @@ export function PublishedTripGuestPicker({
       guestId: result.data.guestId,
       guestDisplayName: result.data.guestDisplayName,
     });
-    router.replace(votingHref);
+    // Use a full-document navigation instead of `router.replace`. When the
+    // viewer is signed in (e.g. the trip owner), Clerk's middleware performs a
+    // session handshake/refresh on requests; that can disrupt an in-flight
+    // App Router soft navigation and leave the guest stranded on the picker
+    // ("clicking a name just refreshes the page"). A hard navigation re-runs
+    // middleware cleanly as a normal top-level request and always carries the
+    // freshly-set guest session cookie, so the board gate lets us in.
+    window.location.assign(votingHref);
   }
 
   return (

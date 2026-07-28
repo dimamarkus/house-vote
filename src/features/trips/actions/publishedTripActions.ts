@@ -207,12 +207,15 @@ export async function claimPublishedTripGuest(
         sameSite: 'lax',
       });
 
+      // No `revalidate`: claiming a guest only establishes a per-browser
+      // session cookie and mutates no server-rendered trip data. Revalidating
+      // the join/board routes here soft-refreshes the page the guest is
+      // leaving and adds needless churn to the claim → board handoff.
       return {
         data: {
           tripId: result.share.tripId,
           ...session,
         },
-        revalidate: publishedTripRevalidationPaths(result.share.tripId, result.share.token),
       };
     },
   });
