@@ -17,8 +17,8 @@ function isExtensionMessage(request: unknown): request is ExtensionMessage {
   );
 }
 
-function buildSignInUrl(syncHost: string): string {
-  return new URL('/sign-in', `${syncHost}/`).toString();
+function buildSignInUrl(appUrl: string): string {
+  return new URL('/sign-in', `${appUrl}/`).toString();
 }
 
 async function getAuthStatus(): Promise<ExtensionAuthStatus> {
@@ -37,8 +37,8 @@ async function getAuthStatus(): Promise<ExtensionAuthStatus> {
       userId: clerk.user?.id ?? null,
       emailAddress: clerk.user?.primaryEmailAddress?.emailAddress ?? null,
       token: token ?? null,
-      appUrl: config.syncHost,
-      signInUrl: buildSignInUrl(config.syncHost),
+      appUrl: config.appUrl,
+      signInUrl: buildSignInUrl(config.appUrl),
       error: null,
     };
   } catch (error) {

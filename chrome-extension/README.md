@@ -3,21 +3,36 @@
 ## Configuration
 
 The extension talks directly to Clerk, so its build config must point at the
-**same Clerk instance and web origin the user actually signs into**. It reads two
-dedicated env vars at build time (from `.env.local`):
+**same Clerk instance the user actually signs into**. It reads three dedicated
+env vars at build time (from `.env.local`):
 
-- `HOUSE_VOTE_EXTENSION_SYNC_HOST` — the web origin to sync the session from.
+- `HOUSE_VOTE_EXTENSION_SYNC_HOST` — where Clerk syncs the browser session from.
+  **This is not the app domain in production.** For a production instance it is
+  the **Clerk Frontend API domain** (e.g. `https://clerk.your-domain.com`); in
+  dev it is `http://localhost`. This is where Clerk's long-lived `__client`
+  cookie lives, and it's what `createClerkClient({ syncHost })` reads.
+- `HOUSE_VOTE_EXTENSION_APP_URL` — the House Vote web app origin. Used for the
+  `/api/extension/*` calls and sign-in / open-trip links.
 - `HOUSE_VOTE_EXTENSION_CLERK_PUBLISHABLE_KEY` — the Clerk publishable key for
-  that same origin.
+  that same instance.
 
-These are intentionally separate from the app's `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`
-because local web dev (`pnpm dev`) usually needs a `pk_test_...` key while an
-extension that syncs with production needs the deployed site's `pk_live_...` key.
+The publishable key is intentionally separate from the app's
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` because local web dev (`pnpm dev`) usually
+needs a `pk_test_...` key while an extension that syncs with production needs the
+deployed site's `pk_live_...` key.
+
+> **Why two domains?** For a production Clerk instance the session cookie lives
+> on the Frontend API domain (`clerk.your-domain.com`), while the app and its
+> extension API routes are served from the primary domain. Collapsing them into
+> one value breaks either session sync or the `/api/extension/*` calls. You can
+> decode the FAPI domain from your publishable key: strip the `pk_live_` prefix
+> and base64-decode the rest.
 
 Local web dev:
 
 ```bash
-HOUSE_VOTE_EXTENSION_SYNC_HOST=http://localhost:3000
+HOUSE_VOTE_EXTENSION_SYNC_HOST=http://localhost
+HOUSE_VOTE_EXTENSION_APP_URL=http://localhost:3000
 HOUSE_VOTE_EXTENSION_CLERK_PUBLISHABLE_KEY=pk_test_...
 ```
 
@@ -25,11 +40,12 @@ Sync with production (note: **https**, not http — Clerk's session cookie is
 `Secure` and is invisible to the extension over http):
 
 ```bash
-HOUSE_VOTE_EXTENSION_SYNC_HOST=https://your-production-domain.com
+HOUSE_VOTE_EXTENSION_SYNC_HOST=https://clerk.your-production-domain.com
+HOUSE_VOTE_EXTENSION_APP_URL=https://your-production-domain.com
 HOUSE_VOTE_EXTENSION_CLERK_PUBLISHABLE_KEY=pk_live_...
 ```
 
-The build fails loudly if either value is missing.
+The build fails loudly if any value is missing.
 
 ## Local Development
 
@@ -92,9 +108,15 @@ key for this patch command.
   Check, in order:
   1. `HOUSE_VOTE_EXTENSION_CLERK_PUBLISHABLE_KEY` matches the deployed site's key
      (`pk_live_...` for production, not `pk_test_...`).
-  2. `HOUSE_VOTE_EXTENSION_SYNC_HOST` is the exact origin you sign into, using
-     `https` for a deployed site.
-  3. The extension origin is in that instance's `allowed_origins`.
-  4. Native API is enabled and bot protection is disabled on that instance.
-  5. Rebuild (`pnpm extension:build`) and reload the unpacked extension after any
+  2. `HOUSE_VOTE_EXTENSION_SYNC_HOST` is the **Clerk Frontend API domain** for a
+     production instance (e.g. `https://clerk.your-domain.com`), not the app
+     domain — using the app domain here is the most common cause of a stuck
+     "Not signed in".
+  3. `HOUSE_VOTE_EXTENSION_APP_URL` is the app origin (`https://your-domain.com`).
+  4. The extension origin is in that instance's `allowed_origins`.
+  5. Native API is enabled and bot protection is disabled on that instance.
+  6. Rebuild (`pnpm extension:build`) and reload the unpacked extension after any
      config change.
+- **Signed in, but trips won't load / saving fails.** `HOUSE_VOTE_EXTENSION_APP_URL`
+  is wrong — it must be the app origin serving `/api/extension/*`, not the Clerk
+  Frontend API domain.

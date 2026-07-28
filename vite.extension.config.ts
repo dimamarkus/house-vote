@@ -35,9 +35,16 @@ export default defineConfig(({ mode }) => {
       // a `pk_test_...` key, while an extension that syncs with production needs
       // the `pk_live_...` key for the deployed site. Use a dedicated var so the
       // two can differ, mirroring `HOUSE_VOTE_EXTENSION_SYNC_HOST`.
+      //
+      // `syncHost` and `appUrl` are intentionally separate: for a production
+      // Clerk instance the session cookie lives on the Frontend API domain
+      // (e.g. clerk.your-domain.com) while the app + its extension API routes
+      // are served from the primary domain. Collapsing them breaks either
+      // session sync or the /api/extension/* calls.
       __HOUSE_VOTE_EXTENSION_CONFIG__: JSON.stringify({
         clerkPublishableKey: env.HOUSE_VOTE_EXTENSION_CLERK_PUBLISHABLE_KEY ?? '',
         syncHost: env.HOUSE_VOTE_EXTENSION_SYNC_HOST ?? '',
+        appUrl: env.HOUSE_VOTE_EXTENSION_APP_URL ?? '',
       }),
     },
     build: {
