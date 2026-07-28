@@ -12,9 +12,10 @@ import {
   getPartyUnitLabels,
   normalizePartyUnit,
   type PartyUnit,
-} from '@/features/trips/utils/partyUnitLabels';
+} from '../../trips/utils/partyUnitLabels';
 
-export const PRICE_BASIS_VALUES = ['TOTAL', 'PER_GUEST'] as const;
+// Order matters: this is the click-through cycle (Total -> Per night -> Per unit).
+export const PRICE_BASIS_VALUES = ['TOTAL', 'NIGHTLY', 'PER_GUEST'] as const;
 export type PriceBasis = (typeof PRICE_BASIS_VALUES)[number];
 
 export const DEFAULT_PRICE_BASIS: PriceBasis = 'TOTAL';
@@ -22,6 +23,7 @@ export const DEFAULT_PRICE_BASIS: PriceBasis = 'TOTAL';
 /** Default labels (guest mode). Prefer `priceBasisLabel` when partyUnit is known. */
 export const PRICE_BASIS_LABELS: Record<PriceBasis, string> = {
   TOTAL: 'Total',
+  NIGHTLY: 'Per night',
   PER_GUEST: 'Per guest',
 };
 
@@ -29,11 +31,18 @@ export function priceBasisLabel(
   basis: PriceBasis,
   partyUnit: PartyUnit | null | undefined,
 ): string {
-  if (basis === 'TOTAL') {
-    return 'Total';
+  switch (basis) {
+    case 'TOTAL':
+      return 'Total';
+    case 'NIGHTLY':
+      return 'Per night';
+    case 'PER_GUEST':
+      return getPartyUnitLabels(partyUnit).perUnit;
+    default: {
+      const _exhaustive: never = basis;
+      return _exhaustive;
+    }
   }
-
-  return getPartyUnitLabels(partyUnit).perUnit;
 }
 
 export function isPriceBasis(value: unknown): value is PriceBasis {
@@ -85,16 +94,31 @@ export function computeNightsFromDates(
 }
 
 /**
- * Which basis options are renderable given the trip context. TOTAL is always
- * available. PER_GUEST needs a positive guest divisor (joined guests or party
- * size).
+ * Which basis options are renderable given the trip context, in cycle order.
+ * NIGHTLY is always available (we store the nightly rate). TOTAL needs trip
+ * dates (otherwise it's identical to NIGHTLY). PER_GUEST needs a positive
+ * divisor (joined guests or party size).
  */
 export function availablePriceBases(
   ctx: TripPriceContext | null | undefined,
 ): ReadonlyArray<PriceBasis> {
-  const available: PriceBasis[] = ['TOTAL'];
-  if (perGuestDivisor(ctx) !== null) available.push('PER_GUEST');
-  return available;
+  const hasDates = computeNightsFromDates(ctx?.startDate, ctx?.endDate) !== null;
+  const hasDivisor = perGuestDivisor(ctx) !== null;
+
+  return PRICE_BASIS_VALUES.filter((basis) => {
+    switch (basis) {
+      case 'NIGHTLY':
+        return true;
+      case 'TOTAL':
+        return hasDates;
+      case 'PER_GUEST':
+        return hasDivisor;
+      default: {
+        const _exhaustive: never = basis;
+        return _exhaustive;
+      }
+    }
+  });
 }
 
 /**
@@ -128,13 +152,34 @@ export interface ComputedListingPrice {
   fallback: boolean;
 }
 
+/** Short unit label for a resolved (effective) basis. */
+function unitLabelFor(
+  basis: PriceBasis,
+  hasDates: boolean,
+  perUnitShort: string,
+): string {
+  switch (basis) {
+    case 'NIGHTLY':
+      return '/ night';
+    case 'TOTAL':
+      return 'total';
+    case 'PER_GUEST':
+      return hasDates ? perUnitShort : `${perUnitShort} / night`;
+    default: {
+      const _exhaustive: never = basis;
+      return _exhaustive;
+    }
+  }
+}
+
 /**
  * Compute the display string for a listing's price under a given basis.
  *
- * `nightlyPrice` is the stored per-night rate. When the trip has dates we
- * multiply by the night count to get the stay total; without dates we can only
- * show the nightly figure, so the unit label switches to "/ night" to stay
- * honest. Per-guest divides the shown amount by the guest divisor.
+ * `nightlyPrice` is the stored per-night rate. TOTAL multiplies it by the trip
+ * night count; NIGHTLY shows it as-is; PER_GUEST divides the stay amount by the
+ * guest/family divisor. When a basis can't be computed (TOTAL/PER_GUEST without
+ * the needed dates or divisor) we fall back to the nearest sensible basis and
+ * flag it.
  */
 export function computeListingPriceDisplay(
   nightlyPrice: number | null,
@@ -147,7 +192,7 @@ export function computeListingPriceDisplay(
     return {
       amount: null,
       rawAmount: null,
-      unitLabel: basis === 'PER_GUEST' ? perUnitShort : 'total',
+      unitLabel: unitLabelFor(basis, true, perUnitShort),
       fallback: false,
     };
   }
@@ -157,27 +202,43 @@ export function computeListingPriceDisplay(
   const stayAmount = hasDates ? nightlyPrice * nights : nightlyPrice;
   const divisor = perGuestDivisor(ctx);
 
-  let raw = stayAmount;
-  let effectiveBasis: PriceBasis = 'TOTAL';
+  let raw: number;
+  let effectiveBasis: PriceBasis = basis;
   let fallback = false;
 
-  if (basis === 'PER_GUEST') {
-    if (divisor !== null) {
-      raw = Math.round(stayAmount / divisor);
-      effectiveBasis = 'PER_GUEST';
-    } else {
-      fallback = true;
+  switch (basis) {
+    case 'NIGHTLY':
+      raw = nightlyPrice;
+      break;
+    case 'TOTAL':
+      if (hasDates) {
+        raw = stayAmount;
+      } else {
+        // No dates: total == nightly, so present it honestly as nightly.
+        raw = nightlyPrice;
+        effectiveBasis = 'NIGHTLY';
+        fallback = true;
+      }
+      break;
+    case 'PER_GUEST':
+      if (divisor !== null) {
+        raw = Math.round(stayAmount / divisor);
+      } else {
+        raw = stayAmount;
+        effectiveBasis = hasDates ? 'TOTAL' : 'NIGHTLY';
+        fallback = true;
+      }
+      break;
+    default: {
+      const _exhaustive: never = basis;
+      return _exhaustive;
     }
   }
-
-  const unitLabel = effectiveBasis === 'PER_GUEST'
-    ? (hasDates ? perUnitShort : `${perUnitShort} / night`)
-    : (hasDates ? 'total' : '/ night');
 
   return {
     amount: Math.round(raw).toLocaleString(),
     rawAmount: Math.round(raw),
-    unitLabel,
+    unitLabel: unitLabelFor(effectiveBasis, hasDates, perUnitShort),
     fallback,
   };
 }

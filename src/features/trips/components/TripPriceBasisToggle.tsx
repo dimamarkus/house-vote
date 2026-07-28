@@ -69,8 +69,16 @@ export function TripPriceBasisToggle({ tripContext, className }: TripPriceBasisT
 }
 
 function missingContextMessage(basis: PriceBasis, singular: string): string {
-  if (basis === 'PER_GUEST') {
-    return `Set the trip ${singular} count to view per-${singular} pricing`;
+  switch (basis) {
+    case 'PER_GUEST':
+      return `Set the trip ${singular} count to view per-${singular} pricing`;
+    case 'TOTAL':
+      return 'Set the trip dates to view the stay total';
+    case 'NIGHTLY':
+      return priceBasisLabel(basis, 'GUEST');
+    default: {
+      const _exhaustive: never = basis;
+      return _exhaustive;
+    }
   }
-  return priceBasisLabel(basis, 'GUEST');
 }

@@ -26,10 +26,10 @@ import {
   availablePriceBases,
   computeListingPriceDisplay,
   nextPriceBasis,
+  priceBasisLabel,
   type TripPriceContext,
 } from '../utils/priceBasis';
 import { usePriceBasis } from '@/features/trips/hooks/usePriceBasis';
-import { getPartyUnitLabels } from '@/features/trips/utils/partyUnitLabels';
 import { generateTravelListingUrl } from '@/features/trips/utils/travelLinks';
 import type { TripTravelContext } from '@/features/trips/utils/tripTravelContext';
 
@@ -126,6 +126,10 @@ export function ListingCard({
   );
   const toggleablePriceBases = availablePriceBases(tripContext);
   const canTogglePriceBasis = priceBasisToggleable && toggleablePriceBases.length > 1;
+  const nextBasisLabel = priceBasisLabel(
+    nextPriceBasis(priceBasis, toggleablePriceBases),
+    tripContext?.partyUnit,
+  );
 
   const detailUrl = `${baseUrl}/${listing.id}`;
   const effectiveTravelLinkContext = travelLinkContext ?? tripContext;
@@ -274,16 +278,8 @@ export function ListingCard({
                     'flex cursor-pointer flex-col items-end rounded-md text-right',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                   )}
-                  aria-label={
-                    priceBasis === 'TOTAL'
-                      ? `Show price ${getPartyUnitLabels(tripContext?.partyUnit).perUnitShort}`
-                      : 'Show total stay price'
-                  }
-                  title={
-                    priceBasis === 'TOTAL'
-                      ? `Click to show ${getPartyUnitLabels(tripContext?.partyUnit).perUnit.toLowerCase()}`
-                      : 'Click to show total'
-                  }
+                  aria-label={`Show price: ${nextBasisLabel}`}
+                  title={`Click to show ${nextBasisLabel.toLowerCase()}`}
                 >
                   <span className="rounded-md bg-primary/10 px-2.5 py-1 text-lg font-bold tracking-tight text-primary transition-colors hover:bg-primary/15">
                     ${priceDisplay.amount}
