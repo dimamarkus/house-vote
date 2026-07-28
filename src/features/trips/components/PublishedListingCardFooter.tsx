@@ -137,8 +137,8 @@ export function PublishedListingCardFooter({
           </div>
         </div>
       ) : cardView === 'feedback' ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          <section>
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-x-0">
+          <section className="sm:border-r sm:border-border sm:pr-3">
             <PublishedListingFeedbackSection
               listingId={listing.id}
               kind={LISTING_FEEDBACK_KIND.PRO}
@@ -154,7 +154,7 @@ export function PublishedListingCardFooter({
               }
             />
           </section>
-          <section>
+          <section className="sm:pl-3">
             <PublishedListingFeedbackSection
               listingId={listing.id}
               kind={LISTING_FEEDBACK_KIND.CON}
