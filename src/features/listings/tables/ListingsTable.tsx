@@ -12,6 +12,8 @@ import { PhotoLightbox } from '@/ui/core/PhotoLightbox';
 import { ListingSourceBadge } from '../components/ListingSourceBadge';
 import { ListingTypeBadge } from '../components/ListingTypeBadge';
 import { ListingActionsMenu } from '../components/ListingActionsMenu';
+import { ListingRejectionNote } from '../components/ListingRejectionNote';
+import { LISTING_STATUS } from '../constants/listing-status';
 import { setListingPrimaryPhoto } from '../actions/setListingPrimaryPhoto';
 import { isHotelLikeListingType } from '../listingTypeOptions';
 import { ListingPriceCell } from '../components/ListingPriceCell';
@@ -157,15 +159,25 @@ export function ListingsTable({
           childCount: tripContext?.childCount,
         });
 
+        const isRejected = listing.status === LISTING_STATUS.REJECTED;
+
         return (
-          <div className="font-medium max-w-sm truncate" title={listing.title}>
-            {originalListingUrl ? (
-              <a href={originalListingUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                {listing.title}
-              </a>
-            ) : (
-              listing.title
-            )}
+          <div className="max-w-sm space-y-1">
+            <div className="font-medium truncate" title={listing.title}>
+              {originalListingUrl ? (
+                <a href={originalListingUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                  {listing.title}
+                </a>
+              ) : (
+                listing.title
+              )}
+            </div>
+            {isRejected ? (
+              <ListingRejectionNote
+                rejectedByName={listing.rejectedByName}
+                rejectionReason={listing.rejectionReason}
+              />
+            ) : null}
           </div>
         );
       }

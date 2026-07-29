@@ -26,8 +26,17 @@ interface UseListingActionsArgs {
 
 export interface UseListingActionsResult {
   refresh: () => Promise<void>;
+  /**
+   * Rejecting requires a reason, so callers should open the reject dialog
+   * (see `isRejectDialogOpen`/`confirmReject`) rather than rejecting directly.
+   * This kicks off a reject flow (opens the dialog) or restores immediately
+   * when the listing is already rejected.
+   */
   toggleStatus: () => Promise<void>;
   deleteListing: () => Promise<void>;
+  isRejectDialogOpen: boolean;
+  setRejectDialogOpen: (open: boolean) => void;
+  confirmReject: (reason: string) => Promise<boolean>;
   isRefreshing: boolean;
   isTogglingStatus: boolean;
   isDeleting: boolean;
@@ -49,6 +58,7 @@ export function useListingActions({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRejectDialogOpen, setRejectDialogOpen] = useState(false);
 
   async function refresh() {
     setIsRefreshing(true);
@@ -82,16 +92,11 @@ export function useListingActions({
     }
   }
 
-  async function toggleStatus() {
-    const isRejected = listingStatus === LISTING_STATUS.REJECTED;
-    const nextStatus: ListingStatusValue = isRejected
-      ? LISTING_STATUS.POTENTIAL
-      : LISTING_STATUS.REJECTED;
-
+  async function restoreListing() {
     setIsTogglingStatus(true);
     const formData = new FormData();
     formData.append('listingId', listingId);
-    formData.append('status', nextStatus);
+    formData.append('status', LISTING_STATUS.POTENTIAL);
 
     try {
       const result = await updateListingStatus(formData);
@@ -99,13 +104,45 @@ export function useListingActions({
         toast.error('Failed to update listing status');
         return;
       }
-      toast.success(
-        isRejected ? 'Listing has been unrejected' : 'Listing has been rejected',
-      );
+      toast.success('Listing has been unrejected');
       onActionComplete?.();
       router.refresh();
     } catch {
       toast.error('An error occurred while updating status');
+    } finally {
+      setIsTogglingStatus(false);
+    }
+  }
+
+  async function toggleStatus() {
+    // Restoring is immediate; rejecting needs a reason, so defer to the dialog.
+    if (listingStatus === LISTING_STATUS.REJECTED) {
+      await restoreListing();
+      return;
+    }
+    setRejectDialogOpen(true);
+  }
+
+  async function confirmReject(reason: string): Promise<boolean> {
+    setIsTogglingStatus(true);
+    const formData = new FormData();
+    formData.append('listingId', listingId);
+    formData.append('status', LISTING_STATUS.REJECTED);
+    formData.append('reason', reason);
+
+    try {
+      const result = await updateListingStatus(formData);
+      if (!result.success) {
+        toast.error(errorToString(result.error || 'Failed to reject listing'));
+        return false;
+      }
+      toast.success('Listing has been rejected');
+      onActionComplete?.();
+      router.refresh();
+      return true;
+    } catch {
+      toast.error('An error occurred while updating status');
+      return false;
     } finally {
       setIsTogglingStatus(false);
     }
@@ -151,6 +188,9 @@ export function useListingActions({
     refresh,
     toggleStatus,
     deleteListing,
+    isRejectDialogOpen,
+    setRejectDialogOpen,
+    confirmReject,
     isRefreshing,
     isTogglingStatus,
     isDeleting,

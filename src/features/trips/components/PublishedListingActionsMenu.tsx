@@ -2,8 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Edit, EllipsisVertical, Eye, Heart, MessageSquare, Plus } from 'lucide-react';
-import { isVoteEligibleListingStatus } from '@/features/listings/constants/listing-status';
+import { Ban, Check, Edit, EllipsisVertical, Eye, Heart, MessageSquare, Plus } from 'lucide-react';
+import {
+  LISTING_STATUS,
+  isVoteEligibleListingStatus,
+} from '@/features/listings/constants/listing-status';
+import { RejectListingDialog } from '@/features/listings/components/RejectListingDialog';
 import {
   LISTING_FEEDBACK_KIND,
   type ListingFeedbackKind,
@@ -12,6 +16,7 @@ import type { PublishedTripListingRecord } from '@/features/trips/publishedDb';
 import { PublishedListingEditSheet } from '@/features/trips/components/PublishedListingEditSheet';
 import { PublishedListingFeedbackDialog } from '@/features/trips/components/PublishedListingFeedbackSection';
 import { usePublishedTripGuest } from '@/features/trips/components/PublishedTripGuestContext';
+import { useGuestListingRejection } from '@/features/trips/hooks/useGuestListingRejection';
 import { getPartyUnitLabels } from '@/features/trips/utils/partyUnitLabels';
 import { Button } from '@/ui/shadcn/button';
 import {
@@ -39,6 +44,13 @@ export function PublishedListingActionsMenu({
   const { share } = usePublishedTripGuest();
   const [editOpen, setEditOpen] = useState(false);
   const [feedbackKind, setFeedbackKind] = useState<ListingFeedbackKind | null>(null);
+  const {
+    isRejectDialogOpen,
+    setRejectDialogOpen,
+    confirmReject,
+    restore,
+    isPending: isRejectionPending,
+  } = useGuestListingRejection({ listingId: listing.id });
 
   const guestEditsAllowed = share.allowGuestSuggestions;
   const canViewSource = typeof listing.url === 'string' && listing.url.length > 0;
@@ -58,6 +70,15 @@ export function PublishedListingActionsMenu({
         ? 'Vote is updating'
         : undefined;
   const voteActionLabel = isCurrentVote ? 'Remove my vote' : 'Vote for this listing';
+  const isRejected = listing.status === LISTING_STATUS.REJECTED;
+  const canReject =
+    share.votingOpen && isVoteEligibleListingStatus(listing.status) && !isRejectionPending;
+  const canRestore = share.votingOpen && isRejected && !isRejectionPending;
+  const rejectDisabledReason = !share.votingOpen
+    ? 'Voting is closed'
+    : isRejectionPending
+      ? 'Updating…'
+      : undefined;
 
   return (
     <>
@@ -136,6 +157,35 @@ export function PublishedListingActionsMenu({
             <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
             {voteActionLabel}
           </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          {isRejected ? (
+            <DropdownMenuItem
+              disabled={!canRestore}
+              onSelect={(event) => {
+                event.preventDefault();
+                void restore();
+              }}
+              title={rejectDisabledReason}
+            >
+              <Check className="h-4 w-4" />
+              Restore house
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              disabled={!canReject}
+              destructive
+              onSelect={(event) => {
+                event.preventDefault();
+                setRejectDialogOpen(true);
+              }}
+              title={rejectDisabledReason}
+            >
+              <Ban className="h-4 w-4" />
+              Reject house
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -158,6 +208,13 @@ export function PublishedListingActionsMenu({
           }}
         />
       ) : null}
+      <RejectListingDialog
+        open={isRejectDialogOpen}
+        onOpenChange={setRejectDialogOpen}
+        onConfirm={confirmReject}
+        listingTitle={listing.title}
+        isSubmitting={isRejectionPending}
+      />
     </>
   );
 }

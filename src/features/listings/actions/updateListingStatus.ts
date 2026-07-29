@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { ErrorCode } from "@/core/errors";
 import { createErrorResponse, createSuccessResponse } from "@/core/responses";
 import { revalidatePath } from "next/cache";
@@ -13,12 +13,18 @@ import { trips } from "../../trips/db";
 import { LISTING_STATUS } from "../constants/listing-status";
 
 // Input schema for updating listing status
-const updateListingStatusSchema = z.object({
-  listingId: z.string().min(1, "Listing ID is required"),
-  status: z.enum([LISTING_STATUS.POTENTIAL, LISTING_STATUS.REJECTED], {
-    error: "Invalid listing status",
-  }),
-});
+const updateListingStatusSchema = z
+  .object({
+    listingId: z.string().min(1, "Listing ID is required"),
+    status: z.enum([LISTING_STATUS.POTENTIAL, LISTING_STATUS.REJECTED], {
+      error: "Invalid listing status",
+    }),
+    reason: z.string().trim().max(500, "Reason is too long.").optional(),
+  })
+  .refine(
+    (data) => data.status !== LISTING_STATUS.REJECTED || Boolean(data.reason?.trim()),
+    { error: "A reason is required to reject a listing.", path: ["reason"] },
+  );
 
 // Define response type using standard ApiResponse
 type UpdateListingStatusResponse = ApiResponse<Listing>;
@@ -42,7 +48,7 @@ export async function updateListingStatus(formData: FormData): Promise<UpdateLis
       return validationResult; // Return error response directly
     }
 
-    const { listingId, status } = validationResult.data;
+    const { listingId, status, reason } = validationResult.data;
 
     // Get the listing to ensure it exists and get tripId
     const listingResult = await listings.get(listingId, { select: { id: true, tripId: true, addedById: true } });
@@ -66,9 +72,22 @@ export async function updateListingStatus(formData: FormData): Promise<UpdateLis
     // If trips.get succeeds, the user is either the owner or a collaborator
     // --- End Authorization Check ---
 
+    // Snapshot a human-friendly actor name for the rejection record.
+    let performedByName: string | undefined;
+    if (status === LISTING_STATUS.REJECTED) {
+      const user = await currentUser();
+      performedByName =
+        [user?.firstName, user?.lastName].filter(Boolean).join(" ") ||
+        user?.username ||
+        user?.emailAddresses?.[0]?.emailAddress ||
+        undefined;
+    }
+
     // Update the listing status
     const updateResult = await listings.updateStatus(listingId, status, {
-      // performedBy is likely not needed if auth is checked above
+      performedBy: userId,
+      performedByName,
+      reason,
     });
 
     if (!updateResult.success) {

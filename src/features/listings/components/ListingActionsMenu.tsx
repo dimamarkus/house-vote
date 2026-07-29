@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/ui/shadcn/dropdown-menu';
 import { ListingFormSheet } from '@/features/listings/forms/ListingFormSheet';
+import { RejectListingDialog } from '@/features/listings/components/RejectListingDialog';
 import { useListingActions } from '@/features/listings/hooks/useListingActions';
 import {
   LISTING_STATUS,
@@ -47,13 +48,22 @@ export function ListingActionsMenu({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
 
-  const { refresh, toggleStatus, deleteListing, isRefreshing, isTogglingStatus, isDeleting } =
-    useListingActions({
-      listingId,
-      listingTitle,
-      listingStatus,
-      onActionComplete: () => setIsMenuOpen(false),
-    });
+  const {
+    refresh,
+    toggleStatus,
+    deleteListing,
+    isRejectDialogOpen,
+    setRejectDialogOpen,
+    confirmReject,
+    isRefreshing,
+    isTogglingStatus,
+    isDeleting,
+  } = useListingActions({
+    listingId,
+    listingTitle,
+    listingStatus,
+    onActionComplete: () => setIsMenuOpen(false),
+  });
 
   const canViewSource = typeof listingUrl === 'string' && listingUrl.length > 0;
   const isRejected = listingStatus === LISTING_STATUS.REJECTED;
@@ -165,6 +175,16 @@ export function ListingActionsMenu({
           initialState={initialStateForEdit}
           open={editSheetOpen}
           onOpenChange={setEditSheetOpen}
+        />
+      ) : null}
+
+      {canToggleStatus ? (
+        <RejectListingDialog
+          open={isRejectDialogOpen}
+          onOpenChange={setRejectDialogOpen}
+          onConfirm={confirmReject}
+          listingTitle={listingTitle}
+          isSubmitting={isTogglingStatus}
         />
       ) : null}
     </>

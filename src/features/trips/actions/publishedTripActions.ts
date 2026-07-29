@@ -19,8 +19,10 @@ import {
   guestNameSchema,
   moderateCommentSchema,
   publishedGuestSessionSchema,
+  rejectListingSchema,
   removeGuestSchema,
   submitListingSchema,
+  unrejectListingSchema,
   tripIdSchema,
   updateListingDetailsSchema,
   updatePublishedTripSettingsSchema,
@@ -244,6 +246,59 @@ export async function castPublishedTripVote(
           listingId: vote.listingId,
         },
         revalidate: publishedTripRevalidationPaths(vote.tripId, token),
+      };
+    },
+  });
+}
+
+export async function rejectPublishedTripListing(
+  input: {
+    token: string;
+    guestId: string;
+    listingId: string;
+    reason: string;
+  },
+): Promise<BasicApiResponse<PublishedListingResult>> {
+  return createServerAction({
+    input,
+    schema: rejectListingSchema,
+    requireAuth: false,
+    errorPrefix: 'Failed to reject listing:',
+    validationErrorMessage: 'Invalid rejection request.',
+    handler: async ({ input: { token, guestId, listingId, reason } }) => {
+      const listing = await publishedTrips.rejectGuestListing(token, guestId, listingId, reason);
+      return {
+        data: {
+          tripId: listing.tripId,
+          listingId: listing.id,
+        },
+        revalidate: publishedTripRevalidationPaths(listing.tripId, token),
+      };
+    },
+  });
+}
+
+export async function unrejectPublishedTripListing(
+  input: {
+    token: string;
+    guestId: string;
+    listingId: string;
+  },
+): Promise<BasicApiResponse<PublishedListingResult>> {
+  return createServerAction({
+    input,
+    schema: unrejectListingSchema,
+    requireAuth: false,
+    errorPrefix: 'Failed to restore listing:',
+    validationErrorMessage: 'Invalid restore request.',
+    handler: async ({ input: { token, guestId, listingId } }) => {
+      const listing = await publishedTrips.unrejectGuestListing(token, guestId, listingId);
+      return {
+        data: {
+          tripId: listing.tripId,
+          listingId: listing.id,
+        },
+        revalidate: publishedTripRevalidationPaths(listing.tripId, token),
       };
     },
   });

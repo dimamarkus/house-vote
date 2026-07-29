@@ -29,6 +29,11 @@ interface MapListing {
   addedById: string | null;
   addedByGuestId: string | null;
   addedByGuestName: string | null;
+  rejectionReason: Listing['rejectionReason'];
+  rejectedAt: Listing['rejectedAt'];
+  rejectedById: Listing['rejectedById'];
+  rejectedByGuestId: Listing['rejectedByGuestId'];
+  rejectedByName: Listing['rejectedByName'];
   tripId: string;
   status: ListingStatusValue;
   source: Listing['source'];

@@ -268,7 +268,11 @@ export const listings = {
   updateStatus: async (
     listingId: string,
     status: ListingStatus,
-    options?: ListingActionOptions & { performedBy?: string }
+    options?: ListingActionOptions & {
+      performedBy?: string;
+      performedByName?: string;
+      reason?: string;
+    }
   ) => {
     const dbClient = options?.tx || db;
 
@@ -283,18 +287,42 @@ export const listings = {
       }
 
       if (status === ListingStatus.REJECTED) {
+        const reason = options?.reason?.trim();
+        if (!reason) {
+          throw new Error("A reason is required to reject a listing.");
+        }
+
+        // Rejecting removes the listing from active voting.
         await (dbClient as DbClientWithModels).tripVote.deleteMany({
           where: {
             listingId,
           },
         });
+
+        return (dbClient as DbClientWithModels).listing.update({
+          where: { id: listingId },
+          data: {
+            status,
+            rejectionReason: reason,
+            rejectedAt: new Date(),
+            rejectedById: options?.performedBy ?? null,
+            rejectedByGuestId: null,
+            rejectedByName: options?.performedByName ?? null,
+          },
+          include: options?.include
+        });
       }
 
-      // Update the listing status
+      // Restoring: clear all rejection metadata.
       return (dbClient as DbClientWithModels).listing.update({
         where: { id: listingId },
         data: {
           status,
+          rejectionReason: null,
+          rejectedAt: null,
+          rejectedById: null,
+          rejectedByGuestId: null,
+          rejectedByName: null,
         },
         include: options?.include
       });

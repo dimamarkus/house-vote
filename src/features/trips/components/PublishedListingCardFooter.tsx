@@ -1,11 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart, MessageSquare, Plus, RefreshCcw } from 'lucide-react';
+import { Ban, Check, Heart, MessageSquare, Plus, RefreshCcw } from 'lucide-react';
+import {
+  LISTING_STATUS,
+  isVoteEligibleListingStatus,
+} from '@/features/listings/constants/listing-status';
+import { RejectListingDialog } from '@/features/listings/components/RejectListingDialog';
 import {
   LISTING_FEEDBACK_KIND,
   getListingFeedbackConfig,
 } from '@/features/trips/constants/listing-feedback';
+import { useGuestListingRejection } from '@/features/trips/hooks/useGuestListingRejection';
 import { PublishedListingCommentsSheet } from '@/features/trips/components/PublishedListingCommentsSheet';
 import {
   PublishedListingFeedbackDialog,
@@ -43,6 +49,17 @@ export function PublishedListingCardFooter({
   const [expandedCommentIds, setExpandedCommentIds] = useState<Set<string>>(() => new Set());
   const [commentDialogOpen, setCommentDialogOpen] = useState(false);
   const votingOpen = share.votingOpen;
+  const {
+    isRejectDialogOpen,
+    setRejectDialogOpen,
+    confirmReject,
+    restore,
+    isPending: isRejectionPending,
+  } = useGuestListingRejection({ listingId: listing.id });
+  const isRejected = listing.status === LISTING_STATUS.REJECTED;
+  const canReject =
+    votingOpen && isVoteEligibleListingStatus(listing.status) && !isRejectionPending;
+  const canRestore = votingOpen && isRejected && !isRejectionPending;
   const comments = listing.comments as PublishedTripCommentRecord[];
   const pros = comments.filter((comment) => comment.kind === LISTING_FEEDBACK_KIND.PRO);
   const cons = comments.filter((comment) => comment.kind === LISTING_FEEDBACK_KIND.CON);
@@ -112,28 +129,61 @@ export function PublishedListingCardFooter({
                 <p className="text-sm text-muted-foreground">No votes yet.</p>
               )}
             </div>
-            <Button
-              onClick={onVote}
-              disabled={!votingOpen || !isVoteEligible || pendingVote}
-              size="sm"
-              aria-label={voteButtonLabel}
-              aria-pressed={isCurrentVote}
-              title={voteButtonLabel}
-              className={cn(
-                'shrink-0 rounded-full px-4 shadow-sm',
-                isCurrentVote
-                  ? 'bg-rose-500 text-white hover:bg-rose-600'
-                  : 'bg-foreground text-background hover:bg-foreground/90',
-                (!votingOpen || !isVoteEligible) && 'border border-input bg-background text-muted-foreground shadow-none hover:bg-background',
-              )}
-            >
-              {pendingVote ? (
-                <RefreshCcw className="h-4 w-4 animate-spin" />
+            <div className="flex shrink-0 items-center gap-2">
+              {isRejected ? (
+                <Button
+                  onClick={() => void restore()}
+                  disabled={!canRestore}
+                  size="sm"
+                  weight="hollow"
+                  aria-label="Restore house"
+                  title="Restore house"
+                  className="rounded-full px-3"
+                >
+                  {isRejectionPending ? (
+                    <RefreshCcw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                  <span>Restore</span>
+                </Button>
               ) : (
-                <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
+                <Button
+                  onClick={() => setRejectDialogOpen(true)}
+                  disabled={!canReject}
+                  size="sm"
+                  weight="hollow"
+                  aria-label="Reject house"
+                  title="Reject house"
+                  className="rounded-full px-3 text-rose-600 hover:text-rose-700"
+                >
+                  <Ban className="h-4 w-4" />
+                  <span>Reject</span>
+                </Button>
               )}
-              <span>{voteButtonLabel}</span>
-            </Button>
+              <Button
+                onClick={onVote}
+                disabled={!votingOpen || !isVoteEligible || pendingVote}
+                size="sm"
+                aria-label={voteButtonLabel}
+                aria-pressed={isCurrentVote}
+                title={voteButtonLabel}
+                className={cn(
+                  'shrink-0 rounded-full px-4 shadow-sm',
+                  isCurrentVote
+                    ? 'bg-rose-500 text-white hover:bg-rose-600'
+                    : 'bg-foreground text-background hover:bg-foreground/90',
+                  (!votingOpen || !isVoteEligible) && 'border border-input bg-background text-muted-foreground shadow-none hover:bg-background',
+                )}
+              >
+                {pendingVote ? (
+                  <RefreshCcw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Heart className={cn('h-4 w-4', isCurrentVote ? 'fill-current' : 'fill-none')} />
+                )}
+                <span>{voteButtonLabel}</span>
+              </Button>
+            </div>
           </div>
         </div>
       ) : cardView === 'feedback' ? (
@@ -224,6 +274,13 @@ export function PublishedListingCardFooter({
           />
         </section>
       ) : null}
+      <RejectListingDialog
+        open={isRejectDialogOpen}
+        onOpenChange={setRejectDialogOpen}
+        onConfirm={confirmReject}
+        listingTitle={listing.title}
+        isSubmitting={isRejectionPending}
+      />
     </div>
   );
 }

@@ -18,6 +18,7 @@ model User {
   trips              Trip[]    @relation("OwnedTrips")
   collaboratingTrips Trip[]    @relation("TripCollaborators")
   listingsAdded      Listing[] @relation("AddedByUser")
+  rejectedListings   Listing[] @relation("RejectedByUser")
   likes              Like[]
 }
 
@@ -97,6 +98,15 @@ model Listing {
   addedByGuestId   String?
   addedByGuest     TripGuest?          @relation("AddedByGuest", fields: [addedByGuestId], references: [id], onDelete: SetNull)
   addedByGuestName String?
+  /// Rejection metadata. Populated when `status` is REJECTED, cleared on restore.
+  rejectionReason   String?
+  rejectedAt        DateTime?
+  rejectedById      String?
+  rejectedBy        User?               @relation("RejectedByUser", fields: [rejectedById], references: [id], onDelete: SetNull)
+  rejectedByGuestId String?
+  rejectedByGuest   TripGuest?          @relation("RejectedByGuest", fields: [rejectedByGuestId], references: [id], onDelete: SetNull)
+  /// Display-name snapshot of who rejected, so "who" survives guest/user deletion.
+  rejectedByName    String?
   tripId           String
   trip             Trip                @relation(fields: [tripId], references: [id], onDelete: Cascade)
   likes            Like[]
@@ -107,6 +117,8 @@ model Listing {
 
   @@index([addedById])
   @@index([addedByGuestId])
+  @@index([rejectedById])
+  @@index([rejectedByGuestId])
   @@index([source, importStatus])
   @@index([sourceExternalId])
   @@index([tripId])
@@ -223,6 +235,7 @@ model TripGuest {
   updatedAt        DateTime         @updatedAt
   trip             Trip             @relation(fields: [tripId], references: [id], onDelete: Cascade)
   addedListings    Listing[]        @relation("AddedByGuest")
+  rejectedListings Listing[]        @relation("RejectedByGuest")
   votes            TripVote[]
   comments         ListingComment[]
 

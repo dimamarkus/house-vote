@@ -17,6 +17,7 @@ import { cn } from '@/ui/utils/cn';
 import { ListingSourceBadge } from './ListingSourceBadge';
 import { ListingTypeBadge } from './ListingTypeBadge';
 import { ListingStatusBadge } from './ListingStatusBadge';
+import { ListingRejectionNote } from './ListingRejectionNote';
 import { ListingCardDescription } from './ListingCardDescription';
 import { ListingCardMetrics } from './ListingCardMetrics';
 import { setListingPrimaryPhoto } from '../actions/setListingPrimaryPhoto';
@@ -324,6 +325,13 @@ export function ListingCard({
           bathroomCount={listing.bathroomCount}
           sleepsCount={sleepsCount}
         />
+
+        {!hasDefaultStatus ? (
+          <ListingRejectionNote
+            rejectedByName={listing.rejectedByName}
+            rejectionReason={listing.rejectionReason}
+          />
+        ) : null}
       </CardHeader>
 
       {hasCardContentBody ? (

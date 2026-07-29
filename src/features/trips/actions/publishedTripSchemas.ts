@@ -96,3 +96,16 @@ export const addCommentSchema = z.object({
   kind: z.enum(ListingCommentKind),
   body: z.string().trim().min(1, 'Comment is required.').max(1000, 'Comment is too long.'),
 });
+
+export const rejectListingSchema = z.object({
+  token: z.string().uuid('A valid published trip link is required.'),
+  guestId: z.string().cuid('A valid guest id is required.'),
+  listingId: z.string().cuid('A valid listing id is required.'),
+  reason: z.string().trim().min(1, 'A reason is required to reject a listing.').max(500, 'Reason is too long.'),
+});
+
+export const unrejectListingSchema = z.object({
+  token: z.string().uuid('A valid published trip link is required.'),
+  guestId: z.string().cuid('A valid guest id is required.'),
+  listingId: z.string().cuid('A valid listing id is required.'),
+});
