@@ -152,7 +152,8 @@ export function PublishedTripListingsGrid({ listings }: PublishedTripListingsGri
             priceBasisToggleable
             roomBreakdown={cardView === 'beds' ? listing.roomBreakdown as ListingCardProps['roomBreakdown'] : null}
             showAllMetadata={cardView === 'beds'}
-            showDescription={cardView === 'info'}
+            // Info card view temporarily disabled (scraped descriptions aren't reliable yet).
+            showDescription={false}
             separateBodyFromHeader
             contentClassName={tabContentFillsCard ? 'flex-none' : undefined}
             footerClassName={tabContentFillsCard ? 'flex-1 items-start' : undefined}

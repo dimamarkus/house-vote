@@ -89,9 +89,6 @@ export function PublishedTripTopBar({
                 <TabsTrigger value="beds" className={listingCardViewTriggerClassName}>
                   Beds
                 </TabsTrigger>
-                <TabsTrigger value="info" className={listingCardViewTriggerClassName}>
-                  Info
-                </TabsTrigger>
                 <TabsTrigger value="votes" className={listingCardViewTriggerClassName}>
                   Votes
                 </TabsTrigger>

@@ -3,7 +3,8 @@
 import { useCallback, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
-export const PUBLISHED_LISTING_CARD_VIEW_VALUES = ['beds', 'info', 'votes', 'feedback', 'comments'] as const;
+// `info` temporarily omitted — scraped listing descriptions aren't reliable yet.
+export const PUBLISHED_LISTING_CARD_VIEW_VALUES = ['beds', 'votes', 'feedback', 'comments'] as const;
 export type PublishedListingCardView = (typeof PUBLISHED_LISTING_CARD_VIEW_VALUES)[number];
 
 export const DEFAULT_PUBLISHED_LISTING_CARD_VIEW: PublishedListingCardView = 'votes';
