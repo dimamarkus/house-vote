@@ -75,14 +75,19 @@ export function PublishedTripGuestPicker({
     <div className="mx-auto w-full max-w-3xl">
       <Card className="border-border/60 shadow-sm">
         <CardHeader className="items-center gap-2 text-center">
-          <CardTitle className="text-2xl sm:text-3xl">Who are you voting as?</CardTitle>
+          <CardTitle className="text-2xl sm:text-3xl">Welcome to {share.trip.name}</CardTitle>
           <CardDescription className="max-w-xl text-base">
-            Pick your name below to start voting.
+            Pick your name to open the trip. You&apos;ll see all the houses and can add
+            your thoughts — voting comes later, once you&apos;ve had a look around.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6 p-6 pt-0 sm:p-8 sm:pt-0">
           {share.guests.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-3">
+              <p className="text-center text-sm font-medium text-muted-foreground">
+                Which {partyLabels.singular} are you? Tap your name to continue.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {share.guests.map((guest) => {
                 const isCurrentGuest = activeGuest?.id === guest.id;
 
@@ -101,11 +106,12 @@ export function PublishedTripGuestPicker({
                   </Button>
                 );
               })}
+              </div>
             </div>
           ) : null}
 
           <div className="mx-auto max-w-md rounded-xl border border-dashed px-4 py-5 text-center text-sm text-muted-foreground">
-            Not on the list? Ask the trip owner to add you before you can vote.
+            Not on the list? Ask the trip owner to add you so you can join the trip.
           </div>
         </CardContent>
       </Card>
